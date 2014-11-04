@@ -25,7 +25,6 @@ int main(int argc, char *argv[])
 qRegisterMetaType<cv::Mat>("Mat");
 #endif
 	qRegisterMetaType<Qt::MouseButton>("MouseButton");
-
 	QApplication app(argc, argv);
 	new Util::Cleaner(&app);
 	AppCore::Core::getInstance(&app);

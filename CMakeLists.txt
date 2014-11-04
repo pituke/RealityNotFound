@@ -217,6 +217,15 @@ if( WIN32 AND MSVC )
 	endif()
 endif()
 
+# ------------------------------ LEAP -------------------------------
+# Find leap
+find_package( LEAP )
+if( LEAP_FOUND )
+	add_definitions( -DLEAP_FOUND )
+	message( STATUS "LEAP_LIB_DIR=${LEAP_LIBRARIES}" )
+else()
+	message( STATUS "LEAP Not Found" )
+endif()
 # ------------
 # Dependencies - External projects
 # ------------
@@ -388,6 +397,11 @@ if( OpenCV_FOUND )
 	)
 endif()
 
+if( LEAP_FOUND )
+	include_directories( SYSTEM
+		${LEAP_INCLUDE_DIRS}
+	)
+endif()
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
 #-------------------------------- Source files -------------------------------
@@ -420,6 +434,9 @@ file( GLOB_RECURSE SRC_KINECT	"src/Kinect/*.cpp" )
 # SpeechSDK
 file( GLOB_RECURSE SRC_SPEECH	"src/Speech/*.cpp" )
 
+# Leap
+file ( GLOB_RECURSE SRC_LEAP "src/Leap/*.cpp" )
+
 # All source files
 set( SRC
 	${SRC_MAIN} ${SRC_CORE} ${SRC_DATA} ${SRC_IMPORTER}
@@ -439,6 +456,11 @@ endif()
 
 if( KINECTSDK_FOUND AND SPEECHSDK_FOUND )
 	list( APPEND SRC ${SRC_SPEECH} )
+endif()
+
+# add Leap
+if( LEAP_FOUND )
+	list( APPEND SRC ${SRC_LEAP} )
 endif()
 
 #-------------------------------- Header files -------------------------------
@@ -470,6 +492,8 @@ file( GLOB_RECURSE HEADER_KINECT	"include/Kinect/*.h" )
 # SpeechSDK
 file( GLOB_RECURSE HEADER_SPEECH	"include/Speech/*.h" )
 
+# LEAP
+file( GLOB_RECURSE HEADER_LEAP	"include/Leap/*.h" )
 # All header files
 set( INCL
 	${HEADER_CORE} ${HEADER_DATA} ${HEADER_IMPORTER}
@@ -491,6 +515,10 @@ if( KINECTSDK_FOUND AND SPEECHSDK_FOUND )
 	list( APPEND INCL ${HEADER_SPEECH} )
 endif()
 
+#LEAP
+if( LEAP_FOUND )
+	list( APPEND INCL ${HEADER_LEAP} )
+endif()
 #-------------------------------------- Group source files --------------------------------------
 source_group( \\src main.cpp )
 source_group( \\src\\Network "^.*Network/.*$" )
@@ -540,6 +568,11 @@ if( KINECTSDK_FOUND AND SPEECHSDK_FOUND )
 	source_group( \\headers\\Speech "^.*Speech/.*h$" )
 endif()
 
+#leap
+if( LEAP_FOUND )
+	source_group( \\src\\Leap "^.*Leap/.*$" )
+	source_group( \\headers\\Leap "^.*Leap/.*h$" )
+endif()
 # ---------------
 # Build and link 3Dsoftviz
 # ---------------
@@ -570,6 +603,10 @@ if( KINECTSDK_FOUND )
 	if( SPEECHSDK_FOUND )
 		target_link_libraries( ${3DSOFTVIZ_NAME} ${SPEECHSDK_LIBRARIES} )
 	endif()
+endif()
+
+if( LEAP_FOUND )
+	target_link_libraries( ${3DSOFTVIZ_NAME} ${LEAP_LIBRARIES} )
 endif()
 
 # 'cotire' the executable
@@ -616,6 +653,15 @@ if( SPEECHSDK_FOUND )
 	install( DIRECTORY ${SPEECHSDK_DRIVER_DIRS}/ DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/_install/bin )
 endif()
 
+# Install needed .dll files for leap
+if( LEAP_FOUND )
+
+	install( DIRECTORY ${LEAP_DRIVER_DIRS}/ DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/_install/bin )
+
+	#install( FILES ${LEAP_LIBRARIES} DESTINATION ${INSTALL_BIN} 
+		#	RUNTIME DESTINATION ${INSTALL_BIN} 
+        #   LIBRARY DESTINATION ${INSTALL_LIB} )
+endif()
 # Install built in dependencies unless we are building an OSX Bundle
 if( USE_BUILTIN_DEPENDENCIES )
 
