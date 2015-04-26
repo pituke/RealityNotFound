@@ -787,6 +787,10 @@ endif()
 #include_directories( SYSTEM dependencies/qtcolorpicker )
 #add_library( qtcolorpicker STATIC dependencies/qtcolorpicker/qtcolorpicker.cpp )
 
+# ParserLib sources
+include_directories( SYSTEM dependencies/parserlib/source )
+add_library( parserlib STATIC dependencies/parserlib/source/ast.cpp dependencies/parserlib/source/parser.cpp )
+
 # ---------------------------------------------------------------
 # Build and link 3Dsoftviz
 # ---------------------------------------------------------------
@@ -807,6 +811,7 @@ target_link_libraries( ${3DSOFTVIZ_NAME}
 	${OSGVIEWER_LIBRARIES}
 	lua
 	libnoise
+	parserlib
 )
 
 if( NOT MSVC )
