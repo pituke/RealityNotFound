@@ -96,10 +96,18 @@ public slots:
 	            */
 	void showLoadGraph();
 
+    /**
+                *  \fn public  showLoadJavaProject
+                *  \brief Show the dialog to load java project
+                */
+
+    void showLoadJavaProject();
+
 	/**
 	            *  \fn public  saveGraphToDB
 	            *  \brief Save a current graph to database
 	            */
+
 	void saveGraphToDB();
 
 
@@ -529,6 +537,12 @@ private:
 	    *  \brief Pointer to dialog to load graph from database
 	    */
 	QAction* loadGraph;
+
+    /**
+        *  QAction * loadJavaProject
+        *  \brief Pointer to dialog to load java project
+        */
+    QAction* loadJavaProject;
 
 	/**
 	    *  QAction * saveLayout

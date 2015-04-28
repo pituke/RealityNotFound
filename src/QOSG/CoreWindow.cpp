@@ -143,7 +143,10 @@ void CoreWindow::createActions()
 	connect( load, SIGNAL( triggered() ), this, SLOT( loadFile() ) );
 
 	loadGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/loadFromDB.png" ),"&Load graph from database", this );
-	connect( loadGraph, SIGNAL( triggered() ), this, SLOT( showLoadGraph() ) );
+    connect( loadGraph, SIGNAL( triggered() ), this, SLOT( showLoadGraph() ) );
+
+    loadJavaProject = new QAction( QIcon( "../share/3dsoftviz/img/gui/open_java.png" ),"&Load java project", this );
+    connect( loadJavaProject, SIGNAL( triggered() ), this, SLOT( showLoadJavaProject() ) );
 
 	saveGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save graph", this );
 	connect( saveGraph, SIGNAL( triggered() ), this, SLOT( saveGraphToDB() ) );
@@ -611,6 +614,7 @@ void CoreWindow::createMenus()
 	file = menuBar()->addMenu( "File" );
 	file->addAction( load );
 	file->addAction( loadGraph );
+    file->addAction( loadJavaProject );
 	file->addSeparator();
 	file->addAction( saveGraph );
 	file->addAction( saveLayout );
@@ -1067,6 +1071,19 @@ void CoreWindow::showLoadGraph()
 {
 	LoadGraphWindow* loadGraph = new LoadGraphWindow( this );
 	loadGraph->show();
+}
+
+void CoreWindow::showLoadJavaProject()
+{
+    QFileDialog dialog;
+    dialog.setWindowTitle("Choose java project folder");
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly);
+    if (dialog.exec())
+    {
+        QString directory = dialog.selectedFiles()[0];
+        qDebug()<<directory;
+    }
 }
 
 void CoreWindow::saveGraphToDB()
