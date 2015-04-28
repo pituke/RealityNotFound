@@ -68,7 +68,6 @@ if( USE_STRICT_COMPILE_WARNINGS )
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		# using Visual Studio C++
 		set( FLAGS_FOR_DEBUG "/W3")
-                   add_definitions( -DNOMINMAX )
 	endif()
 endif()
 
