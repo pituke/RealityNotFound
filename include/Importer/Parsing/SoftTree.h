@@ -4,29 +4,32 @@
 
 namespace Importer
 {
-    using std::vector;
-
-    struct Attribute
+    namespace Parsing
     {
-    };
+        using std::vector;
 
-    struct Method
-    {
-    };
+        struct Attribute
+        {
+        };
 
-    struct Class
-    {
-        vector<Attribute> attributes;
-        vector<Method> methods;
-    };
+        struct Method
+        {
+        };
 
-    struct Namespace
-    {
-        vector<Class> classes;
-    };
+        struct Class
+        {
+            vector<Attribute> attributes;
+            vector<Method> methods;
+        };
 
-    struct SoftTree
-    {
-        vector<Namespace> namespaces;
-    };
+        struct Namespace
+        {
+            vector<Class> classes;
+        };
+
+        struct SoftTree
+        {
+            vector<Namespace> namespaces;
+        };
+    }
 }

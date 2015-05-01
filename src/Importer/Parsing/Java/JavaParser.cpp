@@ -1,8 +1,11 @@
 
 #include "Importer/Parsing/Java/JavaGrammar.h"
 #include "Importer/Parsing/Java/JavaParser.h"
+#include "Importer/Parsing/CollectionHelper.h"
 #include <fstream>
 #include <sstream>
+#include <QDirIterator>
+#include <QTextStream>
 
 namespace Importer
 {
@@ -10,6 +13,18 @@ namespace Importer
 	{
 		using namespace std;
 		using namespace parserlib;
+
+        struct CompileResult
+        {
+            string file;
+            string errorMessage;
+            SourceFileCompilationUnit* astRoot;
+            CompileResult() : astRoot(NULL)
+            {
+            }
+        };
+
+        void ProcessParseResult(const vector<CompileResult>& compileResults, SoftTree& softTree);
 
 		JavaParser::JavaParser()
 		{
@@ -132,49 +147,74 @@ namespace Importer
 			#pragma endregion
 		}
 
-		void JavaParser::Parse(const string& javaProjectDirectory)
+        bool JavaParser::Parse(const string& javaProjectDirectory, SoftTree& softTree, string& errorMessage)
 		{
-
-		}
-
-        bool JavaParser::ParseUnit(const string& javaFilePath, SourceFileCompilationUnit& javaRootAst, string& errorMessage)
-		{
-			ifstream t(javaFilePath);
-			string fileContent;
-
-			t.seekg(0, ios::end);
-			fileContent.reserve(t.tellg());
-			t.seekg(0, ios::beg);
-
-			fileContent.assign((istreambuf_iterator<char>(t)), istreambuf_iterator<char>());
-
-			error_list errors;
-			input input(fileContent.begin(), fileContent.end());
-            if (parse(input, compilationUnit, whitespace, errors, &javaRootAst))
-                return true;
-            else
+            QDirIterator dirIt(QString::fromStdString(javaProjectDirectory), QStringList("*.java"), QDir::Files, QDirIterator::Subdirectories);
+            vector<CompileResult> compileResults;
+            while (dirIt.hasNext())
             {
-                ostringstream oss(errorMessage);
-                oss << "found " << errors.size() << " " << (errors.size() > 1 ? "errors" : "error") << ":\n";
-                errors.sort();
-                for (auto it = errors.begin(); it != errors.end(); ++it)
+                QString filePath = dirIt.next();
+
+                CompileResult cr;
+                cr.file = filePath.toStdString();
+
+                QFile f(filePath);
+                if (!f.open(QFile::ReadOnly | QFile::Text))
                 {
-                    const auto& e = *it;
-                    oss << "    line " << e.m_begin.m_line << ", col " << e.m_begin.m_col << ": ";
-                    oss << endl;
+                    cr.errorMessage = "Cannot open file";
+                    continue;
                 }
-
-                return false;
+                string fileContent = QTextStream(&f).readAll().toStdString();
+                input input(fileContent.begin(), fileContent.end());
+                bool pass = false;
+                error_list errors;
+                try
+                {
+                    pass = parse(input, compilationUnit, whitespace, errors, cr.astRoot);
+                }
+                catch (exception& ex)
+                {
+                    cr.errorMessage = ex.what();
+                    continue;
+                }
+                if (!pass)
+                {
+                    ostringstream oss;
+                    oss << "    found " << errors.size() << " " << (errors.size() > 1 ? "errors" : "error") << ": ";
+                    errors.sort();
+                    for (auto it = errors.begin(); it != errors.end(); ++it)
+                    {
+                        const auto& e = *it;
+                        oss << "line " << e.m_begin.m_line << ", col " << e.m_begin.m_col << ": ";
+                        oss << endl;
+                    }
+                    cr.errorMessage = oss.str();
+                }
+                compileResults.push_back(cr);
             }
-		}
 
-        SoftTree JavaParser::ProcessParseResult(const SourceFileCompilationUnit& rootAst)
+            FOREACH (cr, compileResults)
+            {
+                if (!cr->errorMessage.empty())
+                {
+                    if (!errorMessage.empty())
+                        errorMessage += "\n";
+                    errorMessage += cr->file + ":\n" + cr->errorMessage;
+                }
+            }
+
+            if (errorMessage.empty())
+            {
+                ProcessParseResult(compileResults, softTree);
+                return true;
+            }
+            else
+                return false;
+        }
+
+        void ProcessParseResult(const vector<CompileResult>& compileResults, SoftTree& softTree)
         {
-            SoftTree root;
-
-            // todo
-
-            return root;
+            // TODO: process java ast to soft tree
         }
 	}
 }

@@ -129,11 +129,11 @@ namespace Importer
 
         struct SourceFileCompilationUnit : public NodeContainer
         {
-            AstValue<NodePackageDeclaration, true> packageDeclaration;
+            AstList<NodePackageDeclaration> packageDeclarationList;
             AstList<NodeImportDeclaration> importDeclarationList;
             AstList<NodeTypeDeclaration> typeDeclarationList;
 
-            astVal(NodePackageDeclaration) GetPackage() const;
+            astList(NodePackageDeclaration) GetPackageList() const;
             astList(NodeImportDeclaration) GetImportList() const;
             astList(NodeTypeDeclaration) GetTypeDeclarationList() const;
             vector<const NodeClassDeclaration*> GetClassList() const;

@@ -11,9 +11,9 @@ namespace Importer
 	namespace Parsing
 	{
 		// SourceFileCompilationUnit
-		astVal(NodePackageDeclaration) SourceFileCompilationUnit::GetPackage() const
+        astList(NodePackageDeclaration) SourceFileCompilationUnit::GetPackageList() const
 		{
-			return packageDeclaration;
+            return packageDeclarationList;
 		}
 
 		astList(NodeImportDeclaration) SourceFileCompilationUnit::GetImportList() const

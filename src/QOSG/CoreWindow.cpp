@@ -20,6 +20,9 @@
 #include "Data/GraphLayout.h"
 #include "Data/GraphSpanningTree.h"
 
+#include "Importer/Parsing/Java/JavaParser.h"
+#include "Importer/Parsing/SoftTree.h"
+
 #include "Layout/LayoutThread.h"
 #include "Layout/FRAlgorithm.h"
 #include "Layout/ShapeGetter_CylinderSurface_ByCamera.h"
@@ -1082,7 +1085,11 @@ void CoreWindow::showLoadJavaProject()
     if (dialog.exec())
     {
         QString directory = dialog.selectedFiles()[0];
-        qDebug()<<directory;
+        Importer::Parsing::JavaParser javaParser;
+        Importer::Parsing::SoftTree softTree;
+        std::string errorMessage;
+        if (!javaParser.Parse(directory.toStdString(), softTree, errorMessage))
+            QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
     }
 }
 

@@ -11,9 +11,7 @@ namespace Importer
 		{
 		public:
 			JavaParser();
-			void Parse(const string& javaProjectDirectory);
-            bool ParseUnit(const string& javaFilePath, SourceFileCompilationUnit& javaRootAst, string& errorMessage = string());
-            SoftTree ProcessParseResult(const SourceFileCompilationUnit& rootAst);
+            bool Parse(const string& javaProjectDirectory, SoftTree& softTree, string& errorMessage = string());
 		};
 	}
 }
