@@ -577,6 +577,7 @@ set( SRC_MAIN "src/main.cpp" )
 file( GLOB_RECURSE SRC_CORE		"src/Core/*.cpp" )
 file( GLOB_RECURSE SRC_DATA		"src/Data/*.cpp" )
 file( GLOB_RECURSE SRC_IMPORTER	"src/Importer/*.cpp" )
+#file( GLOB_RECURSE SRC_JAVA	"src/Importer/Parsing/*.cpp" )
 file( GLOB_RECURSE SRC_LAYOUT	"src/Layout/*.cpp" )
 file( GLOB_RECURSE SRC_LUAGRAPH  "src/LuaGraph/*.cpp")
 file( GLOB_RECURSE SRC_LUAINTERFACE  "src/LuaInterface/*.cpp")
@@ -614,6 +615,7 @@ set( SRC
 	${SRC_MANAGER}
 	${SRC_DATA} ${SRC_CLUSTERING}
 	${SRC_IMPORTER}
+#        ${SRC_JAVA}
 	${SRC_LAYOUT}
 	${SRC_LUAGRAPH} ${SRC_LUAINTERFACE}
 	${SRC_MATH}
@@ -647,6 +649,7 @@ endif()
 file( GLOB_RECURSE HEADER_CORE		"include/Core/*.h" )
 file( GLOB_RECURSE HEADER_DATA		"include/Data/*.h" )
 file( GLOB_RECURSE HEADER_IMPORTER	"include/Importer/*.h" )
+#file( GLOB_RECURSE HEADER_JAVA          "include/Importer/Parsing/*.h" )
 file( GLOB_RECURSE HEADER_LAYOUT	"include/Layout/*.h" )
 file( GLOB_RECURSE HEADER_LUAGRAPH  "include/LuaGraph/*.h")
 file( GLOB_RECURSE HEADER_LUAINTERFACE  "include/LuaInterface/*.h")
@@ -683,6 +686,7 @@ set( INCL
 	${HEADER_MANAGER}
 	${HEADER_DATA} ${HEADER_CLUSTERING}
 	${HEADER_IMPORTER}
+#        ${HEADER_JAVA}
 	${HEADER_LAYOUT}
 	${HEADER_LUAGRAPH} ${HEADER_LUAINTERFACE}
 	${HEADER_MATH}
