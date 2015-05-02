@@ -41,8 +41,8 @@ namespace Importer
 			CONNECT_RULE_AST(NodeClassDeclaration, classDeclaration);
 			CONNECT_RULE_AST(NodeClassDeclarationExtend, classDeclarationExtend);
 			CONNECT_RULE_AST(NodeClassDeclarationImplement, classDeclarationImplement);
-			CONNECT_RULE_AST(NodeClassBody, classBody);
-			CONNECT_RULE_AST(NodeClassBodyDeclaration, classBodyDeclaration);
+            CONNECT_RULE_AST(NodeClassBody, classBody);
+            CONNECT_RULE_AST(NodeClassBodyDeclaration, classBodyDeclaration);
 			CONNECT_RULE_AST(NodeMemberDeclaration, memberDeclaration);
 			CONNECT_RULE_AST(NodeMethodDeclaration, methodDeclaration);
 			CONNECT_RULE_AST(NodeMethodBody, methodBody);
@@ -55,7 +55,7 @@ namespace Importer
 			CONNECT_RULE_AST(NodeEnumConstants, enumConstants);
 			CONNECT_RULE_AST(NodeEnumConstant, enumConstant);
 			CONNECT_RULE_AST(NodeArguments, arguments);
-			CONNECT_RULE_AST(NodeEnumBodyDeclarations, enumBodyDeclarations);
+            CONNECT_RULE_AST(NodeEnumBodyDeclarations, enumBodyDeclarations);
 			CONNECT_RULE_AST(NodeInterfaceDeclaration, interfaceDeclaration);
 			CONNECT_RULE_AST(NodeInterfaceBody, interfaceBody);
 			CONNECT_RULE_AST(NodeInterfaceBodyDeclaration, interfaceBodyDeclaration);
@@ -88,7 +88,7 @@ namespace Importer
 			//CONNECT_RULE_AST(NodeElementValuePair, elementValuePair);
 			//CONNECT_RULE_AST(NodeElementValuePairs, elementValuePairs);
 			CONNECT_RULE_AST(NodeBlock, block);
-			CONNECT_RULE_AST(NodeBlockStatement, blockStatement);
+            CONNECT_RULE_AST(NodeBlockStatement, blockStatement);
 			CONNECT_RULE_AST(NodeLocalVariableDeclarationStatement, localVariableDeclarationStatement);
 			CONNECT_RULE_AST(NodeLocalVariableDeclaration, localVariableDeclaration);
 			CONNECT_RULE_AST(NodeVariableDeclaratorId, variableDeclaratorId);
@@ -136,13 +136,16 @@ namespace Importer
 			CONNECT_RULE_AST(NodeStatementExpression, statementExpression);
 			CONNECT_RULE_AST(NodeQualifiedName, qualifiedName);
 			CONNECT_RULE_AST(NodeQualifiedNameList, qualifiedNameList);
-			CONNECT_RULE_AST(NodeExpression, expression);
-			/*CONNECT_RULE_AST(NodeExpressionSequence, expressionSequence);
-			CONNECT_RULE_AST(NodeExpressionPostfix, expressionPostfix);
-			CONNECT_RULE_AST(NodeExpressionInner, expressionInner);
-			CONNECT_RULE_AST(NodeExpressionSequenceInner, expressionSequenceInner);*/
-			CONNECT_RULE_AST(NodeExpressionList, expressionList);
-			CONNECT_RULE_AST(NodeIdentifier, identifier);
+            CONNECT_RULE_AST(NodeExpression, expression);
+            CONNECT_RULE_AST(NodeExpression2, expression2);
+            CONNECT_RULE_AST(NodeExpression3, expression3);
+            CONNECT_RULE_AST(NodeExpressionString, expressionString);
+            CONNECT_RULE_AST(NodeExpressionString2, expressionString2);
+            CONNECT_RULE_AST(NodeExpressionRound, expressionRound);
+            CONNECT_RULE_AST(NodeExpressionBracket, expressionBracket);
+            CONNECT_RULE_AST(NodeExpressionPostfix, expressionPostfix);
+            CONNECT_RULE_AST(NodeExpressionList, expressionList);
+            CONNECT_RULE_AST(NodeIdentifier, identifier);
 
 			#pragma endregion
 		}
@@ -175,6 +178,7 @@ namespace Importer
                 catch (exception& ex)
                 {
                     cr.errorMessage = ex.what();
+                    compileResults.push_back(cr);
                     continue;
                 }
                 if (!pass)
