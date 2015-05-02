@@ -114,13 +114,16 @@ namespace Importer
         struct NodeStatementExpression;
         struct NodeQualifiedName;
         struct NodeQualifiedNameList;
-        struct NodeExpression;
-        struct NodeExpressionSequence;
-        struct NodeExpressionPostfix;
-        struct NodeExpressionInner;
-        struct NodeExpressionSequenceInner;
-        struct NodeExpressionList;
-        struct NodeIdentifier;
+        class NodeExpression;
+        class NodeExpression2;
+        class NodeExpression3;
+        class NodeExpressionString;
+        class NodeExpressionString2;
+        class NodeExpressionRound;
+        class NodeExpressionBracket;
+        class NodeExpressionPostfix;
+        class NodeExpressionList;
+        class NodeIdentifier;
 
 		#pragma endregion
 
@@ -779,7 +782,7 @@ namespace Importer
 
         struct NodeConstantExpression : public NodeContainer
         {
-            AstValue<NodeExpression> expression;
+            AstValue<NodeExpression3> expression3;
         };
 
         struct NodeEnumConstantName : public NodeContainer
@@ -804,39 +807,66 @@ namespace Importer
             AstList<NodeQualifiedName> qualifiedNameList;
         };
 
-        struct NodeExpression : public NodeContainer
+        class NodeExpression : public NodeContainer
         {
-            // change NoteTerm to NodeContainer
-            /*AstValue<NodeExpressionSequence> expressionSequence;
-            AstValue<NodeExpressionPostfix> expressionPostfix;*/
-            AstList<NodeExpression> expressionList;
-        };
-
-        struct NodeExpressionSequence : public NodeTerm
-        {
-        };
-
-        struct NodeExpressionPostfix : public NodeContainer
-        {
-            AstList<NodeExpression> expressionList;
-        };
-
-        struct NodeExpressionInner : public NodeContainer
-        {
-            AstValue<NodeExpressionSequenceInner> expressionSequenceInner;
+        private:
             AstValue<NodeExpressionPostfix> expressionPostfix;
         };
 
-        struct NodeExpressionSequenceInner : public NodeTerm
+        class NodeExpression2 : public NodeContainer
         {
+        private:
+            AstValue<NodeExpressionString2, true> expressionString2;
+            AstValue<NodeExpression2, true> expression2;
+            AstValue<NodeExpressionBracket, true> expressionBracket;
         };
 
-        struct NodeExpressionList : public NodeContainer
+        class NodeExpression3 : public NodeContainer
         {
+        private:
+            AstValue<NodeExpressionPostfix> expressionPostfix;
+        };
+
+        class NodeExpressionString : public NodeContainer
+        {
+        private:
+            AstValue<NodeExpression> expression;
+        };
+
+        class NodeExpressionString2 : public NodeContainer
+        {
+        private:
+            AstValue<NodeExpression2> expression2;
+        };
+
+        class NodeExpressionRound : public NodeContainer
+        {
+        private:
             AstList<NodeExpression> expressionList;
         };
 
-        struct NodeIdentifier : public NodeTerm
+        class NodeExpressionBracket : public NodeContainer
+        {
+        private:
+            AstValue<NodeExpression2> expression2;
+            AstValue<NodeExpression> expression;
+        };
+
+        class NodeExpressionPostfix : public NodeContainer
+        {
+        private:
+            AstValue<NodeExpressionString, true> expressionList;
+            AstValue<NodeExpressionRound, true> expressionRound;
+            AstValue<NodeExpressionBracket, true> expressionBracket;
+        };
+
+        class NodeExpressionList : public NodeContainer
+        {
+        private:
+            AstList<NodeExpression> expressionList;
+        };
+
+        class NodeIdentifier : public NodeTerm
         {
         };
 	}

@@ -136,12 +136,15 @@ namespace Importer
 		extern rule qualifiedName;
 		extern rule qualifiedNameList;
 
-		extern rule expression;
-		extern rule expressionSequence;
-		extern rule expressionPostfix;
-		extern rule expressionInner;
-		extern rule expressionSequenceInner;
-		extern rule expressionList;
+        extern rule expression;
+        extern rule expression2;
+        extern rule expression3;
+        extern rule expressionString;
+        extern rule expressionString2;
+        extern rule expressionRound;
+        extern rule expressionBracket;
+        extern rule expressionPostfix;
+        extern rule expressionList;
 
 		extern rule identifier;
 
@@ -290,19 +293,22 @@ namespace Importer
 		rule resource = *variableModifier >> classOrInterfaceType >> variableDeclaratorId >> '=' >> expression;
 		rule switchBlockStatementGroup = +switchLabel >> +blockStatement;
 		rule switchLabel = ("case" >> constantExpression >> ':') | ("case" >> enumConstantName >> ':') | (expr("default") >> ':');
-		rule constantExpression = expression;
+        rule constantExpression = expression3;
 		rule enumConstantName = identifier;
 		rule statementExpression = expression;
 
 		rule qualifiedName = identifier >> *('.' >> identifier);
 		rule qualifiedNameList = qualifiedName >> *(',' >> qualifiedName);
 
-		rule expression = expressionSequence >> expressionPostfix;
-		rule expressionSequence = EVERYTHING_TO(set("();:{}\""));
-		rule expressionPostfix = -('"' >> EVERYTHING_TO(expr('"')) >> '"' >> expression) >> -(('(' >> expression >> ')' >> expression) | ('{' >> expression >> '}' >> expression));
-		rule expressionInner = expressionSequenceInner >> expressionPostfix;
-		rule expressionSequenceInner = EVERYTHING_TO(set("():{}\""));
-		rule expressionList = expression >> *(',' >> expression);
+        rule expression = EVERYTHING_TO(set("();{}\"")) >> expressionPostfix;
+        rule expression2 = EVERYTHING_TO(set("{}\"")) >> -((expressionString2 >> expression2) | expressionBracket);
+        rule expression3 = EVERYTHING_TO(set("();:{}\"")) >> expressionPostfix;
+        rule expressionString = expr('"') >> EVERYTHING_TO(expr('"')) >> '"' >> expression;
+        rule expressionString2 = expr('"') >> EVERYTHING_TO(expr('"')) >> '"' >> expression2;
+        rule expressionRound = '(' >> expression >> ')' >> expression;
+        rule expressionBracket = '{' >> expression2 >> '}' >> expression;
+        rule expressionPostfix = -expressionString >> -(expressionRound | expressionBracket);
+        rule expressionList = expression >> *(',' >> expression);
 
 		rule identifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
 
