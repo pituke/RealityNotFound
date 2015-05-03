@@ -392,12 +392,12 @@ bool FRAlgorithm::applyForces( Data::Node* node )
 			osg::Vec3f x = osg::Vec3f( node->restrictedTargetPosition().x(), secondOriginalTargetPosition.y(), secondOriginalTargetPosition.z() );
 			secondNode->setTargetPosition( x );
 		}
-		if ( ( *edgeIt )->isShared_Y() ) {
+        if ( ( *edgeIt )->isShared_Y() ) {
 			osg::ref_ptr<Data::Node> secondNode = ( *edgeIt )->getSecondNode( node );
 			osg::Vec3f secondOriginalTargetPosition = secondNode->getTargetPosition();
 			osg::Vec3f y = osg::Vec3f( secondOriginalTargetPosition.x(), node->restrictedTargetPosition().y(), secondOriginalTargetPosition.z() );
 			secondNode->setTargetPosition( y );
-		}
+        }
 		if ( ( *edgeIt )->isShared_Z() ) {
 			osg::ref_ptr<Data::Node> secondNode = ( *edgeIt )->getSecondNode( node );
 			osg::Vec3f secondOriginalTargetPosition = secondNode->getTargetPosition();

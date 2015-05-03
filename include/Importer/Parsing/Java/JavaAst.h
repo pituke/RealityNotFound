@@ -114,16 +114,16 @@ namespace Importer
         struct NodeStatementExpression;
         struct NodeQualifiedName;
         struct NodeQualifiedNameList;
-        class NodeExpression;
-        class NodeExpression2;
-        class NodeExpression3;
-        class NodeExpressionString;
-        class NodeExpressionString2;
-        class NodeExpressionRound;
-        class NodeExpressionBracket;
-        class NodeExpressionPostfix;
-        class NodeExpressionList;
-        class NodeIdentifier;
+        struct NodeExpression;
+        struct NodeExpression2;
+        struct NodeExpression3;
+        struct NodeExpressionString;
+        struct NodeExpressionString2;
+        struct NodeExpressionRound;
+        struct NodeExpressionBracket;
+        struct NodeExpressionPostfix;
+        struct NodeExpressionList;
+        struct NodeIdentifier;
 
 		#pragma endregion
 
@@ -137,6 +137,7 @@ namespace Importer
             AstList<NodeTypeDeclaration> typeDeclarationList;
 
             astList(NodePackageDeclaration) GetPackageList() const;
+            string GetPackageName() const;
             astList(NodeImportDeclaration) GetImportList() const;
             astList(NodeTypeDeclaration) GetTypeDeclarationList() const;
             vector<const NodeClassDeclaration*> GetClassList() const;
@@ -205,6 +206,7 @@ namespace Importer
             AstValue<NodeClassDeclarationExtend, true> classDeclarationExtend;
             AstValue<NodeClassDeclarationImplement, true> classDeclarationImplement;
             AstValue<NodeClassBody> classBody;
+
             string GetClassName() const;
             astVal(NodeClassDeclarationExtend) GetClassExtend() const;
             astVal(NodeClassDeclarationImplement) GetClassImplement() const;
@@ -230,6 +232,7 @@ namespace Importer
             AstList<NodeClassBodyDeclaration> classBodyDeclarationList;
 
             vector<const NodeBlock*> GetBlockList() const;
+            vector<const NodeMemberDeclaration*> GetMembers() const;
             vector<const NodeMethodDeclaration*> GetMethodList() const;
             vector<const NodeGenericMethodDeclaration*> GetGenericMethodList() const;
             vector<const NodeFieldDeclaration*> GetFieldList() const;
@@ -807,66 +810,57 @@ namespace Importer
             AstList<NodeQualifiedName> qualifiedNameList;
         };
 
-        class NodeExpression : public NodeContainer
+        struct NodeExpression : public NodeContainer
         {
-        private:
             AstValue<NodeExpressionPostfix> expressionPostfix;
         };
 
-        class NodeExpression2 : public NodeContainer
+        struct NodeExpression2 : public NodeContainer
         {
-        private:
             AstValue<NodeExpressionString2, true> expressionString2;
             AstValue<NodeExpression2, true> expression2;
             AstValue<NodeExpressionBracket, true> expressionBracket;
         };
 
-        class NodeExpression3 : public NodeContainer
+        struct NodeExpression3 : public NodeContainer
         {
-        private:
             AstValue<NodeExpressionPostfix> expressionPostfix;
         };
 
-        class NodeExpressionString : public NodeContainer
+        struct NodeExpressionString : public NodeContainer
         {
-        private:
             AstValue<NodeExpression> expression;
         };
 
-        class NodeExpressionString2 : public NodeContainer
+        struct NodeExpressionString2 : public NodeContainer
         {
-        private:
             AstValue<NodeExpression2> expression2;
         };
 
-        class NodeExpressionRound : public NodeContainer
+        struct NodeExpressionRound : public NodeContainer
         {
-        private:
             AstList<NodeExpression> expressionList;
         };
 
-        class NodeExpressionBracket : public NodeContainer
+        struct NodeExpressionBracket : public NodeContainer
         {
-        private:
             AstValue<NodeExpression2> expression2;
             AstValue<NodeExpression> expression;
         };
 
-        class NodeExpressionPostfix : public NodeContainer
+        struct NodeExpressionPostfix : public NodeContainer
         {
-        private:
             AstValue<NodeExpressionString, true> expressionList;
             AstValue<NodeExpressionRound, true> expressionRound;
             AstValue<NodeExpressionBracket, true> expressionBracket;
         };
 
-        class NodeExpressionList : public NodeContainer
+        struct NodeExpressionList : public NodeContainer
         {
-        private:
             AstList<NodeExpression> expressionList;
         };
 
-        class NodeIdentifier : public NodeTerm
+        struct NodeIdentifier : public NodeTerm
         {
         };
 	}

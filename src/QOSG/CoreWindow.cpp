@@ -1076,6 +1076,32 @@ void CoreWindow::showLoadGraph()
 	loadGraph->show();
 }
 
+void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* graph)
+{
+    auto nodeType = graph->addType("defaultNodeType");
+    auto edgeType = graph->addType("defaultEdgeType");
+
+    foreach (const Importer::Parsing::Namespace& _namespace, softTree.namespaces)
+    {
+        auto namespaceNode = graph->addNode(QString::fromStdString(_namespace.name), nodeType);
+
+        foreach (const Importer::Parsing::Class& _class, _namespace.classes)
+        {
+            auto classNode = graph->addNode(QString::fromStdString(_class.name), nodeType);
+            auto edgeNamespaceClass = graph->addEdge(QString::fromStdString(_namespace.name + " " + _class.name), namespaceNode, classNode, edgeType, true);
+
+            foreach (const Importer::Parsing::Method _method, _class.methods)
+            {
+                auto methodNode = graph->addNode(QString::fromStdString(_method.name), nodeType);
+                auto edgeClassMethod = graph->addEdge(QString::fromStdString(_class.name + " " + _method.name), classNode, methodNode, edgeType, true);
+            }
+        }
+    }
+
+    //auto layout1 = graph->addLayout("new Layout");
+    //graph->selectLayout(layout1);
+}
+
 void CoreWindow::showLoadJavaProject()
 {
     QFileDialog dialog;
@@ -1090,6 +1116,33 @@ void CoreWindow::showLoadJavaProject()
         std::string errorMessage;
         if (!javaParser.Parse(directory.toStdString(), softTree, errorMessage))
             QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+
+        auto manager = Manager::GraphManager::getInstance();
+        auto graph = manager->createGraph("SoftwareGraph");
+
+        SoftTreeToGraph(softTree, graph);
+
+        // nastavenie aktivneho grafu
+        if (manager->getActiveGraph() != NULL)
+        {
+            // ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
+            manager->closeGraph(manager->getActiveGraph());
+        }
+        manager->activeGraph = graph;
+
+        // robime zakladnu proceduru pre restartovanie layoutu
+        AppCore::Core::getInstance()->restartLayout();
+
+        //Network::Server* server = Network::Server::getInstance();
+        //server -> sendGraph();
+
+        //viewerWidget->getCameraManipulator()->home();
+
+        //treba overit ci funguje
+        if ( isPlaying ) {
+            layout->play();
+            coreGraph->setNodesFreezed( false );
+        }
     }
 }
 

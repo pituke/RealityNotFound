@@ -1,7 +1,6 @@
 
 #include "Importer/Parsing/Java/JavaGrammar.h"
 #include "Importer/Parsing/Java/JavaParser.h"
-#include "Importer/Parsing/CollectionHelper.h"
 #include <fstream>
 #include <sstream>
 #include <QDirIterator>
@@ -197,13 +196,13 @@ namespace Importer
                 compileResults.push_back(cr);
             }
 
-            FOREACH (cr, compileResults)
+            foreach (const CompileResult& cr, compileResults)
             {
-                if (!cr->errorMessage.empty())
+                if (!cr.errorMessage.empty())
                 {
                     if (!errorMessage.empty())
                         errorMessage += "\n";
-                    errorMessage += cr->file + ":\n" + cr->errorMessage;
+                    errorMessage += cr.file + ":\n" + cr.errorMessage;
                 }
             }
 
@@ -218,7 +217,72 @@ namespace Importer
 
         void ProcessParseResult(const vector<CompileResult>& compileResults, SoftTree& softTree)
         {
-            // TODO: process java ast to soft tree
+            QMap<string, Namespace> javaPackages;
+
+            foreach (const CompileResult& cr, compileResults)
+            {
+                SourceFileCompilationUnit* javaAstRoot = cr.astRoot;
+
+                auto javaClassList = javaAstRoot->GetClassList();
+                foreach (const NodeClassDeclaration* javaClass, javaClassList)
+                {
+                    Class _class;
+                    _class.name = javaClass->GetClassName();
+
+                    auto javaClassBody = javaClass->GetClassBody();
+                    auto javaMethodList = javaClassBody->GetMethodList();
+                    auto javaGenericMethodList = javaClassBody->GetGenericMethodList();
+                    auto javaConstructorList = javaClassBody->GetConstructorList();
+                    auto javaGenericConstructorList = javaClassBody->GetGenericConstructorList();
+                    auto javaFieldList = javaClassBody->GetFieldList();
+
+                    foreach (const NodeMethodDeclaration* javaMethod, javaMethodList)
+                    {
+                        Method method;
+                        method.name = javaMethod->GetMethodName();
+                        _class.methods.push_back(method);
+                    }
+                    foreach (const NodeGenericMethodDeclaration* javaGenericMethod, javaGenericMethodList)
+                    {
+                        Method method;
+                        method.name = javaGenericMethod->GetGenericMethodName();
+                        _class.methods.push_back(method);
+                    }
+                    foreach (const NodeConstructorDeclaration* javaConstructor, javaConstructorList)
+                    {
+                        Method method;
+                        method.name = javaConstructor->GetConstructorName();
+                        _class.methods.push_back(method);
+                    }
+                    foreach (const NodeGenericConstructorDeclaration* javaGenericConstructor, javaGenericConstructorList)
+                    {
+                        Method method;
+                        method.name = javaGenericConstructor->GetGenericConstructorName();
+                        _class.methods.push_back(method);
+                    }
+
+                    foreach (const NodeFieldDeclaration* javaField, javaFieldList)
+                    {
+                        Attribute attribute;
+                        attribute.name = javaField->GetFieldName();
+                        _class.attributes.push_back(attribute);
+                    }
+
+                    auto packageName = javaAstRoot->GetPackageName();
+                    if (!javaPackages.contains(packageName))
+                    {
+                        Namespace javaPackage;
+                        javaPackage.name = packageName;
+                        javaPackages.insert(packageName, javaPackage);
+                    }
+                    javaPackages[packageName].classes.push_back(_class);
+                }
+            }
+
+            Q_FOREACH(auto javaPackage, javaPackages)
+            {
+                softTree.namespaces.push_back(javaPackage);
+            }
         }
 	}
 }

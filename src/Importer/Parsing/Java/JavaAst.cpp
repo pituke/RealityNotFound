@@ -1,10 +1,11 @@
 
 #include "Importer/Parsing/Java/JavaAst.h"
 #include "Importer/Parsing/Java/StringHelper.h"
-#include "Importer/Parsing/CollectionHelper.h"
 #include <string>
 #include <algorithm>
 #include <list>
+
+#define FOREACH(_it, _collection) for (auto _it = _collection.begin(); _it != _collection.end(); ++_it)
 
 namespace Importer
 {
@@ -15,6 +16,11 @@ namespace Importer
 		{
             return packageDeclarationList;
 		}
+
+        string SourceFileCompilationUnit::GetPackageName() const
+        {
+            return packageDeclarationList.Empty() ? "" : packageDeclarationList.At(0)->GetPackageName();
+        }
 
 		astList(NodeImportDeclaration) SourceFileCompilationUnit::GetImportList() const
 		{
@@ -30,7 +36,7 @@ namespace Importer
 		{
             vector<const NodeClassDeclaration*> typeList;
             FOREACH (typeDecl, typeDeclarationList)
-			{
+            {
                 if ((*typeDecl)->GetTypeCategory() == NodeTypeDeclaration::CLASS)
                     typeList.push_back((*typeDecl)->GetClass());
 			}
@@ -159,6 +165,18 @@ namespace Importer
 			return typeList;*/
 			return vector<const NodeBlock*>();
 		}
+
+        vector<const NodeMemberDeclaration*> NodeClassBody::GetMembers() const
+        {
+            vector<const NodeMemberDeclaration*> members;
+            FOREACH (member, classBodyDeclarationList)
+            {
+                auto innerMember = (*member)->GetMember();
+                if (innerMember != NULL)
+                    members.push_back(innerMember);
+            }
+            return members;
+        }
 
 		vector<const NodeMethodDeclaration*> NodeClassBody::GetMethodList() const
 		{
@@ -382,6 +400,10 @@ namespace Importer
 		}
 
 		// NodeFieldDeclaration
+        string NodeFieldDeclaration::GetFieldName() const
+        {
+            return "FieldName";
+        }
 
 		// NodeConstructorDeclaration
 		string NodeConstructorDeclaration::GetConstructorName() const
