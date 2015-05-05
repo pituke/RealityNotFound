@@ -51,6 +51,7 @@
 
 #include <iostream>
 #include <osg/ref_ptr>
+#include <osgDB/ReadFile>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -1076,23 +1077,123 @@ void CoreWindow::showLoadGraph()
 	loadGraph->show();
 }
 
+osg::Geometry* CreateBuilding(float floorSize, float height)
+{
+    float floorUnit = floorSize / 2;
+    float heightUnit = height / 2;
+
+    static const float vertices[][3] = {
+        { -floorUnit, -heightUnit, floorUnit },
+        { floorUnit, -heightUnit, floorUnit },
+        { floorUnit, heightUnit, floorUnit },
+        { -floorUnit, heightUnit, floorUnit },
+        { -floorUnit, -heightUnit, -floorUnit },
+        { floorUnit, -heightUnit, -floorUnit },
+        { floorUnit, heightUnit, -floorUnit },
+        { -floorUnit, heightUnit, -floorUnit }
+    };
+
+    static const float normals[][3] = {
+        { 0, 0, 1 },
+        { 1, 0, 0 },
+        { 0, 0, -1 },
+        { -1, 0, 0 },
+        { 0, -1, 0 },
+        { 0, 1, 0 }
+    };
+
+    static const float coords[][2] = {
+        { 0.0f, 0.0f },
+        { 1.0f, 0.0f },
+        { 1.0f, 1.0f },
+        { 0.0f, 1.0f }
+    };
+
+    static const unsigned int quads[][4] = {
+        { 0, 1, 2, 3 },
+        { 1, 5, 6, 2 },
+        { 5, 4, 7, 6 },
+        { 4, 0, 3, 7 },
+        { 4, 5, 1, 0 },
+        { 3, 2, 6, 7 }
+    };
+
+    osg::Geometry* cubeGeometry = new osg::Geometry();
+    osg::Vec3Array* vs = new osg::Vec3Array;
+    osg::Vec3Array* ns = new osg::Vec3Array;
+    osg::Vec2Array* cs = new osg::Vec2Array;
+    osg::DrawElementsUInt* quad = new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS);
+    int globalQi = 0;
+    for (int qi = 0; qi < 6; ++qi)
+    {
+        for (int vi = 0; vi < 4; ++vi)
+        {
+            vs->push_back( osg::Vec3(vertices[quads[qi][vi]][0], vertices[quads[qi][vi]][1], vertices[quads[qi][vi]][2]) );
+            ns->push_back( osg::Vec3(normals[qi][0], normals[qi][1], normals[qi][2]) );
+            if (qi < 4)
+                cs->push_back( osg::Vec2(coords[vi][0], coords[vi][1]) );
+            else
+                cs->push_back( osg::Vec2(coords[0][0], coords[0][1]) );
+
+            quad->push_back(globalQi++);
+        }
+    }
+    cubeGeometry->addPrimitiveSet(quad);
+    cubeGeometry->setVertexArray( vs );
+    cubeGeometry->setNormalArray( ns );
+    cubeGeometry->setTexCoordArray( 0, cs );
+
+    return cubeGeometry;
+}
+
 void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* graph)
 {
     auto nodeType = graph->addType("defaultNodeType");
     auto edgeType = graph->addType("defaultEdgeType");
+    osg::Geometry* pBuilding = CreateBuilding(60, 140);
+    osg::Geometry* building = CreateBuilding(30, 70);
+    //osg::Geometry* building = NULL;
+
+    osg::Image* imgPackage = osgDB::readImageFile("../share/3dsoftviz/img/city_metaphor/package.jpg");
+    osg::Texture2D* texPackage = new osg::Texture2D();
+    texPackage->setDataVariance(osg::Object::STATIC);
+    texPackage->setImage(imgPackage);
+    osg::StateSet* statePackage = new osg::StateSet();
+    statePackage->setTextureAttributeAndModes(0, texPackage, osg::StateAttribute::ON);
+
+    osg::Image* imgClass = osgDB::readImageFile("../share/3dsoftviz/img/city_metaphor/class.jpg");
+    osg::Texture2D* texClass = new osg::Texture2D();
+    texClass->setDataVariance(osg::Object::STATIC);
+    texClass->setImage(imgClass);
+    osg::StateSet* stateClass = new osg::StateSet();
+    stateClass->setTextureAttributeAndModes(0, texClass, osg::StateAttribute::ON);
+
+    osg::Image* imgMethod = osgDB::readImageFile("../share/3dsoftviz/img/city_metaphor/method.jpg");
+    osg::Texture2D* texMethod = new osg::Texture2D();
+    texMethod->setDataVariance(osg::Object::STATIC);
+    texMethod->setImage(imgMethod);
+    osg::StateSet* stateMethod = new osg::StateSet();
+    stateMethod->setTextureAttributeAndModes(0, texMethod, osg::StateAttribute::ON);
 
     foreach (const Importer::Parsing::Namespace& _namespace, softTree.namespaces)
     {
         auto namespaceNode = graph->addNode(QString::fromStdString(_namespace.name), nodeType);
+        namespaceNode->setDrawable(0, pBuilding);
+        namespaceNode->setStateSet(statePackage);
 
         foreach (const Importer::Parsing::Class& _class, _namespace.classes)
         {
             auto classNode = graph->addNode(QString::fromStdString(_class.name), nodeType);
+            classNode->setDrawable(0, building);
+            classNode->setStateSet(stateClass);
+
             auto edgeNamespaceClass = graph->addEdge(QString::fromStdString(_namespace.name + " " + _class.name), namespaceNode, classNode, edgeType, true);
 
             foreach (const Importer::Parsing::Method _method, _class.methods)
             {
                 auto methodNode = graph->addNode(QString::fromStdString(_method.name), nodeType);
+                methodNode->setDrawable(0, building);
+                methodNode->setStateSet(stateMethod);
                 auto edgeClassMethod = graph->addEdge(QString::fromStdString(_class.name + " " + _method.name), classNode, methodNode, edgeType, true);
             }
         }

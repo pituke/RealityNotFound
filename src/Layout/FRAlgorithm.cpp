@@ -382,7 +382,9 @@ bool FRAlgorithm::applyForces( Data::Node* node )
 	}
 
 	// [GrafIT][.] using restrictions (modified and optimized for speed by Peter Sivak)
-	node->setTargetPosition( node->targetPositionConstRef() + fv );   // Compute target position
+    osg::Vec3f newPos = node->targetPositionConstRef() + fv;
+    newPos.z() = 0.0f;
+    node->setTargetPosition( newPos );   // Compute target position
 	graph->getRestrictionsManager().applyRestriction( *node );        // Compute restricted target position
 
 	for ( edgeIt=node->getEdges()->begin(); edgeIt!=node->getEdges()->end(); ++edgeIt ) {
