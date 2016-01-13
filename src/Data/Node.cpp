@@ -7,7 +7,6 @@
  */
 
 #include "Data/Node.h"
-
 #include "Data/Graph.h"
 #include "Data/Cluster.h"
 
@@ -15,29 +14,22 @@
 
 #include <osg/Geometry>
 #include <osg/Depth>
+#include <osg/BlendFunc>
 #include <osg/CullFace>
 #include <osgText/FadeText>
+#include <osg/ShapeDrawable>
 
 #include <QTextStream>
 
 
+#include "Data/OsgNode.h"
+
 Data::Node::Node( qlonglong id, QString name, Data::Type* type, float scaling, Data::Graph* graph, osg::Vec3f position )
+	: OsgNode( id, name, type, graph, scaling, position )
 {
 	//konstruktor
-	//scaling je potrebne na zmensenie uzla ak je vnoreny
-	this->id = id;
-	this->name = name;
-	this->type = type;
 	this->mIsFocused = false;
-	this->mTargetPosition = position;
-	this->currentPosition = position * Util::ApplicationConfig::get()->getValue( "Viewer.Display.NodeDistanceScale" ).toFloat();
-	this->graph = graph;
-	this->inDB = false;
 	this->edges = new QMap<qlonglong, osg::ref_ptr<Data::Edge> >;
-	this->scale = scaling;
-	this->setBall( NULL );
-	this->setParentBall( NULL );
-	this->hasNestedNodes = false;
 	this->cluster = NULL;
 	// Duransky start - Pociatocne nastavenie roznych cisiel vertigo rovin pre uzly
 	this->numberOfVertigoPlane = id;
@@ -61,25 +53,14 @@ Data::Node::Node( qlonglong id, QString name, Data::Type* type, float scaling, D
 		}
 	}
 
-	// MERGE BEGIN
-	// toto bolo u pleska/zelera
-	//	this->addDrawable(createNode(this->scale, Node::createStateSet(this->type)));
+	insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
+	insertChild( INDEX_SQUARE, createNodeSquare( this->scale, Node::createStateSet( this->type ) ) , false );
+	insertChild( INDEX_SPHERE, createNodeSphere( this->scale, Node::createStateSet( this->type ) ), false );
+	setValue( graph->getNodeVisual(), true );
 
-	//	//vytvorenie grafickeho zobrazenia ako label
-	//	this->square = createSquare(this->type->getScale(), Node::createStateSet());
-	//	this->label = createLabel(this->type->getScale(), labelText);
-
-	// toto bolo u sivaka
-	this->square = createNode( this->scale * 4, Node::createStateSet( this->type ) );
-	this->focusedSquare = createNode( this->scale * 16, Node::createStateSet( this->type ) );
-	this->addDrawable( square );
-	this->label = createLabel( this->type->getScale(), labelText );
-
-	// MERGE END
 	this->force = osg::Vec3f();
 	this->velocity = osg::Vec3f( 0,0,0 );
 	this->fixed = false;
-	this->ignore = false;
 	this->positionCanBeRestricted = true;
 	this->removableByUser = true;
 	this->selected = false;
@@ -91,8 +72,8 @@ Data::Node::Node( qlonglong id, QString name, Data::Type* type, float scaling, D
 	float b = type->getSettings()->value( "color.B" ).toFloat();
 	float a = type->getSettings()->value( "color.A" ).toFloat();
 
-	this->colorOfNode=osg::Vec4( r, g, b, a );
-	this->setColor( colorOfNode );
+	this->color=osg::Vec4( r, g, b, a );
+	this->setDrawableColor( 0, color );
 
 	// merging Britvik: this was here
 	//setDefaultColor();
@@ -101,7 +82,6 @@ Data::Node::Node( qlonglong id, QString name, Data::Type* type, float scaling, D
 	layerID = 0;  //node is not on layer of radial layout
 	radialLayout = NULL;  //node does not belong to radial layout
 	//volovar_kon
-
 }
 
 Data::Node::~Node( void )
@@ -123,42 +103,21 @@ void Data::Node::setIsFocused( bool value )
 {
 	mIsFocused = value;
 
-	if ( value == true ) {
-		this->setDrawable( 0, focusedSquare );
-		setColor( osg::Vec4( 0.5f, 1.0f, 0.0f, 1.0 ) );
+	if ( mIsFocused ) {
+		removeChild( INDEX_SQUARE, 1 );
+		this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, Node::createStateSet( this->type ) ) , false );
+		removeChild( INDEX_SPHERE, 1 );
+		this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale , Node::createStateSet( this->type ) ) , false );
+		setDrawableColor( 0, osg::Vec4( 0.5f, 1.0f, 0.0f, 1.0 ) );
 	}
 	else {
-		this->setDrawable( 0, square );
-		setColor( osg::Vec4( 1.0f, 1.0f, 1.0f, 1.0 ) );
+		removeChild( INDEX_SQUARE, 1 );
+		this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale , Node::createStateSet( this->type ) ), false );
+		removeChild( INDEX_SPHERE, 1 );
+		this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale , Node::createStateSet( this->type ) ) , false );
+		setDrawableColor( 0, osg::Vec4( 1.0f, 1.0f, 1.0f, 1.0 ) );
 	}
-}
-osg::Vec3f Data::Node::getTargetPosition() const
-{
-	return mTargetPosition;
-}
-osg::Vec3f Data::Node::targetPosition() const
-{
-	return mTargetPosition;
-}
-const osg::Vec3f& Data::Node::targetPositionConstRef() const
-{
-	return mTargetPosition;
-}
-void Data::Node::setTargetPosition( const osg::Vec3f& position )
-{
-	mTargetPosition = position;
-}
-osg::Vec3f Data::Node::restrictedTargetPosition() const
-{
-	return mRestrictedTargetPosition;
-}
-const osg::Vec3f& Data::Node::restrictedTargetPositionConstRef() const
-{
-	return mRestrictedTargetPosition;
-}
-void Data::Node::setRestrictedTargetPosition( const osg::Vec3f& position )
-{
-	mRestrictedTargetPosition = position;
+	setValue( graph->getNodeVisual(), true );
 }
 
 void Data::Node::addEdge( osg::ref_ptr<Data::Edge> edge )
@@ -185,6 +144,8 @@ void Data::Node::setParentNode( Node* parent )
 	this->nested_parent = parent;
 }
 
+
+
 void Data::Node::removeAllEdges()
 {
 	//odpojenie od vsetkych hran
@@ -194,7 +155,7 @@ void Data::Node::removeAllEdges()
 	edges->clear();
 }
 
-osg::ref_ptr<osg::Drawable> Data::Node::createNode( const float& scaling, osg::StateSet* bbState )
+osg::ref_ptr<osg::Geode> Data::Node::createNodeSquare( const float& scaling, osg::StateSet* bbState )
 {
 	//vytvorenie uzla, scaling urcuje jeho velkost
 	float width = scaling;
@@ -206,7 +167,7 @@ osg::ref_ptr<osg::Drawable> Data::Node::createNode( const float& scaling, osg::S
 	//velkost uzla
 	( *nodeVerts )[0] = osg::Vec3( -width / 2.0f, -height / 2.0f, 0 );
 	( *nodeVerts )[1] = osg::Vec3( width / 2.0f, -height / 2.0f, 0 );
-	( *nodeVerts )[2] = osg::Vec3( width / 2.0f,	height / 2.0f, 0 );
+	( *nodeVerts )[2] = osg::Vec3( width / 2.0f,    height / 2.0f, 0 );
 	( *nodeVerts )[3] = osg::Vec3( -width / 2.0f,  height / 2.0f, 0 );
 
 	nodeQuad->setUseDisplayList( false );
@@ -236,73 +197,81 @@ osg::ref_ptr<osg::Drawable> Data::Node::createNode( const float& scaling, osg::S
 	nodeQuad->setColorBinding( osg::Geometry::BIND_OVERALL );
 	nodeQuad->setStateSet( bbState );
 
-	return nodeQuad;
+	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+	geode->addDrawable( nodeQuad );
+
+	return geode;
 }
 
-osg::ref_ptr<osg::Drawable> Data::Node::createSquare( const float& scale, osg::StateSet* bbState )
+osg::ref_ptr<osg::Geode> Data::Node::createNodeSphere( const float& scaling, osg::StateSet* bbState )
 {
-	//vytvorenie textury uzla
-	float width = 2.0f;
-	float height = 2.0f;
+	//vytvorenie uzla, scaling urcuje jeho velkost
+	float radius = scaling ;
 
-	width *= scale;
-	height *= scale;
+	osg::ref_ptr<osg::ShapeDrawable> nodeSphere = new osg::ShapeDrawable;
+	osg::Sphere* sphere = new osg::Sphere;
+//    if (type->isMeta()){
+//        sphere->setRadius(this->scale*0.25);
+//        (dynamic_cast<osg::ShapeDrawable*>(nodeSphere.get()))->setColor(osg::Vec4(1.0f, 1.0f, 1.0f, 0.5f));
+//    }
+//    else
+	sphere->setRadius( radius );
+	nodeSphere->setShape( sphere );
 
-	osg::ref_ptr<osg::Geometry> nodeRect = new osg::Geometry;
-	osg::ref_ptr<osg::Vec3Array> nodeVerts = new osg::Vec3Array( 5 );
+	nodeSphere->getOrCreateStateSet()->setMode( GL_BLEND, osg::StateAttribute::ON );
+	nodeSphere->getStateSet()->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
 
-	( *nodeVerts )[0] = osg::Vec3( -width / 2.0f, -height / 2.0f, 0 );
-	( *nodeVerts )[1] = osg::Vec3( width / 2.0f, -height / 2.0f, 0 );
-	( *nodeVerts )[2] = osg::Vec3( width / 2.0f,	height / 2.0f, 0 );
-	( *nodeVerts )[3] = osg::Vec3( -width / 2.0f,  height / 2.0f, 0 );
-	( *nodeVerts )[4] = osg::Vec3( -width / 2.0f, -height / 2.0f, 0 );
+	nodeSphere->getStateSet()->setMode( GL_DEPTH_TEST, osg::StateAttribute::ON );
+	nodeSphere->getStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::ON );
+	nodeSphere->getStateSet()->setAttributeAndModes( new osg::BlendFunc, osg::StateAttribute::ON );
+	nodeSphere->getStateSet()->setRenderBinDetails( 11, "RenderBin" );
 
-	nodeRect->setVertexArray( nodeVerts );
-	nodeRect->addPrimitiveSet( new osg::DrawArrays( osg::PrimitiveSet::LINE_STRIP,0,5 ) );
+	nodeSphere->setUseDisplayList( false );
 
-	osg::ref_ptr<ColorIndexArray> colorIndexArray = new osg::TemplateIndexArray<unsigned int, osg::Array::UIntArrayType, 4, 1>;
-	colorIndexArray->push_back( 0 );
+	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+	geode->addDrawable( nodeSphere );
 
-	osg::ref_ptr<osg::Vec4Array> colorArray = new osg::Vec4Array;
-	colorArray->push_back( osg::Vec4( 1.0f, 0.0f, 0.0f, 0.5f ) );
-
-	nodeRect->setColorArray( colorArray );
-#ifdef BIND_PER_PRIMITIVE
-	nodeRect->setColorIndices( colorIndexArray );
-#endif
-	nodeRect->setColorArray( colorArray );
-	nodeRect->setColorBinding( osg::Geometry::BIND_OVERALL );
-
-	nodeRect->setStateSet( bbState );
-
-	return nodeRect;
+	return geode;
 }
 
-osg::ref_ptr<osg::Drawable> Data::Node::createLabel( const float& scale, QString name )
+osg::ref_ptr<osg::Geode> Data::Node::createLabel( const float& scale, QString name )
 {
 	//vytvorenie popisu uzla
 	osg::ref_ptr<osgText::FadeText> label = new osgText::FadeText;
 	label->setFadeSpeed( 0.03f );
 
+	// Gloger: added Open Sans font
 	QString fontPath = Util::ApplicationConfig::get()->getValue( "Viewer.Labels.Font" );
 
-	// experimental value
-	float newScale = 1.375f * scale;
+	// Gloger: added small offset to make label positioning better
+	float yOffset = scale / 2 + 0.5f;
+	float zOffset = 0.1f;
 
+	// Calculate charSize from scale
+	float charSize = 10;//(float)log(scale) * 1.8f + 10;
+
+	// Gloger:
 	if ( fontPath != NULL && !fontPath.isEmpty() ) {
-		label->setFont( fontPath.toStdString() );
+		//label->setFont( fontPath.toStdString() );
 	}
 
 	label->setText( name.toStdString() );
 	label->setLineSpacing( 0 );
 	label->setAxisAlignment( osgText::Text::SCREEN );
-	label->setCharacterSize( newScale );
+	label->setCharacterSize( charSize );
 	label->setDrawMode( osgText::Text::TEXT );
 	label->setAlignment( osgText::Text::CENTER_BOTTOM_BASE_LINE );
-	label->setPosition( osg::Vec3( 0, newScale, 0 ) );
-	label->setColor( osg::Vec4( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	label->setPosition( osg::Vec3( 0, yOffset, zOffset ) );
+	// label->setColor( Util::ApplicationConfig::get()->getColorValue("Label.Color") );
+	label->setUseDisplayList( false );
+//    label->setBackdropType(osgText::Text::OUTLINE);
+//    label->setBackdropColor(Util::ApplicationConfig::get()->getColorValue( "Label.Outline.Color" ));
+//    label->setBackdropOffset(0.05f);
 
-	return label;
+	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+	geode->addDrawable( label );
+
+	return geode;
 }
 
 osg::ref_ptr<osg::StateSet> Data::Node::createStateSet( Data::Type* type )
@@ -356,62 +325,23 @@ bool Data::Node::equals( Node* node )
 	return true;
 }
 
-void Data::Node::setDrawableColor( int pos, osg::Vec4 color )
-{
-	//nastavenie farby uzla
-	osg::Geometry* geometry  = dynamic_cast<osg::Geometry*>( this->getDrawable( pos ) );
 
-	if ( geometry != NULL ) {
-		osg::Vec4Array* colorArray =  dynamic_cast<osg::Vec4Array*>( geometry->getColorArray() );
 
-		colorArray->pop_back();
-		colorArray->push_back( color );
-	}
-}
 
 void Data::Node::showLabel( bool visible )
 {
-	//nastavenie zobrazenia popisku uzla
-	if ( visible && !this->containsDrawable( label ) ) {
-		this->addDrawable( label );
-	}
-	else if ( !visible ) {
-		this->removeDrawable( label );
-	}
+	setValue( INDEX_LABEL, visible );
 }
 
 void Data::Node::reloadConfig()
 {
-	this->setDrawable( 0, createNode( this->scale, Node::createStateSet( this->type ) ) );
+	removeChildren( 0, 3 );
+	this->insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
+	this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, Node::createStateSet( this->type ) ), false );
+	this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale, Node::createStateSet( this->type ) ), false );
 	setSelected( selected );
-
-	osg::ref_ptr<osg::Drawable> newRect = createSquare( this->type->getScale(), Node::createStateSet() );
-	osg::ref_ptr<osg::Drawable> newLabel = createLabel( this->type->getScale(), labelText );
-
-	if ( this->containsDrawable( label ) ) {
-		this->setDrawable( this->getDrawableIndex( label ), newLabel );
-	}
-
-	if ( this->containsDrawable( square ) ) {
-		this->setDrawable( this->getDrawableIndex( square ), newRect );
-	}
-
-	label = newLabel;
-	square = newRect;
-}
-
-osg::Vec3f Data::Node::getCurrentPosition( bool calculateNew, float interpolationSpeed )
-{
-	//zisime aktualnu poziciu uzla v danom okamihu
-	if ( calculateNew ) {
-		float graphScale = Util::ApplicationConfig::get()->getValue( "Viewer.Display.NodeDistanceScale" ).toFloat();
-
-		//osg::Vec3 directionVector = osg::Vec3(targetPosition.x(), targetPosition.y(), targetPosition.z()) * graphScale - currentPosition;
-		osg::Vec3 directionVector = osg::Vec3( mRestrictedTargetPosition.x(), mRestrictedTargetPosition.y(), mRestrictedTargetPosition.z() ) * graphScale - currentPosition;
-		this->currentPosition = osg::Vec3( directionVector * ( usingInterpolation ? interpolationSpeed : 1 ) + this->currentPosition );
-	}
-
-	return osg::Vec3( this->currentPosition );
+	setColor( color );
+	setValue( graph->getNodeVisual(), true );
 }
 
 QSet<Data::Node*> Data::Node::getIncidentNodes() const
@@ -446,12 +376,19 @@ QSet<Data::Node*> Data::Node::getIncidentNodes() const
 
 void Data::Node::setDefaultColor()
 {
-	float r = type->getSettings()->value( "color.R" ).toFloat();
-	float g = type->getSettings()->value( "color.G" ).toFloat();
-	float b = type->getSettings()->value( "color.B" ).toFloat();
-	float a = type->getSettings()->value( "color.A" ).toFloat();
+//   float r = type->getSettings()->value( "color.R" ).toFloat();
+//   float g = type->getSettings()->value( "color.G" ).toFloat();
+	//  float b = type->getSettings()->value( "color.B" ).toFloat();
+//  float a = type->getSettings()->value( "color.A" ).toFloat();
 
-	this->setColor( osg::Vec4( r, g, b, a ) );
+	this->setDrawableColor( 0, color );
+}
+
+void Data::Node::setVisual( int index )
+{
+	setValue( INDEX_SQUARE, false );
+	setValue( INDEX_SPHERE, false );
+	setValue( index, true );
 }
 
 // Duransky start - Funkcie na nastavenie a ziskanie cisla vertigo roviny, na ktorej sa uzol nachadza
@@ -464,7 +401,7 @@ qlonglong Data::Node::getNumberOfVertigoPlane()
 {
 	return this->numberOfVertigoPlane;
 }
-// Duransky end - Funkcie na nastavenie a ziskanie cisla vertigo roviny, na ktorej sa uzol nachadza
+// Duransky end - Funkcie na nastavenie a ziskanie cisla vertigo roviny, na ktorej salabel uzol nachadza
 
 QString Data::Node::toString() const
 {
@@ -472,7 +409,6 @@ QString Data::Node::toString() const
 	QTextStream( &str ) << "node id:" << id << " name:" << name << " pos:[" << mTargetPosition.x() << "," << mTargetPosition.y() << "," << mTargetPosition.z() << "]";
 	return str;
 }
-
 
 Data::Cluster* Data::Node::getCluster() const
 {
@@ -483,7 +419,6 @@ void Data::Node::setCluster( Data::Cluster* cluster )
 {
 	this->cluster = cluster;
 }
-
 
 //volovar_zac
 //pre potreby odpudivych sil v radialLayoute

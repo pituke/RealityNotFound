@@ -7,7 +7,11 @@
 #include "Viewer/PerlinNoiseTextureGenerator.h"
 #include "Viewer/SkyTransform.h"
 #include "Viewer/TextureWrapper.h"
+#include "Viewer/DataHelper.h"
 
+#include <QDebug>
+
+#include <osgManipulator/TranslateAxisDragger>
 
 #include "Network/Server.h"
 #include "Data/Graph.h"
@@ -545,6 +549,7 @@ osg::ref_ptr<osg::AutoTransform> CoreGraph::dodecahedron( qlonglong id, osg::Vec
 //    dodecahedronGeometry->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
 
 
+
 	osg::ref_ptr<osg::StateSet> ss = dodecahedronGeometry->getOrCreateStateSet();
 	/*
 	// only wireframe (outline / contour)
@@ -556,6 +561,7 @@ osg::ref_ptr<osg::AutoTransform> CoreGraph::dodecahedron( qlonglong id, osg::Vec
 	    linewidth->setWidth(20.0f);
 	    ss->setAttributeAndModes(linewidth, osg::StateAttribute::ON);
 	*/
+
 // transparent
 
 	ss->setMode( GL_BLEND, osg::StateAttribute::ON );
@@ -621,12 +627,33 @@ Vwr::CoreGraph::CoreGraph( Data::Graph* graph, osg::ref_ptr<osg::Camera> camera 
 	graphRotTransf = new osg::MatrixTransform();
 	graphGroup = new osg::Group();
 
+	/*
+	   manipulatorGroup = new osg::Group();
+
+	   osg::ref_ptr<osgManipulator::TranslateAxisDragger> dragger = new osgManipulator::TranslateAxisDragger();
+	   dragger->setupDefaultGeometry();
+	   manipulatorGroup->addChild(dragger.get());
+
+	   osg::ref_ptr<osg::MatrixTransform> geom1 = new osg::MatrixTransform(osg::Matrixd::scale(osg::Vec3f(25,25,25)));
+	   geom1->addChild(manipulatorGroup);
+
+	   qDebug() << dragger->getMatrix().getTrans().x() << " " << dragger->getMatrix().getTrans().y();
+
+	   float scale = geom1->getBound().radius() * 1.0f;
+	   osg::Matrix mat = osg::Matrix::scale(scale, scale, scale) ;
+	   dragger->setMatrix(mat);
+
+	   dragger->setHandleEvents(false);
+	   // konec
+
+	   //root->addChild( geom1 );
+	*/
 
 	graphRotTransf->addChild( graphGroup );
 	root->addChild( graphRotTransf );
 
-
 	// backgroung this must be last Node in root !!!  ( because of ortho2d background)
+	// Gloger: disabled skybox- using solid background (see setClearColor in ViewerQT)
 	root->addChild( createBackground() );
 	backgroundPosition = 1;
 
@@ -669,7 +696,7 @@ void CoreGraph::reload( Data::Graph* graph )
 	graphGroup->addChild( nodesGroup->getGroup() );
 	nodesPosition = currentPos++;
 
-	this->edgesGroup = new Vwr::EdgeGroup( in_edges, appConf->getValue( "Viewer.Textures.EdgeScale" ).toFloat() );
+	this->edgesGroup = new Vwr::EdgeGroup( in_edges );
 	//this->edgesGroup = new Vwr::EdgeGroup(in_edges, 10);
 	graphGroup->addChild( edgesGroup->getGroup() );
 	edgesPosition = currentPos++;
@@ -678,7 +705,7 @@ void CoreGraph::reload( Data::Graph* graph )
 	graphGroup->addChild( qmetaNodesGroup->getGroup() );
 	qmetaNodesPosition = currentPos++;
 
-	this->qmetaEdgesGroup = new Vwr::EdgeGroup( qmetaEdges, appConf->getValue( "Viewer.Textures.EdgeScale" ).toFloat() );
+	this->qmetaEdgesGroup = new Vwr::EdgeGroup( qmetaEdges );
 	//this->qmetaEdgesGroup = new Vwr::EdgeGroup(qmetaEdges, 10);
 	graphGroup->addChild( qmetaEdgesGroup->getGroup() );
 	qmetaEdgesPosition = currentPos++;
@@ -686,6 +713,25 @@ void CoreGraph::reload( Data::Graph* graph )
 	graphGroup->addChild( initEdgeLabels() );
 	labelsPosition = currentPos++;
 
+	//zaciatok
+
+	/*
+	    osg::ref_ptr<osgManipulator::TranslateAxisDragger> dragger = new osgManipulator::TranslateAxisDragger();
+	    dragger->setupDefaultGeometry();
+	    graphGroup->addChild(dragger.get());
+
+	    osg::ref_ptr<osg::MatrixTransform> geom1 = new osg::MatrixTransform(osg::Matrixd::scale(osg::Vec3f(1,1,1)));
+	    geom1->addChild(graphGroup);
+
+	    qDebug() << dragger->getMatrix().getTrans().x() << " " << dragger->getMatrix().getTrans().y();
+
+	    float scale = geom1->getBound().radius() * 1.0f;
+	    osg::Matrix mat = osg::Matrix::scale(scale, scale, scale) * osg::Matrix::translate(geom1->getBound().center());
+	    dragger->setMatrix(mat);
+
+	    dragger->setHandleEvents(true);
+	    // konec
+	*/
 	this->restrictionVisualizationsGroup = QSharedPointer<Vwr::RestrictionVisualizationsGroup> ( new Vwr::RestrictionVisualizationsGroup );
 	graphGroup->addChild( restrictionVisualizationsGroup->getGroup() );
 	restrictionVisualizationsPosition = currentPos++;
@@ -710,6 +756,10 @@ void CoreGraph::reload( Data::Graph* graph )
 
 	osgUtil::Optimizer opt;
 	opt.optimize( edgesGroup->getGroup(), osgUtil::Optimizer::CHECK_GEOMETRY );
+
+	// Set browsers to be always on top
+	this->browsersGroup->getGroup()->getOrCreateStateSet()->setMode( GL_DEPTH_TEST, osg::StateAttribute::OFF );
+	this->browsersGroup->getGroup()->getOrCreateStateSet()->setRenderBinDetails( 100,"RenderBin" );
 }
 
 void CoreGraph::cleanUp()
@@ -970,17 +1020,15 @@ osg::ref_ptr<osg::Node> CoreGraph::createBackground()
 
 osg::ref_ptr<osg::Group> CoreGraph::initEdgeLabels()
 {
-	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+	osg::ref_ptr<osg::Group> labels = new osg::Group;
 
 	QMap<qlonglong, osg::ref_ptr<Data::Edge> >::iterator i = in_edges->begin();
 
 	while ( i != in_edges->end() ) {
-		geode->addDrawable( i.value()->createLabel( i.value()->getName() ) );
+		labels->addChild( i.value()->createLabel( i.value()->Data::AbsEdge::getName() ) );
 		++i;
 	}
 
-	osg::ref_ptr<osg::Group> labels = new osg::Group;
-	labels->addChild( geode );
 	labels->setNodeMask( 0 );
 
 	return labels;
@@ -1103,16 +1151,18 @@ void CoreGraph::update()
 		nodesGroup->updateNodeCoordinates( interpolationSpeed );
 		qmetaNodesGroup->updateNodeCoordinates( interpolationSpeed );
 	}
-	else {
+	else if ( !this->interpolationDenied ) {
 		nodesGroup->updateNodeCoordinates( 1 );
 		qmetaNodesGroup->updateNodeCoordinates( 1 );
 	}
 
-	edgesGroup->updateEdgeCoords();
-	qmetaEdgesGroup->updateEdgeCoords();
-	browsersGroup->updateBrowsers();
+	if ( !this->nodesFreezed || !this->interpolationDenied ) {
+		edgesGroup->updateEdgeCoords();
+		qmetaEdgesGroup->updateEdgeCoords();
+		browsersGroup->updateBrowsers();
 
-	updateClustersCoords();
+		updateClustersCoords();
+	}
 
 	graphGroup->addChild( initCustomNodes() );
 
@@ -1182,6 +1232,24 @@ void CoreGraph::updateGraphRotByAruco( const osg::Quat quat )
 	computeGraphRotTransf();
 }
 
+void CoreGraph::updateGraphPosAndRotByAruco( const osg::Quat quat, osg::Vec3d pos )
+{
+	mRotAruco = quat;
+	//computeGraphRotTransf();
+	addTranslateToGraphRotTransf( pos );
+}
+
+void CoreGraph::translateGraph( osg::Vec3d pos )
+{
+	osg::Matrixd matrix = graphRotTransf->getMatrix();
+
+	qDebug() << "pos x,y,z " << pos.x() << "," << pos.y() << "," << pos.z();
+
+	matrix.preMultTranslate( pos );
+
+	graphRotTransf->setMatrix( matrix );
+}
+
 void CoreGraph::updateGraphRotByMouse( const osg::Quat quat )
 {
 	mRotMouse = mRotMouse * quat;
@@ -1198,6 +1266,44 @@ void CoreGraph::computeGraphRotTransf()
 {
 	osg::Matrixd graphTransfMat( mRotMouse * mRotAruco * mRotFaceDet );
 	graphRotTransf->setMatrix( graphTransfMat );
+}
+
+void CoreGraph::setNodeVisual( int index )
+{
+	QMap<qlonglong, osg::ref_ptr<Data::Node> >::iterator iNode = in_nodes->begin();
+
+	while ( iNode != in_nodes->end() ) {
+		iNode.value()->setVisual( index );
+		iNode++;
+	}
+
+	QMap<qlonglong, osg::ref_ptr<Data::Node> >::iterator iMetaNode = qmetaNodes->begin();
+
+	while ( iMetaNode != qmetaNodes->end() ) {
+		iMetaNode.value()->setVisual( index );
+		iMetaNode++;
+	}
+
+	graph->setNodeVisual( index );
+}
+
+void CoreGraph::setEdgeVisual( int index )
+{
+	QMap<qlonglong, osg::ref_ptr<Data::Edge> >::iterator iEdge = in_edges->begin();
+
+	while ( iEdge != in_edges->end() ) {
+		iEdge.value()->setVisual( index );
+		iEdge++;
+	}
+
+	QMap<qlonglong, osg::ref_ptr<Data::Edge> >::iterator iMetaEdge = qmetaEdges->begin();
+
+	while ( iMetaEdge != qmetaEdges->end() ) {
+		iMetaEdge.value()->setVisual( index );
+		iMetaEdge++;
+	}
+
+	graph->setEdgeVisual( index );
 }
 
 #ifdef OPENCV_FOUND
@@ -1220,4 +1326,58 @@ bool CoreGraph::cameraInsideSphere( osg::Vec3d midPoint, float radius )
 	return ( new osg::BoundingSphere( midPoint, radius ) )->contains( cameraManipulator->getCameraPosition() );
 }
 
+void CoreGraph::addTranslateToGraphRotTransf( osg::Vec3d pos )
+{
+	osg::Matrixd matrix = graphRotTransf->getMatrix();
+	osg::Vec3d vypis;
+	osg::Vec3f eye, center, up;
+	double fovy, ar, zNear, zFar;
+	double ViewportWidth, ViewPortHeight;
+	int debug = 0;
+
+	camera->getProjectionMatrixAsPerspective( fovy, ar, zNear, zFar );
+	camera->getViewMatrixAsLookAt( eye, center, up );
+
+	double x, y, z;
+	x = -pos.x() * 1000;
+	y = -pos.z() * 1000;
+	z = -pos.y() * 1000;
+
+	if ( debug ) {
+		vypis.x() = x;
+		vypis.y() = y;
+		vypis.z() = z;
+	}
+	osg::ref_ptr<osg::Vec3Array> coordinates = new osg::Vec3Array;
+
+	QMap<qlonglong, osg::ref_ptr<Data::Node> >::const_iterator i = in_nodes->constBegin();
+
+	while ( i != in_nodes->constEnd() ) {
+		coordinates->push_back( ( *i )->targetPositionConstRef() );
+		++i;
+	}
+
+	osg::Vec3 massCenter = Vwr::DataHelper::getMassCenter( coordinates );
+
+	double distance = fabs( center.y() - massCenter.z() );
+
+	ViewPortHeight = tan( ( fovy/2 )*3.14159265 / 180.0 )*abs( distance );
+	ViewportWidth = ViewPortHeight * ar;
+
+	x = x * fabs( ViewportWidth/( 950+y ) );
+	z = z * fabs( ViewPortHeight/( 450+y ) );
+
+	if ( debug ) {
+		qDebug() << "pos x,y,z " << x << "(" << vypis.x() << ")," << y << "(" << vypis.y() << ")," << z << "(" << vypis.z() << "), " << ViewportWidth << " x " << ViewPortHeight;
+	}
+
+	osg::Vec3d result;
+	result.x() = x;
+	result.y() = y;
+	result.z() = z;
+
+	matrix.makeTranslate( result );
+
+	graphRotTransf->setMatrix( matrix );
+}
 }

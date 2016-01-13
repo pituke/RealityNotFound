@@ -15,6 +15,8 @@
 
 #include "Util/ApplicationConfig.h"
 
+#include "osgViewer/Viewer"
+
 #include <osg/Notify>
 #include <osg/BoundsChecking>
 
@@ -69,6 +71,8 @@ Vwr::CameraManipulator::CameraManipulator( Vwr::CoreGraph* coreGraph )
 	else {
 		_cameraCanRot = true;
 	}
+
+	_cameraActive = true;
 
 }
 
@@ -150,38 +154,104 @@ bool Vwr::CameraManipulator::handle( const GUIEventAdapter& ea, GUIActionAdapter
 		return false;
 	}
 
-	switch ( ea.getEventType() ) {
-		case ( GUIEventAdapter::PUSH ): {
-			return handlePush( ea, us );
-		}
-		case ( GUIEventAdapter::RELEASE ): {
-			return handleRelease( ea, us );
-		}
-		case ( GUIEventAdapter::DRAG ):
-		case ( GUIEventAdapter::SCROLL ): {
-			return handleScroll( ea, us );
-		}
-		case ( GUIEventAdapter::MOVE ): {
-			return false;
-		}
-		case ( GUIEventAdapter::KEYDOWN ): {
-			return handleKeyDown( ea, us );
-		}
-		case ( GUIEventAdapter::KEYUP ): {
-			return handleKeyUp( ea, us );
-		}
-		case ( GUIEventAdapter::FRAME ): {
-			if ( _thrown ) {
-				if ( calcMovement() ) {
-					us.requestRedraw();
-				}
-			}
+	if ( _cameraActive ) {
 
-			return false;
+		switch ( ea.getEventType() ) {
+			case ( GUIEventAdapter::PUSH ): {
+				return handlePush( ea, us );
+			}
+			case ( GUIEventAdapter::RELEASE ): {
+				return handleRelease( ea, us );
+			}
+			case ( GUIEventAdapter::DRAG ):
+			case ( GUIEventAdapter::SCROLL ): {
+				return handleScroll( ea, us );
+			}
+			case ( GUIEventAdapter::MOVE ): {
+				return false;
+			}
+			case ( GUIEventAdapter::KEYDOWN ): {
+				return handleKeyDown( ea, us );
+			}
+			case ( GUIEventAdapter::KEYUP ): {
+				return handleKeyUp( ea, us );
+			}
+			case ( GUIEventAdapter::FRAME ): {
+				if ( _thrown ) {
+					if ( calcMovement() ) {
+						us.requestRedraw();
+					}
+				}
+
+				return false;
+			}
+			default:
+				return false;
 		}
-		default:
-			return false;
 	}
+	else {
+		switch ( ea.getEventType() ) {
+			case ( GUIEventAdapter::KEYDOWN ): {
+				return handleKeyDownGraph( ea, us );
+			}
+			default:
+				return false;
+
+		}
+	}
+}
+
+bool Vwr::CameraManipulator::handleKeyDownGraph( const GUIEventAdapter& ea, GUIActionAdapter& us )
+{
+	osg::Vec3d pos;
+	int speed = 2;
+
+	switch ( ea.getKey() ) {
+		case osgGA::GUIEventAdapter::KEY_Control_R:
+		case osgGA::GUIEventAdapter::KEY_Control_L: {
+			ctrlPressed = true;
+			break;
+		}
+		case osgGA::GUIEventAdapter::KEY_Shift_R:
+		case osgGA::GUIEventAdapter::KEY_Shift_L: {
+			shiftPressed = true;
+			break;
+		}
+		case osgGA::GUIEventAdapter::KEY_Up: {
+			pos.y() = speed;
+			break;
+		}
+
+		case osgGA::GUIEventAdapter::KEY_Down: {
+			pos.y() = -speed;
+			break;
+		}
+
+		case osgGA::GUIEventAdapter::KEY_Right: {
+			pos.x() = speed;
+			break;
+		}
+
+		case osgGA::GUIEventAdapter::KEY_Left: {
+			pos.x() = -speed;
+			break;
+		}
+		case osgGA::GUIEventAdapter::KEY_Page_Up: {
+			pos.z() = speed;
+			break;
+		}
+		case osgGA::GUIEventAdapter::KEY_Page_Down: {
+			pos.z() = -speed;
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	emit sendTranslatePosition( pos );
+
+	return true;
 }
 
 bool Vwr::CameraManipulator::handleScroll( const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us )
@@ -308,6 +378,11 @@ bool Vwr::CameraManipulator::isMouseMoving()
 
 	return ( len>dt*velocity );
 }
+bool CameraManipulator::getDecelerateForwardRate() const
+{
+	return decelerateForwardRate;
+}
+
 
 
 void Vwr::CameraManipulator::flushMouseEventStack()
@@ -367,6 +442,25 @@ void Vwr::CameraManipulator::computePosition( const osg::Vec3& eye,const osg::Ve
 
 }
 
+
+void CameraManipulator::rotateCamera( float py0, float px0, double throwScale, float py1, float px1 )
+{
+	osg::Vec3 axis;
+	float angle;
+
+	trackball( axis,angle,px1,py1,px0,py0 );
+
+	osg::Quat new_rotate;
+
+	new_rotate.makeRotate( angle * throwScale,axis );
+
+	if ( _cameraCanRot ) {
+		_rotation = _rotation*new_rotate;
+	}
+	else {
+		emit sendMouseRotation( new_rotate.inverse() );
+	}
+}
 
 bool Vwr::CameraManipulator::calcMovement()
 {
@@ -441,28 +535,13 @@ bool Vwr::CameraManipulator::calcMovement()
 
 		// rotate camera.
 
-		osg::Vec3 axis;
-		float angle;
-
 		float px0 = _ga_t0->getXnormalized();
 		float py0 = _ga_t0->getYnormalized();
 
 		float px1 = _ga_t1->getXnormalized();
 		float py1 = _ga_t1->getYnormalized();
 
-
-		trackball( axis,angle,px1,py1,px0,py0 );
-
-		osg::Quat new_rotate;
-
-		new_rotate.makeRotate( angle * throwScale,axis );
-
-		if ( _cameraCanRot ) {
-			_rotation = _rotation*new_rotate;
-		}
-		else {
-			emit sendMouseRotation( new_rotate.inverse() );
-		}
+		rotateCamera( py0, px0, throwScale, py1, px1 );
 
 
 		notifyServer();
@@ -673,6 +752,16 @@ bool Vwr::CameraManipulator::handleKeyUp( const osgGA::GUIEventAdapter& ea, osgG
 		case osgGA::GUIEventAdapter::KEY_Page_Down:
 			decelerateVerticalRate = true;
 			break;
+		case osgGA::GUIEventAdapter::KEY_C:
+			// Print camera position
+			qDebug() << "_center.set(" << _center.x() << "," << _center.y() << "," << _center.z() << ");\n_rotation.set(" << _rotation.x() << "," << _rotation.y() << "," << _rotation.z() << "," << _rotation.w() << ");";
+			break;
+		case osgGA::GUIEventAdapter::KEY_V: {
+			// Set camera position (use for debug & setting specific camera position)
+			_center.set( 15.9042 , -277.226 , -372.165 );
+			_rotation.set( 0.467275 , -0.0320081 , 0.0985734 , 0.878017 );
+			break;
+		}
 		default:
 			break;
 	}
@@ -775,8 +864,6 @@ void Vwr::CameraManipulator::frame( const osgGA::GUIEventAdapter& ea, osgGA::GUI
 
 	//if movingCenter flag is set and view is not centered
 	if ( movingCenter && points > 0 ) {
-		osg::Vec3 d = this->newCenter - this->originalCenter;
-		//int l = d.length();
 		float x = this->originalCenter.x() + d.x() * pointID/points;
 		float y = this->originalCenter.y() + d.y() * pointID/points;
 		float z = this->originalCenter.z() + d.z() * pointID/points;
@@ -1340,6 +1427,58 @@ void Vwr::CameraManipulator::resetProjectionMatrixToDefault()
 	this->coreGraph->getCamera()->setProjectionMatrixAsPerspective( 60, ratio, 0.01, appConf->getValue( "Viewer.Display.ViewDistance" ).toFloat() );
 }
 // Duransky end - Resetovanie projekcnej matice pri vypnuti vertigo modu
+
+// pridame funkciu setSpeed, ktoru budeme volat na zaklade druhej ruky (pocet vystretych prstov napr)
+void Vwr::CameraManipulator::enableCameraMovement( Vwr::CameraManipulator::Movement movement )
+{
+	switch ( movement ) {
+		case Vwr::CameraManipulator::Movement::RIGHT : {
+			sideSpeed = 2 * maxSpeed;;
+			decelerateSideRate = false;
+			break;
+		}
+
+		case Vwr::CameraManipulator::Movement::LEFT : {
+			sideSpeed = -2 * maxSpeed;;
+			decelerateSideRate = false;
+			break;
+		}
+
+		case Vwr::CameraManipulator::Movement::UP : {
+			verticalSpeed = -2 * maxSpeed;;
+			decelerateVerticalRate = false;
+			break;
+		}
+
+		case Vwr::CameraManipulator::Movement::DOWN : {
+			verticalSpeed = 2 * maxSpeed;;
+			decelerateVerticalRate = false;
+			break;
+		}
+
+		case Vwr::CameraManipulator::Movement::FORWARD : {
+			forwardSpeed = 2 * maxSpeed;
+			decelerateForwardRate = false;
+			break;
+		}
+
+		case Vwr::CameraManipulator::Movement::BACKWARD : {
+			forwardSpeed = -2 * maxSpeed;
+			decelerateForwardRate = false;
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
+void Vwr::CameraManipulator::disableCameraMovement()
+{
+	decelerateSideRate = true;
+	decelerateVerticalRate = true;
+	decelerateForwardRate = true;
+}
 
 } // namespace Vwr
 

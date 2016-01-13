@@ -41,6 +41,10 @@
 #include "Fglove/FgloveThread.h"
 #endif
 
+#ifdef LEAP_FOUND
+#include "Leap/LeapThread.h"
+#endif
+
 #include "Clustering/Clusterer.h"
 
 namespace Layout {
@@ -80,8 +84,12 @@ private:
 #ifdef FGLOVE_FOUND
 	Fglove::FgloveThread* mGloveThr;
 #endif
-public slots:
 
+#ifdef LEAP_FOUND
+	Leap::LeapThread* mLeapThr;
+#endif
+
+public slots:
 	void moveMouseAruco( double positionX,double positionY,bool isClick, Qt::MouseButton button );
 
 	/**
@@ -141,6 +149,8 @@ public slots:
 	            *  \brief Commit the sql in sql input
 	            */
 	void sqlQuery();
+
+	void showMetrics();
 
 	/**
 	            *  \fn public  playPause
@@ -291,11 +301,25 @@ public slots:
 	void colorPickerChanged( const QColor& color );
 
 	/**
+	            *  \fn public  selectionTypeComboBoxChanged(int index)
+	            *  \brief Type in combobox changed
+	            *  \param  index
+	            */
+	void selectionTypeComboBoxChanged( int index );
+
+	/**
 	            *  \fn public  nodeTypeComboBoxChanged(int index)
 	            *  \brief Type in combobox changed
 	            *  \param  index
 	            */
 	void nodeTypeComboBoxChanged( int index );
+
+	/**
+	            *  \fn public  nodeTypeComboBoxChanged(int index)
+	            *  \brief Type in combobox changed
+	            *  \param  index
+	            */
+	void edgeTypeComboBoxChanged( int index );
 
 	/**
 	            *  \fn public  applyColorClick
@@ -400,6 +424,21 @@ public slots:
 	void unsetRestrictionFromAll();
 
 	/**
+	             * \brief Start edge bundling.
+	             */
+	void startEdgeBundling();
+
+	/**
+	             * \brief Pause edge bundling.
+	             */
+	void pauseEdgeBundling();
+
+	/**
+	             * \brief Stop edge bundling.
+	             */
+	void stopEdgeBundling();
+
+	/**
 	            *  \fn public  add_EdgeClick
 	            *  \brief create edge between selected node
 	            */
@@ -439,6 +478,10 @@ public slots:
 
 #ifdef SPEECHSDK_FOUND
 	void startSpeech();
+#endif
+
+#ifdef LEAP_FOUND
+	void startLeap();
 #endif
 
 #ifdef FGLOVE_FOUND
@@ -487,6 +530,8 @@ public slots:
 
 	void repulsive_Forces_ValueChanged();
 
+	void setCameraEnable( bool enable );
+
 
 private:
 
@@ -513,6 +558,12 @@ private:
 	    *  \brief Pointer to toolbar
 	    */
 	QToolBar* toolBar;
+
+	/**
+	    *  QToolBar * metricsToolBar
+	    *  \brief Pointer to toolbar
+	    */
+	QToolBar* metricsToolBar;
 
 	/**
 	    *  ToolBox * toolBox
@@ -567,6 +618,8 @@ private:
 	    *  \brief Action for play/pause layout
 	    */
 	QPushButton* play;
+
+	QPushButton* showMetricsButton;
 
 	/**
 	    *  QPushButton * addMeta
@@ -815,6 +868,12 @@ private:
 	QPushButton* b_start_kinect;
 
 	/**
+	 * QPushButton start leap senzor
+	 * @brief b_start_leap
+	 */
+	QPushButton* b_start_leap;
+
+	/**
 	 * @brief Button for start calculate Ransac Surface
 	 */
 	QPushButton* b_start_ransac;
@@ -836,6 +895,12 @@ private:
 	 *@brief chb_camera_rot
 	 */
 	QCheckBox* chb_camera_rot;
+
+	/**
+	 *CheckBox for enabling camera
+	 *@brief chb_camera_enable
+	 */
+	QCheckBox* chb_camera_enable;
 
 	/**
 	    *  QAction * load
@@ -1048,6 +1113,44 @@ private:
 
 	void setVisibleClusterSection( bool visible );
 
+	/**
+	     * \brief Button for starting edge bundling.
+	     */
+	QPushButton* b_StartEdgeBundling;
+
+	/**
+	     * \brief Button for pausing edge bundling.
+	     */
+	QPushButton* b_PauseEdgeBundling;
+
+	/**
+	     * \brief Button for stoping edge bundling.
+	     */
+	QPushButton* b_StopEdgeBundling;
+
+	/**
+	     * \brief LineEdit for modifying edge bundling. It defines strength of edge bundling forces.
+	     */
+	QLineEdit* le_edgeBundlingalpha;
+
+	/**
+	    *  QComboBox * selectionTypeComboBox
+	    *  \brief Pointer to comobox of selection types
+	    */
+	QComboBox* selectionTypeComboBox;
+
+	/**
+	    *  QComboBox * edgeTypeComboBox
+	    *  \brief Pointer to comobox of edge types
+	    */
+	QComboBox* edgeTypeComboBox;
+
+	/**
+	    *  int isEBPlaying
+	    *  \brief Flag if edge bundling is running
+	    */
+	int isEBPlaying;
+
 public:
 
 	void setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster );
@@ -1075,7 +1178,6 @@ public:
 	    */
 	void addSQLInput();
 
-
 	/**
 	    *  \fn inline public constant  getLayoutThread
 	    *  \brief Get the layout thread
@@ -1088,6 +1190,10 @@ public:
 	bool playing()
 	{
 		return isPlaying;
+	}
+	bool playingEB()
+	{
+		return isEBPlaying;
 	}
 	Vwr::CameraManipulator* getCameraManipulator();
 
