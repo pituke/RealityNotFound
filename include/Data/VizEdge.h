@@ -2,7 +2,6 @@
 #define VIZEDGE_H
 
 #include "Data/AbsEdge.h"
-#include "opencv/cv.h"
 
 namespace Data {
 

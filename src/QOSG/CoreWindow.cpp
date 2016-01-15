@@ -1266,13 +1266,13 @@ void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* g
     foreach (const Importer::Parsing::Namespace& _namespace, softTree.namespaces)
     {
         auto namespaceNode = graph->addNode(QString::fromStdString(_namespace.name), nodeType);
-        namespaceNode->setDrawable(0, pBuilding);
+        //namespaceNode->setDrawable(0, pBuilding);
         namespaceNode->setStateSet(statePackage);
 
         foreach (const Importer::Parsing::Class& _class, _namespace.classes)
         {
             auto classNode = graph->addNode(QString::fromStdString(_class.name), nodeType);
-            classNode->setDrawable(0, building);
+            //classNode->setDrawable(0, building);
             classNode->setStateSet(stateClass);
 
             auto edgeNamespaceClass = graph->addEdge(QString::fromStdString(_namespace.name + " " + _class.name), namespaceNode, classNode, edgeType, true);
@@ -1280,7 +1280,7 @@ void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* g
             foreach (const Importer::Parsing::Method _method, _class.methods)
             {
                 auto methodNode = graph->addNode(QString::fromStdString(_method.name), nodeType);
-                methodNode->setDrawable(0, building);
+                //methodNode->setDrawable(0, building);
                 methodNode->setStateSet(stateMethod);
                 auto edgeClassMethod = graph->addEdge(QString::fromStdString(_class.name + " " + _method.name), classNode, methodNode, edgeType, true);
             }

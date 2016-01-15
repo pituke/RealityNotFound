@@ -3,6 +3,7 @@
 
 #include "Leap.h"
 #include "Leap/LeapController.h"
+#include <QThread>
 
 namespace Leap {
 
