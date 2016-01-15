@@ -3,14 +3,19 @@
 
 #include <QThread>
 #include <QImage>
+#include <QTimer>
 
+#ifdef OPENNI2_FOUND
 #include "OpenNI.h"
+#endif
 
 #ifdef NITE2_FOUND
 #include "NiTE.h"
 #endif
 
 #include <opencv2/core/core.hpp>
+#include "Viewer/GraphNavigation.h"
+#include "Viewer/MouseControl.h"
 
 namespace Kinect {
 
@@ -36,7 +41,10 @@ public:
 	void run();
 
 signals:
-
+	// Marak start
+	void signalClickTimerStart();
+	void signalClickTimerStop();
+	// Marak end
 	/**
 	 * @brief send coordinate for controlling graph
 	 * @param x x coordinate of hand
@@ -65,7 +73,15 @@ signals:
 	void pushImageQ( QImage qimage );
 
 public slots:
-
+	// Marak start
+	/**
+	 *	\fn public timerTimeout
+	 *	\brief called when timer for removeLastSelection gesture times out
+	 */
+	void clickTimerStart();
+	void clickTimerStop();
+	void clickTimerTimeout();
+	// Marak end
 	/**
 	 * @brief start funkcionality Kinect thread
 	 * @param set true if start, false for stop
@@ -114,8 +130,18 @@ public slots:
 	 */
 	void closeActionOpenni();
 
+	void setCaptureImage( bool set );
+
 private:
 
+	bool captureImage;
+
+	// Marak start
+	QTimer* clickTimer;
+	bool clickTimerFirstRun;
+	Vwr::GraphNavigation* nav;
+	Vwr::MouseControl* mouse;
+	// Marak end
 	/**
 	 * @brief information about status thread
 	 */
@@ -151,6 +177,7 @@ private:
 	 */
 	double mSpeed;
 
+#ifdef OPENNI2_FOUND
 	/**
 	 * @brief base colorframe enity for save data
 	 */
@@ -160,10 +187,12 @@ private:
 	 * @brief depthFrame depthframe entity for save data
 	 */
 	openni::VideoFrameRef depthFrame;
+#endif
 
 	/**
 	 * @brief base class for Hand Recognition
 	 */
+
 #ifdef NITE2_FOUND
 	KinectHandTracker* kht;
 #endif
@@ -173,7 +202,7 @@ private:
 	 * @brief base class for open Kinect a converted
 	 */
 	KinectRecognition* mKinect;
-
+#ifdef OPENNI2_FOUND
 	/**
 	 * @brief video stream data for save
 	 */
@@ -183,8 +212,7 @@ private:
 	 * @brief video stream data for save
 	 */
 	openni::VideoStream  m_depth;
-
-
+#endif
 };
 }
 

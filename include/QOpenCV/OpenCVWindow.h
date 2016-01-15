@@ -5,12 +5,12 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-class QLabel;
-class QPushButton;
-class QRadioButton;
-class QCheckBox;
-class QStackedLayout;
-class QSlider;
+#include <QLabel>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QCheckBox>
+#include <QStackedLayout>
+#include <QSlider>
 
 namespace OpenCV {
 class CapVideo;
@@ -209,6 +209,8 @@ signals:
 	 */
 	void closeActionOpenni();
 
+	void setKinectCaptureImage( bool set );
+
 public slots:
 	/**
 	     * @author Autor: David Durcak
@@ -288,6 +290,8 @@ private slots:
 	     */
 	void onFaceDetBackgrCBClicked( bool checked );
 
+	void onKinectSnapshotPBClicked();
+
 	/**
 	     * @author Autor: David Durcak
 	     * @brief onMarkerBackgrCBClicked Slot for enabling video backgroung from Aruco and disabling from FaceRecongition
@@ -343,6 +347,7 @@ private:
 	QPushButton*		mKinectPB;
 	QPushButton*		mUpdateCorParPB;
 	QPushButton*		mInterchangeMarkersPB;
+	QPushButton*     mKinectSnapshotPB;
 
 	QStackedLayout*  mModulesStackL;
 	QStackedLayout*  mSubmodulesStackL;

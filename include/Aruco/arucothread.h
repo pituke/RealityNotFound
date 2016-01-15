@@ -30,7 +30,6 @@ namespace ArucoModul {
 	*@note This class provides a thread for tracking Aruco.
 	*/
 class ArucoThread : public QThread
-
 {
 	Q_OBJECT
 
@@ -67,6 +66,14 @@ signals:
 	* @param quat Quaternion
 	*/
 	void sendArucoRorQuat( const osg::Quat quat );
+
+	/**
+	* @author Michael Garaj
+	* @brief sendArucoPosAndQuat signal that emit Quaternion that represent rotation of detected marker and position Vector
+	* @param quat Quaternion
+	* @param pos Vec3d
+	*/
+	void sendArucoPosAndQuat( const osg::Quat quat, osg::Vec3d pos );
 
 	/**
 	* @author Dávid Durčák
@@ -253,7 +260,7 @@ private:
 	bool		mUpdCorPar;			// if true, correction can be setted
 	bool		mSendImgEnabled;	// if true, of emiting actual frame is enabled
 	bool		mSendBackgrImgEnabled;
-	bool        mMultiMarkerEnabled;
+	bool		mMultiMarkerEnabled;
 
 	unsigned int	mGrM;				// number of marker for graph controll
 	unsigned int	mMoM;				// number of marker for mouse controll

@@ -1,4 +1,4 @@
-#include "QOSG/CoreWindow.h"
+﻿#include "QOSG/CoreWindow.h"
 
 #include "QOSG/ViewerQT.h"
 #include "QOSG/OptionsWindow.h"
@@ -11,6 +11,7 @@
 #include "Viewer/CoreGraph.h"
 #include "Viewer/CameraManipulator.h"
 #include "Viewer/PickHandler.h"
+#include "Viewer/DataHelper.h"
 
 #include "Manager/Manager.h"
 
@@ -70,6 +71,7 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 {
 	//inicializacia premennych
 	isPlaying = true;
+	isEBPlaying = false;
 	application = app;
 	layout = thread;
 
@@ -133,10 +135,14 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 	Lua::LuaInterface::getInstance()->executeFile( "main.lua" );
 	viewerWidget->getPickHandler()->setSelectionObserver( this );
 
+	QObject::connect( viewerWidget->getCameraManipulator(), SIGNAL( sendTranslatePosition( osg::Vec3d ) ),
+					  this->coreGraph, SLOT( translateGraph( osg::Vec3d ) ) );
+
 }
 
 void CoreWindow::createActions()
 {
+
 	quit = new QAction( "Quit", this );
 	connect( quit, SIGNAL( triggered() ), application, SLOT( quit() ) );
 
@@ -165,6 +171,13 @@ void CoreWindow::createActions()
 	play->setToolTip( "&Play" );
 	play->setFocusPolicy( Qt::NoFocus );
 	connect( play, SIGNAL( clicked() ), this, SLOT( playPause() ) );
+
+	showMetricsButton = new QPushButton();
+	showMetricsButton->setToolTip( "Show metrics toolbar" );
+	showMetricsButton->setMaximumSize( 20, 614 );
+	showMetricsButton->setText( "<" );
+	showMetricsButton->setFocusPolicy( Qt::NoFocus );
+	connect( showMetricsButton, SIGNAL( clicked() ), this, SLOT( showMetrics() ) );
 
 	addMeta = new QPushButton();
 	addMeta->setIcon( QIcon( "../share/3dsoftviz/img/gui/meta.png" ) );
@@ -247,13 +260,16 @@ void CoreWindow::createActions()
 	// <Change> Nagy+Gloger
 	loadFunctionCallButton = new QPushButton();
 	loadFunctionCallButton->setText( "Load function calls" );
+
 	loadFunctionCallButton->setToolTip( "Load function calls" );
 	loadFunctionCallButton->setFocusPolicy( Qt::NoFocus );
 	connect( loadFunctionCallButton, SIGNAL( clicked() ), this, SLOT( loadFunctionCall() ) );
 
 	browsersGroupingButton = new QPushButton();
 	browsersGroupingButton->setIcon( QIcon( "../share/3dsoftviz/img/gui/grouping.png" ) );
-	browsersGroupingButton->setToolTip( "Toggle browsers (webViews) grouping" );
+
+	browsersGroupingButton->setToolTip( "Toggle webviews grouping" );
+
 	browsersGroupingButton->setCheckable( true );
 	browsersGroupingButton->setFocusPolicy( Qt::NoFocus );
 	connect( browsersGroupingButton, SIGNAL( clicked( bool ) ), this, SLOT( browsersGroupingClicked( bool ) ) );
@@ -429,6 +445,39 @@ void CoreWindow::createActions()
 	b_UnsetRestrictionFromAll->setToolTip( "&Unset restriction from all nodes" );
 	b_UnsetRestrictionFromAll->setFocusPolicy( Qt::NoFocus );
 	connect( b_UnsetRestrictionFromAll, SIGNAL( clicked() ), this, SLOT( unsetRestrictionFromAll() ) );
+
+	b_StartEdgeBundling = new QPushButton();
+	b_StartEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
+	b_StartEdgeBundling->setToolTip( "&Start edge bundling" );
+	b_StartEdgeBundling->setFocusPolicy( Qt::NoFocus );
+	connect( b_StartEdgeBundling, SIGNAL( clicked() ), this, SLOT( startEdgeBundling() ) );
+
+	b_PauseEdgeBundling = new QPushButton();
+	b_PauseEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
+	b_PauseEdgeBundling->setToolTip( "&Pause edge bundling" );
+	b_PauseEdgeBundling->setFocusPolicy( Qt::NoFocus );
+	b_PauseEdgeBundling->setEnabled( false );
+	connect( b_PauseEdgeBundling, SIGNAL( clicked() ), this, SLOT( pauseEdgeBundling() ) );
+
+	b_StopEdgeBundling = new QPushButton();
+	b_StopEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/stop.png" ) );
+	b_StopEdgeBundling->setToolTip( "&Stop edge bundling" );
+	b_StopEdgeBundling->setFocusPolicy( Qt::NoFocus );
+	b_StopEdgeBundling->setEnabled( false );
+	connect( b_StopEdgeBundling, SIGNAL( clicked() ), this, SLOT( stopEdgeBundling() ) );
+
+	le_edgeBundlingalpha = new QLineEdit( "alpha: " );
+	le_edgeBundlingalpha->setText( "100" );
+
+	nodeTypeComboBox = new QComboBox();
+	nodeTypeComboBox->insertItems( 0,( QStringList() << "Square" << "Sphere" ) );
+	nodeTypeComboBox->setFocusPolicy( Qt::NoFocus );
+	connect( nodeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( nodeTypeComboBoxChanged( int ) ) );
+
+	edgeTypeComboBox = new QComboBox();
+	edgeTypeComboBox->insertItems( 0,( QStringList() << "Quad" << "Cylinder" << "Line" ) );
+	edgeTypeComboBox->setFocusPolicy( Qt::NoFocus );
+	connect( edgeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( edgeTypeComboBoxChanged( int ) ) );
 
 	b_start_server = new QPushButton();
 	b_start_server->setText( "Host session" );
@@ -661,8 +710,8 @@ QWidget* CoreWindow::createGraphTab( QFrame* line )
 	lGraph->addRow( multiSelect,center );
 	multiSelect->setMinimumWidth( 68 );
 	center->setMaximumWidth( 68 );
-	lGraph->addRow( nodeTypeComboBox );
-	nodeTypeComboBox->setMaximumWidth( 136 );
+	lGraph->addRow( selectionTypeComboBox );
+	selectionTypeComboBox->setMaximumWidth( 136 );
 	line = createLine();
 	lGraph->addRow( line );
 	addMeta->setMinimumWidth( 68 );
@@ -699,6 +748,13 @@ QWidget* CoreWindow::createGraphTab( QFrame* line )
 	lGraph->addRow( play );
 	slider->setMaximumWidth( 136 );
 	lGraph->addRow( slider );
+	line = createLine();
+	lGraph->addRow( line );
+
+	nodeTypeComboBox->setMaximumWidth( 136 );
+	lGraph->addRow( nodeTypeComboBox );
+	edgeTypeComboBox->setMaximumWidth( 136 );
+	lGraph->addRow( edgeTypeComboBox );
 
 	wGraph->setLayout( lGraph );
 
@@ -903,6 +959,21 @@ QWidget* CoreWindow::createClusteringTab( QFrame* line )
 	sb_repulsiveForceInsideCluster->setMaximumWidth( 136 );
 	lClustering->addRow( sb_repulsiveForceInsideCluster );
 
+	line = createLine();
+	lClustering->addRow( line );
+	lClustering->addRow( new QLabel( "Edge Bundling" ) );
+	b_StartEdgeBundling->setMinimumWidth( 68 );
+	b_StartEdgeBundling->setMaximumWidth( 68 );
+	b_PauseEdgeBundling->setMinimumWidth( 68 );
+	b_PauseEdgeBundling->setMaximumWidth( 68 );
+	b_StopEdgeBundling->setMaximumWidth( 136 );
+	lClustering->addRow( b_StartEdgeBundling, b_PauseEdgeBundling );
+	lClustering->addRow( b_StopEdgeBundling );
+	le_edgeBundlingalpha->setMaximumWidth( 68 );
+	lClustering->addRow( new QLabel( "alpha: " ), le_edgeBundlingalpha );
+	line = createLine();
+	lClustering->addRow( line );
+
 	wClustering->setLayout( lClustering );
 
 	return wClustering;
@@ -933,6 +1004,12 @@ QWidget* CoreWindow::createMoreFeaturesTab( QFrame* line )
 	else {
 		chb_camera_rot->setChecked( true );
 	}
+
+	chb_camera_enable = new QCheckBox( tr( "Camera enabled" ) );
+	chb_camera_enable->setChecked( true );
+	chb_camera_enable->setMaximumWidth( 136 );
+	lMore->addRow( chb_camera_enable );
+	connect( chb_camera_enable, SIGNAL( clicked( bool ) ), this, SLOT( setCameraEnable( bool ) ) );
 #ifdef OPENCV_FOUND
 
 #ifdef OPENNI2_FOUND
@@ -950,6 +1027,17 @@ QWidget* CoreWindow::createMoreFeaturesTab( QFrame* line )
 	lMore->addRow( b_start_ransac );
 	connect( b_start_ransac, SIGNAL( clicked() ), this, SLOT( calculateRansac() ) );
 #endif
+#endif
+
+#ifdef LEAP_FOUND
+	line = createLine();
+	lMore->addRow( line );
+	lMore->addRow( new QLabel( tr( "Leap" ) ) );
+	b_start_leap = new QPushButton();
+	b_start_leap->setText( "Start Leap" );
+	b_start_leap->setMaximumWidth( 136 );
+	lMore->addRow( b_start_leap );
+	connect( b_start_leap, SIGNAL( clicked() ), this, SLOT( startLeap() ) );
 #endif
 
 #ifdef SPEECHSDK_FOUND
@@ -991,10 +1079,10 @@ void CoreWindow::createGraphSlider()
 
 void CoreWindow::createSelectionComboBox()
 {
-	nodeTypeComboBox = new QComboBox();
-	nodeTypeComboBox->insertItems( 0,( QStringList() << "All" << "Node" << "Edge" << "Cluster" ) );
-	nodeTypeComboBox->setFocusPolicy( Qt::NoFocus );
-	connect( nodeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( nodeTypeComboBoxChanged( int ) ) );
+	selectionTypeComboBox = new QComboBox();
+	selectionTypeComboBox->insertItems( 0,( QStringList() << "All" << "Node" << "Edge" << "Cluster" ) );
+	selectionTypeComboBox->setFocusPolicy( Qt::NoFocus );
+	connect( selectionTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( selectionTypeComboBoxChanged( int ) ) );
 }
 
 void CoreWindow::createLeftToolBar()
@@ -1277,6 +1365,30 @@ void CoreWindow::sqlQuery()
 	std::cout << lineEdit->text().toStdString() << endl;
 }
 
+void CoreWindow::showMetrics()
+{
+	if ( CoreWindow::loadFunctionCallButton->isHidden() ) {
+		metricsToolBar->setMinimumWidth( 350 );
+		metricsToolBar->setMaximumWidth( 350 );
+		CoreWindow::loadFunctionCallButton->show();
+		CoreWindow::browsersGroupingButton->show();
+		showMetricsButton->setToolTip( "Hide metrics toolbar" );
+		showMetricsButton->setText( ">" );
+		luaGraphTreeView->setMaximumWidth( 350 );
+
+	}
+	else {
+		CoreWindow::loadFunctionCallButton->hide();
+		CoreWindow::browsersGroupingButton->hide();
+		showMetricsButton->setToolTip( "Show metrics toolbar" );
+		showMetricsButton->setText( "<" );
+		luaGraphTreeView->setMaximumWidth( 0 );
+		luaGraphTreeView->setMinimumWidth( 0 );
+		metricsToolBar->setMaximumWidth( 20 );
+		metricsToolBar->setMinimumWidth( 20 );
+	}
+}
+
 void CoreWindow::playPause()
 {
 	if ( isPlaying ) {
@@ -1470,7 +1582,7 @@ void CoreWindow::removeMetaNodes()
 
 	while ( i != selectedNodes->constEnd() ) {
 		//treba este opravit - zatial kontrolujeme ci to nie je mergedNode len podla mena
-		if ( ( *i )->getType()->isMeta() && ( *i )->getName() != "mergedNode" ) {
+		if ( ( *i )->getType()->isMeta() && ( *i )->Data::AbsNode::getName() != "mergedNode" ) {
 			Network::Server* server = Network::Server::getInstance();
 			Network::Client* client = Network::Client::getInstance();
 			if ( !client->isConnected() ) {
@@ -1505,8 +1617,9 @@ void CoreWindow::loadFile()
 	// Duransky end - vynulovanie vertigo rovin pri nacitani noveho grafu
 
 	//treba overit
-	layout->pause();
+	layout->pauseAllAlg();
 	coreGraph->setNodesFreezed( true );
+	coreGraph->setInterpolationDenied( false );
 
 	QString fileName =NULL;
 
@@ -1526,6 +1639,10 @@ void CoreWindow::loadFile()
 		layout->play();
 		coreGraph->setNodesFreezed( false );
 	}
+
+	//reprezentacie na default
+	nodeTypeComboBoxChanged( nodeTypeComboBox->currentIndex() );
+	edgeTypeComboBoxChanged( edgeTypeComboBox->currentIndex() );
 
 }
 
@@ -1628,7 +1745,7 @@ void CoreWindow::colorPickerChanged( const QColor& color )
 	this->color = color;
 }
 
-void CoreWindow::nodeTypeComboBoxChanged( int index )
+void CoreWindow::selectionTypeComboBoxChanged( int index )
 {
 	switch ( index ) {
 		case 0:
@@ -1648,7 +1765,45 @@ void CoreWindow::nodeTypeComboBoxChanged( int index )
 			label->setChecked( edgeLabelsVisible & nodeLabelsVisible );
 			break;
 		default:
+			qDebug() << "CoreWindow:selectionTypeComboBoxChanged do not suported index";
+			break;
+
+	}
+}
+
+void CoreWindow::nodeTypeComboBoxChanged( int index )
+{
+	switch ( index ) {
+		case 0:
+			coreGraph->setNodeVisual( Data::Node::INDEX_SQUARE );
+			break;
+		case 1:
+			coreGraph->setNodeVisual( Data::Node::INDEX_SPHERE );
+			break;
+		default:
 			qDebug() << "CoreWindow:nodeTypeComboBoxChanged do not suported index";
+			break;
+
+	}
+}
+
+void CoreWindow::edgeTypeComboBoxChanged( int index )
+{
+	switch ( index ) {
+		case 0:
+			coreGraph->setEdgeVisual( Data::Edge::INDEX_QUAD );
+			break;
+		case 1:
+			coreGraph->setEdgeVisual( Data::Edge::INDEX_CYLINDER );
+			break;
+		case 2:
+			coreGraph->setEdgeVisual( Data::Edge::INDEX_LINE );
+			break;
+		case 3:
+			coreGraph->setEdgeVisual( Data::Edge::INDEX_CURVE );
+			break;
+		default:
+			qDebug() << "CoreWindow:edgeTypeComboBoxChanged do not suported index";
 			break;
 
 	}
@@ -1711,7 +1866,7 @@ void CoreWindow::applyLabelClick()
 			client->sendNodeLabel( ( *ni )->getId(), newLabel );
 		}
 		else {
-			( *ni )->setName( newLabel );
+			( *ni )->Data::AbsNode::setName( newLabel );
 			( *ni )->setLabelText( newLabel );
 			( *ni )->reloadConfig();
 			server->sendNodeLabel( ( *ni )->getId(), newLabel );
@@ -2091,7 +2246,7 @@ void CoreWindow::setRestriction_Circle( QLinkedList<osg::ref_ptr<Data::Node> >* 
 			}
 			node2 = currentGraph->addRestrictionNode( name_node2, positionNode2 );
 			node3 = currentGraph->addRestrictionNode( name_node3, positionNode3 );
-			node3->setInvisible();
+			node3->setInvisible( true );
 			restrictionNodes.push_back( node1 );
 			restrictionNodes.push_back( node2 );
 			restrictionNodes.push_back( node3 );
@@ -2218,9 +2373,9 @@ void CoreWindow::setRestriction_ConeTree()
 		osg::ref_ptr<Data::Node> node1 = currentGraph->addRestrictionNode( "plane_node_1", positionNode1 );
 		osg::ref_ptr<Data::Node> node2 = currentGraph->addRestrictionNode( "plane_node_2", positionNode2 );
 		osg::ref_ptr<Data::Node> node3 = currentGraph->addRestrictionNode( "plane_node_3", positionNode3 );
-		node1->setInvisible();
-		node2->setInvisible();
-		node3->setInvisible();
+		node1->setInvisible( true );
+		node2->setInvisible( true );
+		node3->setInvisible( true );
 		restrictionNodes.push_back( node1 );
 		restrictionNodes.push_back( node2 );
 		restrictionNodes.push_back( node3 );
@@ -2279,6 +2434,115 @@ void CoreWindow::unsetRestrictionFromAll()
 		}
 		//volovar_kon
 	}
+}
+
+void CoreWindow::startEdgeBundling()
+{
+	//pause FRalg
+	if ( isPlaying ) {
+		isPlaying = 0;
+		layout->pause();
+	}
+
+	//if edge bundling is not playing, then split edges
+	if ( !isEBPlaying ) {
+		Data::Graph* currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+
+		if ( currentGraph != NULL ) {
+			//select all nodes and fix them
+			QMap<qlonglong, osg::ref_ptr<Data::Node> >::iterator iNode = currentGraph->getNodes()->begin();
+			while ( iNode != currentGraph->getNodes()->end() ) {
+				( *iNode )->setFixed( true );
+				( *iNode )->setDefaultColor();
+				iNode++;
+			}
+
+			//select all meta nodes and fix them
+			iNode = currentGraph->getMetaNodes()->begin();
+			while ( iNode != currentGraph->getMetaNodes()->end() ) {
+				( *iNode )->setFixed( true );
+				( *iNode )->setDefaultColor();
+				iNode++;
+			}
+
+			//split edges
+			QString alpha = le_edgeBundlingalpha->text();
+			layout->setAlphaEdgeBundlingValue( alpha.toInt() );
+			int splitCount = 3;
+			currentGraph->splitAllEdges( splitCount );
+		}
+	}
+
+	//play FRalg
+	if ( !isPlaying ) {
+		play->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
+		isPlaying = 1;
+		layout->play();
+	}
+
+	//play edge bundling
+	layout->playEdgeBundling();
+	isEBPlaying = true;
+
+	//set updating of node positions
+	coreGraph->setNodesFreezed( false );
+	coreGraph->setInterpolationDenied( false );
+
+	//set buttons
+	b_StartEdgeBundling->setEnabled( false );
+	b_PauseEdgeBundling->setEnabled( true );
+	b_StopEdgeBundling->setEnabled( true );
+}
+
+void CoreWindow::pauseEdgeBundling()
+{
+	//deny updating of node positions
+	coreGraph->setNodesFreezed( true );
+	coreGraph->setInterpolationDenied( true );
+
+	//pause edge bundling
+	layout->stopEdgeBundling();
+
+	//pause FRalg
+	if ( isPlaying ) {
+		play->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
+		isPlaying = 0;
+		layout->pause();
+	}
+
+	//set buttons
+	b_StartEdgeBundling->setEnabled( true );
+	b_PauseEdgeBundling->setEnabled( false );
+	b_StopEdgeBundling->setEnabled( true );
+}
+
+void CoreWindow::stopEdgeBundling()
+{
+	//stop edge bundling
+	layout->stopEdgeBundling();
+	isEBPlaying = false;
+
+	//pause FRalg
+	if ( isPlaying ) {
+		play->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
+		isPlaying = 0;
+		layout->pause();
+	}
+
+	//restore splitted edges
+	Data::Graph* currentGraph = Manager::GraphManager::getInstance()->getActiveGraph();
+	if ( currentGraph != NULL ) {
+		currentGraph->restoreSplittedEdges();
+	}
+
+	//set updating of node positions
+	coreGraph->setNodesFreezed( false );
+	coreGraph->setInterpolationDenied( false );
+
+	//set buttons
+	b_StartEdgeBundling->setEnabled( true );
+	b_PauseEdgeBundling->setEnabled( false );
+	b_StopEdgeBundling->setEnabled( false );
 }
 
 void CoreWindow::setRestrictionToSelectedNodes(
@@ -2650,7 +2914,7 @@ void CoreWindow::cluster_nodes()
 	// show
 	setVisibleClusterSection( true );
 
-	nodeTypeComboBox->setCurrentIndex( 3 ); // selectionType zmen na CLUSTER
+	selectionTypeComboBox->setCurrentIndex( 3 ); // selectionType zmen na CLUSTER
 
 	//AppCore::Core::getInstance(NULL)->cg->reload(currentGraph);
 
@@ -2725,10 +2989,10 @@ void CoreWindow::setRestriction_Cube_Selected()
 		Layout::ShapeGetter_Cube* cube = new Layout::ShapeGetter_Cube( centerNode, surfaceNodeX, surfaceNodeY, surfaceNodeZ );
 
 		// schovaj kocku obmedzovaca a aj nody ktorymi je reprezentovany - pretoze samotny tvar clusteru predstavuje obmedzovac
-		centerNode->setInvisible();
-		surfaceNodeX->setInvisible();
-		surfaceNodeY->setInvisible();
-		surfaceNodeZ->setInvisible();
+		centerNode->setInvisible( true );
+		surfaceNodeX->setInvisible( true );
+		surfaceNodeY->setInvisible( true );
+		surfaceNodeZ->setInvisible( true );
 		cube->setInvisible( true );
 
 		QSharedPointer<Layout::ShapeGetter> shapeGetter = QSharedPointer<Layout::ShapeGetter> ( cube );
@@ -2806,6 +3070,25 @@ void CoreWindow::startSpeech()
 	}
 	this->mSpeechThr->start();
 	b_start_speech->setText( "Stop Speech" );
+}
+#endif
+
+#ifdef LEAP_FOUND
+void CoreWindow::startLeap()
+{
+	if ( mLeapThr!=NULL && b_start_leap->text()=="Stop Leap" ) {
+		//this->mLeapThr->cancel=true;
+		delete( this->mLeapThr );
+		b_start_leap->setText( "Start Leap" );
+		this->mLeapThr=NULL;
+		return;
+	}
+
+	this->mLeapThr = new Leap::LeapThread();
+	//CoUninitialize();
+
+	this->mLeapThr->start();
+	b_start_leap->setText( "Stop Leap" );
 }
 #endif
 
@@ -2943,6 +3226,12 @@ void CoreWindow::setAvatarScale( int scale )
 	Network::Server::getInstance()->setAvatarScale( scale );
 }
 
+void CoreWindow::setCameraEnable( bool enable )
+{
+	qDebug() << "Nastavujem na " << enable;
+	viewerWidget->getCameraManipulator()->setCameraActive( enable );
+}
+
 // Duransky start - Akcia pri prepnuti checkboxu "Vertigo zoom"
 void CoreWindow::toggleVertigo()
 {
@@ -2974,7 +3263,7 @@ void CoreWindow::create_Vertigo_Planes( int numberOfPlanes, int nOfDepthsInOnePl
 		QSetIterator<Data::Node*> i( nodesOfPlane );
 		while ( i.hasNext() ) {
 			Data::Node* node = i.next();
-			node->setInvisible();
+			node->setInvisible( true );
 			// - vyriesit odstranovanie uzlov spravne
 		}
 	}
@@ -3116,7 +3405,7 @@ void CoreWindow::remove_PlanesClick()
 			QSetIterator<Data::Node*> i( nodesOfPlane );
 			while ( i.hasNext() ) {
 				Data::Node* node = i.next();
-				node->setInvisible();
+				node->setInvisible( true );
 				//node->Referenced.deleteUsingDeleteHandler();
 				/*osg::ref_ptr<Data::Node> nodeRefPtr = node;
 				node->setRemovableByUser(true);
@@ -3295,20 +3584,21 @@ void CoreWindow::startGlovesRecognition()
 
 void CoreWindow::createMetricsToolBar()
 {
-	toolBar = new QToolBar( "Metrics visualizations",this );
-
+	metricsToolBar = new QToolBar( "Metrics visualizations",this );
 	// <Change> Gloger start: added horizontal frame to support browser (webView) grouping toggling
 	QFrame* frame = createHorizontalFrame();
 	frame->layout()->addWidget( loadFunctionCallButton );
 	frame->layout()->addWidget( browsersGroupingButton );
-	toolBar->addWidget( frame );
+	metricsToolBar->addWidget( frame );
 	// Gloger end
+	frame = createHorizontalFrame();
+	frame->layout()->addWidget( showMetricsButton );
+	frame->layout()->addWidget( luaGraphTreeView );
+	metricsToolBar->addWidget( frame );
+	metricsToolBar->setMovable( false );
+	showMetrics();
 
-	toolBar->addWidget( luaGraphTreeView );
-	toolBar->setMinimumWidth( 350 );
-
-	addToolBar( Qt::RightToolBarArea,toolBar );
-	toolBar->setMovable( true );
+	addToolBar( Qt::RightToolBarArea,metricsToolBar );
 
 	toolBar = new QToolBar( "Metrics filter",this );
 #if QT_VERSION >= 0x040700
@@ -3331,6 +3621,7 @@ void CoreWindow::loadFunctionCall()
 	}
 	std::cout << "You selected " << file.toStdString() << std::endl;
 	Lua::LuaInterface* lua = Lua::LuaInterface::getInstance();
+
 
 	Diluculum::LuaValueList path;
 	path.push_back( file.toStdString() );
@@ -3388,12 +3679,12 @@ void CoreWindow::filterGraph()
 
 void CoreWindow::onChange()
 {
-//	TODO release models from memory in browser group
-//	QAbstractItemModel *model = luaGraphTreeView->model();
-//	if (model != NULL){
-//		delete model;
-//		model = NULL;
-//	}
+	// Release previous last node model
+	QAbstractItemModel* model = luaGraphTreeView->model();
+	if ( model != NULL ) {
+		delete model;
+		model = NULL;
+	}
 
 	// <Change> Gloger start: added support for multiple node selection using browser visualization
 	QLinkedList<osg::ref_ptr<Data::Node> >* selected = viewerWidget->getPickHandler()->getSelectedNodes();
@@ -3401,12 +3692,15 @@ void CoreWindow::onChange()
 	coreGraph->getBrowsersGroup()->setSelectedNodes( selected );
 	// qDebug() << "Selected nodes count: " << selected->size();
 
+
 	if ( selected->size() > 0 ) {
 		// Get last node model & display it in qt view
 		qlonglong lastNodeId = selected->last()->getId();
-		Lua::LuaGraphTreeModel* lastNodeModel = coreGraph->getBrowsersGroup()->getSelectedNodesModels()->value( lastNodeId );
-		luaGraphTreeView->setModel( lastNodeModel );
+		Lua::LuaNode* lastLuaNode = Lua::LuaGraph::getInstance()->getNodes()->value( lastNodeId );
+		Lua::LuaGraphTreeModel* lastLuaModel = new Lua::LuaGraphTreeModel( lastLuaNode );
+		luaGraphTreeView->setModel( lastLuaModel );
 	}
+
 
 	// Gloger end
 }

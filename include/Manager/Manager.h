@@ -13,7 +13,6 @@
 #include <qfileinfo.h>
 
 
-
 namespace Model {
 class DB;
 }
@@ -25,13 +24,13 @@ class Graph;
 namespace Manager {
 /**
  * \class Manager
-	 * \brief Manager provides functionality to manage graphs (loading, creating, holding, editing and deleting).
-	 *
-	 * Class is implemented as singleton.
-	 *
-	 * \author Pavol Perdik
-	 * \date 25.4.2010
-	 */
+     * \brief Manager provides functionality to manage graphs (loading, creating, holding, editing and deleting).
+     *
+     * Class is implemented as singleton.
+     *
+     * \author Pavol Perdik
+     * \date 25.4.2010
+     */
 class GraphManager
 {
 public:
@@ -41,7 +40,7 @@ public:
 	 * \fn inline getDB
 	 * \brief Return db
 	 */
-	Model::DB* getDB()
+	::Model::DB* getDB()
 	{
 		return db;
 	}
@@ -172,7 +171,7 @@ public:
 	*  Model::DB * db
 	*  \brief connection to DB
 	*/
-	Model::DB* db;
+	::Model::DB* db;
 
 
 	/**
