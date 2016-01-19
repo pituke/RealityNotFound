@@ -4,7 +4,7 @@
  */
 #include "Data/Edge.h"
 #include "Data/Graph.h"
-#include "Math/Bezier.h"
+#include "osgModeling/Bezier"
 
 #include "Util/ApplicationConfig.h"
 
@@ -30,7 +30,7 @@ Data::Edge::Edge( qlonglong id, QString name, Data::Graph* graph, osg::ref_ptr<D
 	this->insertChild( INDEX_CYLINDER, createEdgeCylinder( NULL ), false );
 	this->insertChild( INDEX_LINE, createEdgeLine( NULL ), false );
 	this->insertChild( INDEX_CURVE, createEdgeCurve( NULL ), false );
-	setValue( graph->getEdgeVisual(), true );
+	setValue( static_cast<unsigned int>( graph->getEdgeVisual() ), true );
 
 	//updateCoordinates(getSrcNode()->getTargetPosition(), getDstNode()->getTargetPosition());
 	updateCoordinates( getSrcNode()->restrictedTargetPosition(), getDstNode()->restrictedTargetPosition() );
@@ -84,7 +84,7 @@ void Data::Edge::setEdgePieces( QList<osg::ref_ptr<Data::Edge> > edgePieces )
 		( *iEdge )->setEdgeParent( this );
 		( *iEdge )->getSrcNode()->setInvisible( true );
 		( *iEdge )->getDstNode()->setInvisible( true );
-		iEdge ++;
+		++iEdge;
 	}
 
 	getSrcNode()->setInvisible( false );
@@ -292,12 +292,12 @@ osg::ref_ptr<osg::Geode> Data::Edge::createLabel( QString name )
 /*
 float Data::Edge::getEdgeStrength() const
 {
-    return edgeStrength;
+	return edgeStrength;
 }
 
 void Data::Edge::setEdgeStrength( float value )
 {
-    edgeStrength = value;
+	edgeStrength = value;
 }
 */
 osg::ref_ptr<Data::Node> Data::Edge::getSecondNode( osg::ref_ptr<Data::Node> firstNode )
@@ -442,7 +442,13 @@ osg::ref_ptr<osg::StateSet> Data::Edge::createStateSet( Data::Type* type )
 
 	// Common configuration
 	edgeStateSet->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
-	edgeStateSet->setTextureAttributeAndModes( 0, texture, osg::StateAttribute::ON );
+	if ( type->getName() != "edge" ) {
+		edgeStateSet->setTextureAttributeAndModes( 0, type->getTypeTexture(), osg::StateAttribute::ON );
+	}
+	else {
+		edgeStateSet->setTextureAttributeAndModes( 0, texture, osg::StateAttribute::ON );
+	}
+
 	edgeStateSet->setAttributeAndModes( new osg::BlendFunc, osg::StateAttribute::ON );
 	edgeStateSet->setMode( GL_BLEND, osg::StateAttribute::ON );
 	edgeStateSet->setMode( GL_DEPTH_TEST, osg::StateAttribute::ON );
@@ -477,7 +483,7 @@ void Data::Edge::setVisual( int index )
 	setValue( INDEX_CYLINDER, false );
 	setValue( INDEX_LINE, false );
 	setValue( INDEX_CURVE, false );
-	setValue( index, !isInvisible );
+	setValue( static_cast<unsigned int>( index ), !isInvisible );
 }
 
 //Marak start
