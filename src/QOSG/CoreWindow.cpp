@@ -1305,7 +1305,7 @@ void CoreWindow::showLoadJavaProject()
             // ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
             manager->closeGraph(manager->getActiveGraph());
         }
-        manager->activeGraph = graph;
+		manager->setActiveGraph(graph);
 
         // robime zakladnu proceduru pre restartovanie layoutu
         AppCore::Core::getInstance()->restartLayout();

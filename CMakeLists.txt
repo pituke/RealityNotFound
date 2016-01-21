@@ -69,6 +69,7 @@ if( USE_STRICT_COMPILE_WARNINGS )
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		# using Visual Studio C++
 		set( FLAGS_FOR_DEBUG "/W3")
+                   add_definitions( -DNOMINMAX )
 	endif()
 endif()
 
@@ -898,6 +899,10 @@ target_include_directories( noiseutils SYSTEM PUBLIC dependencies/noiseutils  )
 add_library( qtcolorpicker STATIC dependencies/qtcolorpicker/qtcolorpicker.cpp )
 target_include_directories( noiseutils SYSTEM PUBLIC dependencies/qtcolorpicker )
 
+# ParserLib sources
+include_directories( SYSTEM dependencies/parserlib/source )
+add_library( parserlib STATIC dependencies/parserlib/source/ast.cpp dependencies/parserlib/source/parser.cpp )
+
 # ---------------------------------------------------------------
 # Build modules as libraries
 # ---------------------------------------------------------------
@@ -930,6 +935,7 @@ target_link_libraries( ${3DSOFTVIZ_NAME}
 	lua
 	noiseutils
 	libnoise
+	parserlib
 	osgModeling
 	qtcolorpicker
 	${QT_LIBRARIES}

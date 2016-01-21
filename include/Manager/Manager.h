@@ -144,6 +144,15 @@ public:
 	}
 
 	/**
+	 * \fn setActiveGraph
+	 * \brief set the active graph
+	 */
+	void setActiveGraph(Data::Graph* graph)
+	{
+		activeGraph = graph;
+	}
+
+	/**
 	 * Repository::Git::GitEvolutionGraph* getActiveEvolutionGraph()
 	 * @brief Returns active evolution graph
 	 * @return active evolution graph
