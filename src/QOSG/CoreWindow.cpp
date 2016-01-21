@@ -139,7 +139,6 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 
 	QObject::connect( viewerWidget->getCameraManipulator(), SIGNAL( sendTranslatePosition( osg::Vec3d ) ),
 					  this->coreGraph, SLOT( translateGraph( osg::Vec3d ) ) );
-
 }
 
 void CoreWindow::createActions()
@@ -160,8 +159,8 @@ void CoreWindow::createActions()
 	loadGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/loadFromDB.png" ),"&Load graph from database", this );
     connect( loadGraph, SIGNAL( triggered() ), this, SLOT( showLoadGraph() ) );
 
-    loadJavaProject = new QAction( QIcon( "../share/3dsoftviz/img/gui/open_java.png" ),"&Load java project", this );
-    connect( loadJavaProject, SIGNAL( triggered() ), this, SLOT( showLoadJavaProject() ) );
+    loadJavaProjectAction = new QAction( QIcon( "../share/3dsoftviz/img/gui/open_java.png" ),"&Load java project", this );
+    connect( loadJavaProjectAction, SIGNAL( triggered() ), this, SLOT( showDialogLoadJavaProject() ) );
 
 	saveGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save graph", this );
 	connect( saveGraph, SIGNAL( triggered() ), this, SLOT( saveGraphToDB() ) );
@@ -752,7 +751,7 @@ void CoreWindow::createMenus()
 	file = menuBar()->addMenu( "File" );
 	file->addAction( load );
 	file->addAction( loadGraph );
-    file->addAction( loadJavaProject );
+    file->addAction( loadJavaProjectAction );
 	file->addAction( loadGit );
 	file->addSeparator();
 	file->addAction( saveGraph );
@@ -1279,7 +1278,7 @@ void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* g
     //graph->selectLayout(layout1);
 }
 
-void CoreWindow::showLoadJavaProject()
+void CoreWindow::showDialogLoadJavaProject()
 {
     QFileDialog dialog;
     dialog.setWindowTitle("Choose java project folder");
@@ -1288,38 +1287,38 @@ void CoreWindow::showLoadJavaProject()
     if (dialog.exec())
     {
         QString directory = dialog.selectedFiles()[0];
-        Importer::Parsing::JavaParser javaParser;
-        Importer::Parsing::SoftTree softTree;
-        std::string errorMessage;
-        if (!javaParser.Parse(directory.toStdString(), softTree, errorMessage))
-            QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+        loadJavaProject(directory);
+    }
+}
 
-        auto manager = Manager::GraphManager::getInstance();
-        auto graph = manager->createGraph("SoftwareGraph");
+void CoreWindow::loadJavaProject(const QString& projectDir)
+{
+    Importer::Parsing::JavaParser javaParser;
+    Importer::Parsing::SoftTree softTree;
+    std::string errorMessage;
+    if (!javaParser.Parse(projectDir.toStdString(), softTree, errorMessage))
+        QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
 
-        SoftTreeToGraph(softTree, graph);
+    auto manager = Manager::GraphManager::getInstance();
+    auto graph = manager->createGraph("SoftwareGraph");
 
-        // nastavenie aktivneho grafu
-        if (manager->getActiveGraph() != NULL)
-        {
-            // ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
-            manager->closeGraph(manager->getActiveGraph());
-        }
-		manager->setActiveGraph(graph);
+    SoftTreeToGraph(softTree, graph);
 
-        // robime zakladnu proceduru pre restartovanie layoutu
-        AppCore::Core::getInstance()->restartLayout();
+    // nastavenie aktivneho grafu
+    if (manager->getActiveGraph() != NULL)
+    {
+        // ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
+        manager->closeGraph(manager->getActiveGraph());
+    }
+	manager->setActiveGraph(graph);
 
-        //Network::Server* server = Network::Server::getInstance();
-        //server -> sendGraph();
+    // robime zakladnu proceduru pre restartovanie layoutu
+    AppCore::Core::getInstance()->restartLayout();
 
-        //viewerWidget->getCameraManipulator()->home();
-
-        //treba overit ci funguje
-        if ( isPlaying ) {
-            layout->play();
-            coreGraph->setNodesFreezed( false );
-        }
+    //treba overit ci funguje
+    if ( isPlaying ) {
+        layout->play();
+        coreGraph->setNodesFreezed( false );
     }
 }
 
@@ -3548,6 +3547,11 @@ void CoreWindow::closeEvent( QCloseEvent* event )
 void QOSG::CoreWindow::moveMouseAruco( double positionX,double positionY,bool isClick, Qt::MouseButton button )
 {
 	this->viewerWidget->moveMouseAruco( positionX,positionY,isClick,this->x(),this->y(),button );
+}
+
+void CoreWindow::showEvent(QShowEvent* e)
+{
+	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )

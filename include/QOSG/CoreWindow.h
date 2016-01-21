@@ -106,11 +106,16 @@ public slots:
 	void showLoadGraph();
 
     /**
-                *  \fn public  showLoadJavaProject
+                *  \fn public  showDialogLoadJavaProject
                 *  \brief Show the dialog to load java project
                 */
+    void showDialogLoadJavaProject();
 
-    void showLoadJavaProject();
+	/**
+    *  \fn public  loadJavaProject
+    *  \brief Load, parse java project, create visualization and make it current
+    */
+	void loadJavaProject(const QString& projectDir);
 
 	/**
 	            *  \fn public  saveGraphToDB
@@ -119,7 +124,7 @@ public slots:
 
 	void saveGraphToDB();
 
-
+	
 	/**
 	            *  \fn public  loadFunctionCall()
 	            *  \brief load function call clicked
@@ -664,7 +669,7 @@ private:
         *  QAction * loadJavaProject
         *  \brief Pointer to dialog to load java project
         */
-    QAction* loadJavaProject;
+    QAction* loadJavaProjectAction;
 
 	/**
 	    *  QAction * saveLayout
@@ -1296,6 +1301,9 @@ private:
 		*  \brief Flag if edge bundling is running
 		*/
 	bool isEBPlaying;
+
+private:
+	void showEvent(QShowEvent* e) override;
 
 public:
 
