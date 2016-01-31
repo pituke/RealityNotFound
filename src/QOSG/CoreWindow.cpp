@@ -56,6 +56,10 @@
 #include <iostream>
 #include <osg/ref_ptr>
 #include <string>
+#include <Manager/ResourceManager.h>
+#include <osgDB/ReadFile>
+#include <Clustering/Floor.h>
+#include <Clustering/Building.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -1315,7 +1319,7 @@ void CoreWindow::loadJavaProject(const QString& projectDir)
     // robime zakladnu proceduru pre restartovanie layoutu
     AppCore::Core::getInstance()->restartLayout();
 
-    //treba overit ci funguje
+   //treba overit ci funguje
     if ( isPlaying ) {
         layout->play();
         coreGraph->setNodesFreezed( false );
@@ -3549,9 +3553,26 @@ void QOSG::CoreWindow::moveMouseAruco( double positionX,double positionY,bool is
 	this->viewerWidget->moveMouseAruco( positionX,positionY,isClick,this->x(),this->y(),button );
 }
 
+uint random(uint min, uint max)
+{
+	return (qrand() % (max + 1 - min)) + min;
+}
+
 void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
+
+	QList<Clustering::Floor*> fs;
+	const uint floorCount = random(2, 10);
+	for (uint fi = 0; fi < floorCount; ++fi)
+	{
+		QList<Clustering::Window*> ws;
+		const uint windowCount = random(1, 15);
+		for (uint wi = 0; wi < windowCount; ++wi)
+			ws << new Clustering::Window("window", static_cast<Clustering::Window::WindowType>(random(0,2)));
+		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
+	}
+	viewerWidget->setSceneData(new Clustering::Building(fs));
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )
