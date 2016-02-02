@@ -2,7 +2,7 @@
 
 namespace Clustering
 {
-	Building::Building(const QList<Floor*>& inputFloors)
+	Building::Building(const QList<Floor*>& inputFloors, const QList<Vehicle*>& inputVehicles)
 	{
 		floors = inputFloors;
 		std::sort(floors.begin(), floors.end(), [](const Floor* a, const Floor* b)
@@ -30,5 +30,18 @@ namespace Clustering
 			Group::addChild(f);
 			pos.z() += floorHeight;
 		}
+
+		width = maxSize;
+		height = pos.z();
+	}
+
+	float Building::getWidth() const
+	{
+		return width;
+	}
+
+	float Building::getHeight() const
+	{
+		return height;
 	}
 }

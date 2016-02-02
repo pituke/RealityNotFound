@@ -4,25 +4,35 @@
 
 namespace Clustering
 {
-	Cuboid::Cuboid(float width, float height, float depth)
+	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& centerOffset)
 	{
-		const float right = width / 2;
-		const float left = -right;
-		const float top = height / 2;
-		const float bottom = -top;
-		const float near = depth / 2;
-		const float far = -near;
+		const float right = (width / 2) - centerOffset.x();
+		const float left = -(width / 2) - centerOffset.x();
+		const float top = (height / 2) - centerOffset.z();
+		const float bottom = -(height / 2) - centerOffset.z();
+		const float far = (depth / 2) - centerOffset.y();
+		const float near = -(depth / 2) - centerOffset.y();
 
 		const osg::Vec3 vs[] =
 		{
-			osg::Vec3(left, bottom, near),	// 0
-			osg::Vec3(right, bottom, near),	// 1
-			osg::Vec3(right, top, near),	// 2
-			osg::Vec3(left, top, near),		// 3
-			osg::Vec3(left, bottom, far),	// 4
-			osg::Vec3(right, bottom, far),	// 5
-			osg::Vec3(right, top, far),		// 6
-			osg::Vec3(left, top, far)		// 7
+			osg::Vec3(left, near, bottom),	// 0
+			osg::Vec3(right, near, bottom),	// 1
+			osg::Vec3(right, near, top),	// 2
+			osg::Vec3(left, near, top),		// 3
+			osg::Vec3(left, far, bottom),	// 4
+			osg::Vec3(right, far, bottom),	// 5
+			osg::Vec3(right, far, top),		// 6
+			osg::Vec3(left, far, top)		// 7
+		};
+
+		const osg::Vec3 ns[] =
+		{
+			osg::Vec3(0, -1, 0),
+			osg::Vec3(1, 0, 0),
+			osg::Vec3(0, 1, 0),
+			osg::Vec3(-1, 0, 0),
+			osg::Vec3(0, 0, 1),
+			osg::Vec3(0, 0, -1)
 		};
 
 		const GLuint fs[] =
@@ -37,7 +47,10 @@ namespace Clustering
 
 		auto geom = new osg::Geometry;
 		geom->setVertexArray(new osg::Vec3Array(sizeof(vs) / sizeof(osg::Vec3), vs));
-		geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, sizeof(fs) / sizeof(GLuint), fs));
+		geom->setNormalArray(new osg::Vec3Array(sizeof(ns) / sizeof(osg::Vec3), ns));
+		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
+		for (GLuint i = 0; i < sizeof(fs)/sizeof(GLuint); i += 4)
+			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, sizeof(GLuint) * 4, &fs[i]));
 		Geode::addDrawable(geom);
 	}
 }

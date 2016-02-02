@@ -3572,7 +3572,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 			ws << new Clustering::Window("window", static_cast<Clustering::Window::WindowType>(random(0,2)));
 		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
 	}
-	viewerWidget->setSceneData(new Clustering::Building(fs));
+	auto b = new Clustering::Building(fs, QList<Clustering::Vehicle*>());
+	viewerWidget->setSceneData(b);
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )

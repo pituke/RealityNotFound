@@ -32,7 +32,7 @@ namespace Clustering
 	static GeometrySet floorNoncorner, floorCorner;
 	static float floorHeight, wallHeight, windowHeight, wallVertCenter, cornerSize, borderSize;
 	static QMap<QString, osg::ref_ptr<osg::Geometry>> floorGeometries;
-	static bool inited = false;
+	static bool initedFloor = false;
 
 	osg::BoundingBox findBoundBox(const QVector<osg::Vec3>& vertices, const QList<uint>& vIndexes)
 	{
@@ -86,7 +86,7 @@ namespace Clustering
 		}
 	}
 
-	void init()
+	void initFloor()
 	{
 		fillGeometrySet("..\\..\\resources\\mesh\\floor_void.obj", floorNoncorner);
 		fillGeometrySet("..\\..\\resources\\mesh\\floor_out.obj", floorCorner);
@@ -142,10 +142,10 @@ namespace Clustering
 
 	Floor::Floor(const QString& displayText, const QList<Window*>& windows, const QString& cornerText, uint priority)
 	{
-		if (!inited)
+		if (!initedFloor)
 		{
-			init();
-			inited = true;
+			initFloor();
+			initedFloor = true;
 		}
 
 		this->displayText = displayText;

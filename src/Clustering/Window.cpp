@@ -5,6 +5,8 @@
 
 namespace Clustering
 {
+	static const float WINDOW_DEPTH_SCALE = 1.0;
+
 	Window::Window(const QString& displayText, WindowType windowType)
 	{
 		static const QString MESHES_DIR = "..\\..\\resources\\mesh\\";
@@ -22,10 +24,7 @@ namespace Clustering
 
 	void Window::setHeight(float height)
 	{
-		auto newScale = getScale();
-		newScale.x() = height;
-		newScale.z() = height;
-		setScale(newScale);
+		setScale(osg::Vec3(height, WINDOW_DEPTH_SCALE, height));
 	}
 
 	float Window::getWidth() const
