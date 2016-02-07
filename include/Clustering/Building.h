@@ -10,8 +10,7 @@ namespace Clustering
 	class Building : public osg::PositionAttitudeTransform
 	{
 	private:
-		QList<Floor*> floors;
-		float width, height;
+		float floorsBaseSize, floorsHeight;
 
 	public:
 		Building(const QList<Floor*>& inputFloors, const QList<Vehicle*>& inputVehicles);

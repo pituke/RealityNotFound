@@ -19,6 +19,7 @@ namespace Clustering
 	static const float WINDOW_TOP_MARGIN = 0.05f; // space between window and top edge of floor
 	static const float WINDOW_BOTTOM_MARGIN = 0.05f; // space between window and bottom edge of floor
 	static const float WINDOW_SPACING = 0.2f; // constant space between windows belong to floor wall
+	static const float FLOOR_MIN_SIZE = 0.4f;
 
 	struct GeometrySet
 	{
@@ -153,27 +154,27 @@ namespace Clustering
 		this->priority = priority;
 
 		// calculate floor size, order windows among wall1 and wall2
-		float width1 = 0, width2 = 0;
+		float nearWallWidth = 0, leftWallWidth = 0;
 		foreach(auto w, windows)
 		{
 			w->setHeight(windowHeight);
-			if (width1 <= width2)
+			if (nearWallWidth <= leftWallWidth)
 			{
-				width1 += WINDOW_SPACING + w->getWidth();
-				floor1 << w;
+				nearWallWidth += WINDOW_SPACING + w->getWidth();
+				nearWall << w;
 			}
 			else
 			{
-				width2 += WINDOW_SPACING + w->getWidth();
-				floor2 << w;
+				leftWallWidth += WINDOW_SPACING + w->getWidth();
+				leftWall << w;
 			}
 		}
-		if (!floor1.empty()) width1 += WINDOW_SPACING;
-		if (!floor2.empty()) width2 += WINDOW_SPACING;
+		if (!nearWall.empty()) nearWallWidth += WINDOW_SPACING;
+		if (!leftWall.empty()) leftWallWidth += WINDOW_SPACING;
 
-		// final wall size (temporary) is logner one
+		// final wall size (temporary) is logner one but at least FLOOR_MIN_SIZE
 		// final size will set by setSize and generate
-		auto reqWallSize = std::max(width1, width2);
+		auto reqWallSize = std::max(FLOOR_MIN_SIZE, std::max(nearWallWidth, leftWallWidth));
 		reqFloorSize = reqWallSize + 2 * borderSize + (cornerText.isEmpty() ? 0 : cornerSize);
 	}
 
@@ -205,9 +206,9 @@ namespace Clustering
 		
 		// calculate and set windows position to wall1 relative to floor
 		osg::Vec3 f1StartWindowPosition(-wallHorPosition + (cornerText.isEmpty() ? 0.0f : cornerSize), -wallHorPosition, wallVertCenter);
-		for (uint i = 0; i < floor1.count(); ++i)
+		for (uint i = 0; i < nearWall.count(); ++i)
 		{
-			auto& w = floor1[i];
+			auto& w = nearWall[i];
 			f1StartWindowPosition.x() += WINDOW_SPACING + (i == 0 ? w->getWidth() / 2 : w->getWidth());
 			w->setPosition(f1StartWindowPosition);
 			addChild(w);
@@ -215,9 +216,9 @@ namespace Clustering
 
 		// calculate and set windows position to wall2 relative to floor
 		osg::Vec3 f2StartWindowPosition(-wallHorPosition, -wallHorPosition + (cornerText.isEmpty() ? 0.0f : cornerSize), wallVertCenter);
-		for (uint i = 0; i < floor2.count(); ++i)
+		for (uint i = 0; i < leftWall.count(); ++i)
 		{
-			auto& w = floor2[i];
+			auto& w = leftWall[i];
 			f2StartWindowPosition.y() += WINDOW_SPACING + (i == 0 ? w->getWidth() / 2 : w->getWidth());
 			w->setPosition(f2StartWindowPosition);
 			w->setAttitude(osg::Quat(osg::PI_2, osg::Vec3(0, 0, 1)));

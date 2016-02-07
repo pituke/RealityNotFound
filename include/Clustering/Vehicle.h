@@ -9,7 +9,8 @@ namespace Clustering
 	{
 	public:
 		Vehicle(const QString& displayText);
-		static float getWidth();
-		static float getDepth();
+		float getWidth() const;
+		float getHeight() const;
+		float getDepth() const;
 	};
 }

@@ -3572,7 +3572,11 @@ void CoreWindow::showEvent(QShowEvent* e)
 			ws << new Clustering::Window("window", static_cast<Clustering::Window::WindowType>(random(0,2)));
 		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
 	}
-	auto b = new Clustering::Building(fs, QList<Clustering::Vehicle*>());
+	QList<Clustering::Vehicle*> vs;
+	const uint vehicleCount = 40;
+	for (uint vi = 0; vi < vehicleCount; ++vi)
+		vs << new Clustering::Vehicle("vehicle");
+	auto b = new Clustering::Building(fs, vs);
 	viewerWidget->setSceneData(b);
 }
 

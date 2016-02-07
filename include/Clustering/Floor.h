@@ -10,7 +10,7 @@ namespace Clustering
 	{
 	private:
 		QString displayText;
-		QList<osg::ref_ptr<Window>> floor1, floor2;
+		QList<osg::ref_ptr<Window>> nearWall, leftWall;
 		QString cornerText;
 		float reqFloorSize;
 		uint priority;

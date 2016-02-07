@@ -50,7 +50,7 @@ namespace Clustering
 		geom->setNormalArray(new osg::Vec3Array(sizeof(ns) / sizeof(osg::Vec3), ns));
 		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
 		for (GLuint i = 0; i < sizeof(fs)/sizeof(GLuint); i += 4)
-			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, sizeof(GLuint) * 4, &fs[i]));
+			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4, &fs[i]));
 		Geode::addDrawable(geom);
 	}
 }
