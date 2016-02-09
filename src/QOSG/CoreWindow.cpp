@@ -3573,7 +3573,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
 	}
 	QList<Clustering::Vehicle*> vs;
-	const uint vehicleCount = 40;
+	const uint vehicleCount = 0;
 	for (uint vi = 0; vi < vehicleCount; ++vi)
 		vs << new Clustering::Vehicle("vehicle");
 	auto b = new Clustering::Building(fs, vs);

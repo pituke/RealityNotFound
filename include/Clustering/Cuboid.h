@@ -7,6 +7,6 @@ namespace Clustering
 	class Cuboid : public osg::Geode
 	{
 	public:
-		Cuboid(float width, float height, float depth, const osg::Vec3& centerOffset = osg::Vec3());
+		Cuboid(float width, float height, float depth, const osg::Vec3& centerPivotOffset = osg::Vec3());
 	};
 }

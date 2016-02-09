@@ -1,17 +1,18 @@
 #include "Clustering/Cuboid.h"
 #include <osg/Vec3>
 #include <osg/Geometry>
+#include <QVector>
 
 namespace Clustering
 {
-	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& centerOffset)
+	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& centerPivotOffset)
 	{
-		const float right = (width / 2) - centerOffset.x();
-		const float left = -(width / 2) - centerOffset.x();
-		const float top = (height / 2) - centerOffset.z();
-		const float bottom = -(height / 2) - centerOffset.z();
-		const float far = (depth / 2) - centerOffset.y();
-		const float near = -(depth / 2) - centerOffset.y();
+		const float right = (width / 2) - centerPivotOffset.x();
+		const float left = -(width / 2) - centerPivotOffset.x();
+		const float top = (height / 2) - centerPivotOffset.z();
+		const float bottom = -(height / 2) - centerPivotOffset.z();
+		const float far = (depth / 2) - centerPivotOffset.y();
+		const float near = -(depth / 2) - centerPivotOffset.y();
 
 		const osg::Vec3 vs[] =
 		{
@@ -45,12 +46,22 @@ namespace Clustering
 			4, 5, 1, 0	// bottom
 		};
 
+		QVector<osg::Vec3> vertices;
+		QVector<osg::Vec3> normals;
+		QVector<GLuint> quads;
+		for (GLuint i = 0; i < sizeof(fs)/sizeof(GLuint); ++i)
+		{
+			vertices << vs[fs[i]];
+			normals << ns[i / 4];
+			quads << i;
+		}
+
 		auto geom = new osg::Geometry;
-		geom->setVertexArray(new osg::Vec3Array(sizeof(vs) / sizeof(osg::Vec3), vs));
-		geom->setNormalArray(new osg::Vec3Array(sizeof(ns) / sizeof(osg::Vec3), ns));
-		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
-		for (GLuint i = 0; i < sizeof(fs)/sizeof(GLuint); i += 4)
-			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4, &fs[i]));
+		geom->setVertexArray(new osg::Vec3Array(vertices.count(), vertices.data()));
+		geom->setNormalArray(new osg::Vec3Array(normals.count(), normals.data()));
+		geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+		for (GLuint i = 0; i < quads.count(); i += 4)
+			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4, quads.data() + i));
 		Geode::addDrawable(geom);
 	}
 }
