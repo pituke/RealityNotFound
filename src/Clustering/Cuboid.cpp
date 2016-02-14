@@ -5,25 +5,25 @@
 
 namespace Clustering
 {
-	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& centerPivotOffset)
+	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& offset)
 	{
-		const float right = (width / 2) - centerPivotOffset.x();
-		const float left = -(width / 2) - centerPivotOffset.x();
-		const float top = (height / 2) - centerPivotOffset.z();
-		const float bottom = -(height / 2) - centerPivotOffset.z();
-		const float far = (depth / 2) - centerPivotOffset.y();
-		const float near = -(depth / 2) - centerPivotOffset.y();
+		const float right = (width / 2) + offset.x();
+		const float left = -(width / 2) + offset.x();
+		const float top = (height / 2) + offset.z();
+		const float bottom = -(height / 2) + offset.z();
+		const float farr = (depth / 2) + offset.y();
+		const float nearr = -(depth / 2) + offset.y();
 
 		const osg::Vec3 vs[] =
 		{
-			osg::Vec3(left, near, bottom),	// 0
-			osg::Vec3(right, near, bottom),	// 1
-			osg::Vec3(right, near, top),	// 2
-			osg::Vec3(left, near, top),		// 3
-			osg::Vec3(left, far, bottom),	// 4
-			osg::Vec3(right, far, bottom),	// 5
-			osg::Vec3(right, far, top),		// 6
-			osg::Vec3(left, far, top)		// 7
+			osg::Vec3(left, nearr, bottom),		// 0
+			osg::Vec3(right, nearr, bottom),	// 1
+			osg::Vec3(right, nearr, top),		// 2
+			osg::Vec3(left, nearr, top),		// 3
+			osg::Vec3(left, farr, bottom),		// 4
+			osg::Vec3(right, farr, bottom),		// 5
+			osg::Vec3(right, farr, top),		// 6
+			osg::Vec3(left, farr, top)			// 7
 		};
 
 		const osg::Vec3 ns[] =

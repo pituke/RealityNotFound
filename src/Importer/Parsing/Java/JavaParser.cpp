@@ -87,6 +87,9 @@ namespace Importer
 			//CONNECT_RULE_AST(NodeElementValuePair, elementValuePair);
 			//CONNECT_RULE_AST(NodeElementValuePairs, elementValuePairs);
 			CONNECT_RULE_AST(NodeBlock, block);
+			CONNECT_RULE_AST(NodeBlockTextBefore, blockTextBefore);
+			CONNECT_RULE_AST(NodeBlockTextAfter, blockTextAfter);
+			CONNECT_RULE_AST(NodeBlockk, blockk);
             CONNECT_RULE_AST(NodeBlockStatement, blockStatement);
 			CONNECT_RULE_AST(NodeLocalVariableDeclarationStatement, localVariableDeclarationStatement);
 			CONNECT_RULE_AST(NodeLocalVariableDeclaration, localVariableDeclaration);

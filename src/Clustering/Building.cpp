@@ -127,7 +127,7 @@ namespace Clustering
 		const float parkingNearBorder = borderLimit - (inputVehicles.empty() ? 0 : VEHICLE_SPACING + inputVehicles.first()->getDepth()) - PARKING_STICK_UP;
 		const float parkingFarBorder = floorsBaseSize / 2 + PARKING_STICK_UP;
 		const osg::Vec3 pivotOffset((parkingLeftBorder + parkingRightBorder) / 2, (parkingNearBorder + parkingFarBorder) / 2, PARKING_HEIGHT / 2);
-		auto parkingGeode = new Cuboid(parkingRightBorder - parkingLeftBorder, PARKING_HEIGHT, parkingFarBorder - parkingNearBorder);
+		auto parkingGeode = new Cuboid(parkingRightBorder - parkingLeftBorder, PARKING_HEIGHT, parkingNearBorder - parkingFarBorder);
 		// do not add as child, it is not desirable do the next processing
 
 		// move all building element nodes to reach pivot at the center

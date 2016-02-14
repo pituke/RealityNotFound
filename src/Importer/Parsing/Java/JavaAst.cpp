@@ -155,7 +155,7 @@ namespace Importer
 		}
 
 		// NodeClassBody
-		vector<const NodeBlock*> NodeClassBody::GetBlockList() const
+		vector<const NodeBlockk*> NodeClassBody::GetBlockList() const
 		{
 			/*vector<const NodeBlock*> typeList;
 			for (auto typeDecl : classBodyDeclarationList->g)
@@ -163,7 +163,7 @@ namespace Importer
 			typeList.push_back(typeDecl->_method);
 			}
 			return typeList;*/
-			return vector<const NodeBlock*>();
+			return vector<const NodeBlockk*>();
 		}
 
         vector<const NodeMemberDeclaration*> NodeClassBody::GetMembers() const
@@ -299,7 +299,7 @@ namespace Importer
 		}
 
 		// NodeClassBodyDeclaration
-		astVal(NodeBlock) NodeClassBodyDeclaration::GetBlock() const
+		astVal(NodeBlockk) NodeClassBodyDeclaration::GetBlock() const
 		{
 			return block;
 		}
@@ -499,7 +499,23 @@ namespace Importer
 
 		// NodeElementValuePairs
 
-		// NodeBlock
+		string NodeBlock::GetBlockContent() const
+		{
+			string st;
+			st += "{";
+			if (blockTextBefore != nullptr) st += blockTextBefore->GetValue();
+			if (block != nullptr)
+				st += block->GetBlockContent();
+			if (blockTextAfter != nullptr && !blockTextAfter->GetValue().empty()) st += blockTextAfter->GetValue();
+			st += "}";
+			return st;
+		}
+
+		// NodeBlockTextBefore
+
+		// NodeBlockTextAfter
+
+		// NodeBlockk
 
 		// NodeBlockStatement
 

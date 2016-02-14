@@ -65,7 +65,10 @@ namespace Importer
         struct NodeElementValueArrayInitializer;
         struct NodeElementValuePair;
         struct NodeElementValuePairs;
-        struct NodeBlock;
+		struct NodeBlock;
+		struct NodeBlockTextBefore;
+		struct NodeBlockTextAfter;
+        struct NodeBlockk;
         struct NodeBlockStatement;
         struct NodeLocalVariableDeclarationStatement;
         struct NodeLocalVariableDeclaration;
@@ -231,7 +234,7 @@ namespace Importer
         {
             AstList<NodeClassBodyDeclaration> classBodyDeclarationList;
 
-            vector<const NodeBlock*> GetBlockList() const;
+            vector<const NodeBlockk*> GetBlockList() const;
             vector<const NodeMemberDeclaration*> GetMembers() const;
             vector<const NodeMethodDeclaration*> GetMethodList() const;
             vector<const NodeGenericMethodDeclaration*> GetGenericMethodList() const;
@@ -245,10 +248,10 @@ namespace Importer
 
         struct NodeClassBodyDeclaration : public NodeContainer
         {
-            AstValue<NodeBlock, true> block;
+            AstValue<NodeBlockk, true> block;
             AstValue<NodeMemberDeclaration, true> memberDeclaration;
 
-            astVal(NodeBlock) GetBlock() const;
+            astVal(NodeBlockk) GetBlock() const;
             astVal(NodeMemberDeclaration) GetMember() const;
         };
 
@@ -293,7 +296,7 @@ namespace Importer
 
         struct NodeMethodBody : public NodeContainer
         {
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
         };
 
         struct NodeGenericMethodDeclaration : public NodeContainer
@@ -325,7 +328,7 @@ namespace Importer
 
         struct NodeConstructorBody : public NodeContainer
         {
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
         };
 
         struct NodeGenericConstructorDeclaration : public NodeContainer
@@ -501,7 +504,24 @@ namespace Importer
 
         //struct NodeElementValuePairs : public NodeContainer
 
-        struct NodeBlock : public NodeContainer
+		struct NodeBlockTextBefore : public NodeTerm
+		{
+		};
+
+		struct NodeBlockTextAfter : public NodeTerm
+		{
+		};
+
+		struct NodeBlock : public NodeContainer
+		{
+			AstValue<NodeBlockTextBefore, true> blockTextBefore;
+			AstValue<NodeBlock, true> block;
+			AstValue<NodeBlockTextAfter, true> blockTextAfter;
+
+			string GetBlockContent() const;
+		};
+
+        struct NodeBlockk : public NodeContainer
         {
             AstList<NodeBlockStatement> blockStatementList;
         };
@@ -591,7 +611,7 @@ namespace Importer
 
         struct NodeStatement : public NodeContainer
         {
-            AstValue<NodeBlock, true> block;
+            AstValue<NodeBlockk, true> block;
             AstValue<NodeAssertStatement, true> assertStatement;
             AstValue<NodeIfStatement, true> ifStatement;
             AstValue<NodeForStatement, true> forStatement;
@@ -652,7 +672,7 @@ namespace Importer
 
         struct NodeTryBlock : public NodeContainer
         {
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
             AstList<NodeCatchClause> catchClause;
             AstValue<NodeFinallyBlock, true> finallyBlock;
         };
@@ -660,7 +680,7 @@ namespace Importer
         struct NodeTryResSpec : public NodeContainer
         {
             AstValue<NodeResourceSpecification> resourceSpecification;
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
             AstList<NodeCatchClause> catchClause;
             AstValue<NodeFinallyBlock, true> finallyBlock;
         };
@@ -675,7 +695,7 @@ namespace Importer
         struct NodeSynchronizedStatement : public NodeContainer
         {
             AstValue<NodeParExpression> parExpression;
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
         };
 
         struct NodeReturnStatement : public NodeContainer
@@ -740,7 +760,7 @@ namespace Importer
             AstList<NodeVariableModifier> variableModifierList;
             AstValue<NodeCatchType> catchType;
             AstValue<NodeIdentifier> identifier;
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
         };
 
         struct NodeCatchType : public NodeContainer
@@ -750,7 +770,7 @@ namespace Importer
 
         struct NodeFinallyBlock : public NodeContainer
         {
-            AstValue<NodeBlock> block;
+            AstValue<NodeBlockk> block;
         };
 
         struct NodeResourceSpecification : public NodeContainer

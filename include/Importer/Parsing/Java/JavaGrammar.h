@@ -83,6 +83,9 @@ namespace Importer
 		extern rule elementValuePairs;
 
 		extern rule block;
+		extern rule blockTextBefore;
+		extern rule blockTextAfter;
+		extern rule blockk;
 		extern rule blockStatement;
 		extern rule localVariableDeclarationStatement;
 		extern rule localVariableDeclaration;
@@ -179,7 +182,7 @@ namespace Importer
 
 		rule compilationUnit = -packageDeclaration >> *importDeclaration >> *typeDeclaration;
 		rule packageDeclaration = *annotation >> "package" >> qualifiedName >> ';';
-		rule importDeclaration = "import" >> -expr("static") >> qualifiedName >> -expr(".*") >> ';';
+		rule importDeclaration = expr("import") >> -expr("static") >> qualifiedName >> -expr(".*") >> ';';
 		rule typeDeclaration = (*classOrInterfaceModifier >> (classDeclaration | enumDeclaration | interfaceDeclaration | annotationTypeDeclaration)) | ';';
 		rule classOrInterfaceModifier = /*annotation |*/ CLASS_OR_INTERFACE_MODIFIER;
 		rule typeBound = type >> *('&' >> type);
@@ -190,14 +193,14 @@ namespace Importer
 		rule classDeclarationExtend = "extends" >> type;
 		rule classDeclarationImplement = "implements" >> typeList;
 		rule classBody = expr('{') >> *classBodyDeclaration >> '}';
-		rule classBodyDeclaration = expr(';') | (-expr("static") >> block) | memberDeclaration;
+		rule classBodyDeclaration = expr(';') | (-expr("static") >> blockk) | memberDeclaration;
 		rule memberDeclaration = *modifier >> (methodDeclaration | genericMethodDeclaration | fieldDeclaration | constructorDeclaration | genericConstructorDeclaration | interfaceDeclaration | annotationTypeDeclaration | classDeclaration | enumDeclaration);
 		rule methodDeclaration = (type | "void") >> identifier >> formalParameters >> *(expr('[') >> ']') >> -("throws" >> qualifiedNameList) >> (methodBody | ';');
-		rule methodBody = block;
+		rule methodBody = blockk;
 		rule genericMethodDeclaration = typeParameters >> methodDeclaration;
 		rule fieldDeclaration = type >> variableDeclarators >> ';';
 		rule constructorDeclaration = identifier >> formalParameters >> -("throws" >> qualifiedNameList) >> constructorBody;
-		rule constructorBody = block;
+		rule constructorBody = blockk;
 		rule genericConstructorDeclaration = typeParameters >> constructorDeclaration;
 
 		rule enumDeclaration = expr("enum") >> identifier >> -("implements" >> typeList) >> '{' >> -enumConstants >> -expr(',') >> -enumBodyDeclarations >> '}';
@@ -243,7 +246,10 @@ namespace Importer
 		rule elementValuePair = identifier >> '=' >> elementValue;
 		rule elementValuePairs = elementValuePair >> *(',' >> elementValuePair);
 
-		rule block = '{' >> *blockStatement >> '}';
+		rule blockTextBefore = EVERYTHING_TO(set("{}"));
+		rule blockTextAfter = EVERYTHING_TO(set("{}"));
+		rule block = '{' >> blockTextBefore >> -block >> blockTextAfter >> '}';
+		rule blockk = '{' >> *blockStatement >> '}';
 		rule blockStatement = localVariableDeclarationStatement | statement | typeDeclaration;
 		rule localVariableDeclarationStatement = localVariableDeclaration >> ';';
 		rule localVariableDeclaration = *variableModifier >> type >> variableDeclarators;
@@ -261,7 +267,7 @@ namespace Importer
 		//rule typeArgument = type | ('?' >> -((expr("extends") | "super") >> type));
 		//rule typeArguments = expr('<') >> typeArgument >> *(',' >> typeArgument) >> '>';
 		rule primitiveType = expr("boolean") | "char" | "byte" | "short" | "int" | "long" | "float" | "double";
-		rule statement = block | assertStatement | ifStatement | forStatement | whileStatement | doStatement | tryStatement
+		rule statement = blockk | assertStatement | ifStatement | forStatement | whileStatement | doStatement | tryStatement
 			| switchStatement | synchronizedStatement | returnStatement | throwStatement | breakStatement | continueStatement
 			| ';' | (statementExpression >> ';') | (identifier >> ':' >> statement);
 		rule assertStatement = "assert" >> expression >> -(':' >> expression) >> ';';
@@ -271,10 +277,10 @@ namespace Importer
 		rule whileStatement = "while" >> parExpression >> statement;
 		rule doStatement = "do" >> statement >> "while" >> parExpression >> ';';
 		rule tryStatement = "try" >> (tryBlock | tryResSpec);
-		rule tryBlock = block >> ((+catchClause >> -finallyBlock) | finallyBlock);
-		rule tryResSpec = resourceSpecification >> block >> *catchClause >> -finallyBlock;
+		rule tryBlock = blockk >> ((+catchClause >> -finallyBlock) | finallyBlock);
+		rule tryResSpec = resourceSpecification >> blockk >> *catchClause >> -finallyBlock;
 		rule switchStatement = "switch" >> parExpression >> '{' >> *switchBlockStatementGroup >> *switchLabel >> '}';
-		rule synchronizedStatement = "synchronized" >> parExpression >> block;
+		rule synchronizedStatement = "synchronized" >> parExpression >> blockk;
 		rule returnStatement = "return" >> -expression >> ';';
 		rule throwStatement = "throw" >> expression >> ';';
 		rule breakStatement = "break" >> -identifier >> ';';
@@ -285,9 +291,9 @@ namespace Importer
 		rule forUpdate = expressionList;
 		rule enhancedForControl = *variableModifier >> type >> variableDeclaratorId >> ':' >> expression;
 		rule regularForControl = -forInit >> ';' >> -expression >> ';' >> -forUpdate;
-		rule catchClause = expr("catch") >> '(' >> *variableModifier >> catchType >> identifier >> ')' >> block;
+		rule catchClause = expr("catch") >> '(' >> *variableModifier >> catchType >> identifier >> ')' >> blockk;
 		rule catchType = qualifiedName >> *('|' >> qualifiedName);
-		rule finallyBlock = "finally" >> block;
+		rule finallyBlock = "finally" >> blockk;
 		rule resourceSpecification = '(' >> resources >> -expr(';') >> ')';
 		rule resources = resource >> *(';' >> resource);
 		rule resource = *variableModifier >> classOrInterfaceType >> variableDeclaratorId >> '=' >> expression;
