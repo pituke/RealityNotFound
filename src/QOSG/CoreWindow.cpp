@@ -3562,6 +3562,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
 
+	Importer::Parsing::JavaParser javaParser;
+	Importer::Parsing::SoftTree softTree;
+	std::string errorMessage;
+	if (!javaParser.Parse("C:/Users/pituke/Desktop/Traffic", softTree, errorMessage))
+		QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+
 	QList<Clustering::Floor*> fs;
 	const uint floorCount = random(2, 10);
 	for (uint fi = 0; fi < floorCount; ++fi)
@@ -3573,7 +3579,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
 	}
 	QList<Clustering::Vehicle*> vs;
-	const uint vehicleCount = 0;
+	const uint vehicleCount = 23;
 	for (uint vi = 0; vi < vehicleCount; ++vi)
 		vs << new Clustering::Vehicle("vehicle");
 	auto b = new Clustering::Building(fs, vs);
