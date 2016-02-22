@@ -31,23 +31,24 @@ namespace Importer
 		{
 			#pragma region connect rules <-> ast
 
+			CONNECT_RULE_AST(NodeExpressionBracketBefore, expressionBracketBefore);
+			CONNECT_RULE_AST(NodeExpressionBracketAfter, expressionBracketAfter);
 			CONNECT_RULE_AST(NodeExpressionBracket, expressionBracket);
+			CONNECT_RULE_AST(NodeExpressionRoundBefore, expressionRoundBefore);
+			CONNECT_RULE_AST(NodeExpressionRoundAfter, expressionRoundAfter);
 			CONNECT_RULE_AST(NodeExpressionRound, expressionRound);
 			CONNECT_RULE_AST(NodeExpressionString, expressionString);
 			CONNECT_RULE_AST(NodeExpressionPostfix, expressionPostfix);
 			CONNECT_RULE_AST(NodeExpression, expression);
-			CONNECT_RULE_AST(NodeExpressionString2, expressionString2);
-			CONNECT_RULE_AST(NodeExpression2, expression2);
-			CONNECT_RULE_AST(NodeExpression3, expression3);
 			CONNECT_RULE_AST(NodeExpressionList, expressionList);
 			CONNECT_RULE_AST(NodeIdentifier, identifier);
 			CONNECT_RULE_AST(NodeQualifiedName, qualifiedName);
-			/*CONNECT_RULE_AST(NodeAnnotationIdentifier, annotationIdentifier);
+			CONNECT_RULE_AST(NodeAnnotationIdentifier, annotationIdentifier);
 			CONNECT_RULE_AST(NodeAnnotationName, annotationName);
 			CONNECT_RULE_AST(NodeAnnotationSequenceBefore, annotationSequenceBefore);
 			CONNECT_RULE_AST(NodeAnnotationSequenceAfter, annotationSequenceAfter);
 			CONNECT_RULE_AST(NodeAnnotationSequence, annotationSequence);
-			CONNECT_RULE_AST(NodeAnnotation, annotation);*/
+			CONNECT_RULE_AST(NodeAnnotation, annotation);
 			CONNECT_RULE_AST(NodePackageDeclaration, packageDeclaration);
 			CONNECT_RULE_AST(NodeImportDeclaration, importDeclaration);
 			CONNECT_RULE_AST(NodeClassOrInterfaceModifierBasic, classOrInterfaceModifierBasic);
@@ -285,6 +286,13 @@ namespace Importer
 				parameter.name = fp->variableDeclaratorId->identifier->GetValue();
 				parameters.push_back(parameter);
 			}
+			if (fpl->lastFormalParameter != nullptr)
+			{
+				Parameter parameter;
+				parameter.type = GetType(fpl->lastFormalParameter->type) + GenTypeArray(fpl->lastFormalParameter->variableDeclaratorId->typeArray.GetCount());
+				parameter.name = fpl->lastFormalParameter->variableDeclaratorId->identifier->GetValue();
+				parameters.push_back(parameter);
+			}
 			return parameters;
 		}
 
@@ -299,17 +307,20 @@ namespace Importer
 			return method;
 		}
 
-		Attribute GetAttributeFromFieldDeclaration(const NodeFieldDeclaration* fieldDeclaration)
+		vector<Attribute> GetAttributeFromFieldDeclaration(const NodeFieldDeclaration* fieldDeclaration, Modifier::ModifierEnum modifier)
 		{
-			Attribute attribute;
+			vector<Attribute> attributes;
 			auto type = GetType(fieldDeclaration->type);
 			for (const NodeVariableDeclarator* vdi : fieldDeclaration->variableDeclarators->variableDeclarator)
 			{
+				Attribute attribute;
 				auto typeArray = GenTypeArray(vdi->variableDeclaratorId->typeArray.GetCount());
+				attribute.modifier = modifier;
 				attribute.type = type + typeArray;
 				attribute.name = vdi->variableDeclaratorId->identifier->GetValue();
+				attributes.push_back(attribute);
 			}
-			return attribute;
+			return attributes;
 		}
 
 		Method GetConstructorFromConstructorDeclaration(const NodeConstructorDeclaration* constructorDeclaration, Modifier::ModifierEnum modifier)
@@ -322,6 +333,33 @@ namespace Importer
 			return method;
 		}
 
+		vector<Attribute> GetAttributeFromConstDeclaration(const NodeConstDeclaration* constDeclaration, Modifier::ModifierEnum modifier)
+		{
+			vector<Attribute> attributes;
+			auto type = GetType(constDeclaration->type);
+			for (const NodeConstantDeclarator* cd : constDeclaration->constantDeclarator)
+			{
+				Attribute attribute;
+				auto typeArray = GenTypeArray(cd->typeArray.GetCount());
+				attribute.modifier = modifier;
+				attribute.type = type + typeArray;
+				attribute.name = cd->identifier->GetValue();
+				attributes.push_back(attribute);
+			}
+			return attributes;
+		}
+
+		Method GetMethodFromInterfaceMethodDeclaration(const NodeInterfaceMethodDeclaration* interfaceMethodDeclaration, Modifier::ModifierEnum modifier)
+		{
+			Method method;
+			method.modifier = modifier;
+			method.returnType = GetType(interfaceMethodDeclaration->type);
+			method.name = interfaceMethodDeclaration->identifier->GetValue();
+			if (interfaceMethodDeclaration->formalParameters->formalParameterList != nullptr)
+				method.parameters = GetParametersFromFormalParameterList(interfaceMethodDeclaration->formalParameters->formalParameterList);
+			return method;
+		}
+
         void ProcessParseResult(const vector<CompileResult>& compileResults, SoftTree& softTree)
         {
             QMap<string, Namespace> javaPackages;
@@ -331,12 +369,13 @@ namespace Importer
 				const SourceFileCompilationUnit* javaAstRoot = cr.astRoot;
 
 				string packageName;
-				if (javaAstRoot->packageDeclaration.Empty())
+				if (!javaAstRoot->packageDeclaration.Empty())
 					packageName = GetQualifiedName(javaAstRoot->packageDeclaration.First()->qualifiedName);
+				javaPackages[packageName].name = packageName;
 
 				for (const NodeTypeDeclaration* typeDecl : javaAstRoot->typeDeclaration)
 				{
-					Modifier::ModifierEnum modifierForTypeDecl;
+					Modifier::ModifierEnum modifierForTypeDecl = Modifier::UNKNOWN;
 					for (const NodeClassOrInterfaceModifier* coim : typeDecl->classOrInterfaceModifier)
 					{
 						modifierForTypeDecl = GetClassOrInterfaceModifier(coim);
@@ -353,7 +392,7 @@ namespace Importer
 							if (cbd->memberDeclaration == nullptr)
 								continue;
 
-							Modifier::ModifierEnum modifierForClassMember;
+							Modifier::ModifierEnum modifierForClassMember = Modifier::UNKNOWN;
 							for (const NodeModifier* m : cbd->memberDeclaration->modifier)
 							{
 								modifierForClassMember = GetModifier(m);
@@ -371,7 +410,9 @@ namespace Importer
 							}
 							else if (cbd->memberDeclaration->fieldDeclaration != nullptr)
 							{
-								class1.attributes.push_back(GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration));
+								auto fields = GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration, modifierForClassMember);
+								for (const auto& f : fields)
+									class1.attributes.push_back(f);
 							}
 							else if (cbd->memberDeclaration->constructorDeclaration != nullptr)
 							{
@@ -403,42 +444,72 @@ namespace Importer
 							if (cbd->memberDeclaration == nullptr)
 								continue;
 
-							Modifier::ModifierEnum modifierForClassMember;
+							Modifier::ModifierEnum modifierForEnumMember = Modifier::UNKNOWN;
 							for (const NodeModifier* m : cbd->memberDeclaration->modifier)
 							{
-								modifierForClassMember = GetModifier(m);
-								if (modifierForClassMember != Modifier::UNKNOWN)
+								modifierForEnumMember = GetModifier(m);
+								if (modifierForEnumMember != Modifier::UNKNOWN)
 									break;
 							}
 
 							if (cbd->memberDeclaration->methodDeclaration != nullptr)
 							{
-								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->methodDeclaration, modifierForClassMember));
+								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->methodDeclaration, modifierForEnumMember));
 							}
 							else if (cbd->memberDeclaration->genericMethodDeclaration != nullptr)
 							{
-								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->genericMethodDeclaration->methodDeclaration, modifierForClassMember));
+								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->genericMethodDeclaration->methodDeclaration, modifierForEnumMember));
 							}
 							else if (cbd->memberDeclaration->fieldDeclaration != nullptr)
 							{
-								enum1.attributes.push_back(GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration));
+								auto fields = GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration, modifierForEnumMember);
+								for (const auto& f : fields)
+									enum1.attributes.push_back(f);
 							}
 							else if (cbd->memberDeclaration->constructorDeclaration != nullptr)
 							{
-								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->constructorDeclaration, modifierForClassMember));
+								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->constructorDeclaration, modifierForEnumMember));
 							}
 							else if (cbd->memberDeclaration->genericConstructorDeclaration != nullptr)
 							{
-								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->genericConstructorDeclaration->constructorDeclaration, modifierForClassMember));
+								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->genericConstructorDeclaration->constructorDeclaration, modifierForEnumMember));
 							}
 						}
 						javaPackages[packageName].enums.push_back(enum1);
 					}
 					else if (typeDecl->interfaceDeclaration != nullptr)
 					{
-					}
-					else if (typeDecl->annotationTypeDeclaration != nullptr)
-					{
+						Interface interface1;
+						interface1.modifier = modifierForTypeDecl;
+						interface1.name = typeDecl->interfaceDeclaration->identifier->GetValue();
+						for (const NodeInterfaceBodyDeclaration* ibd : typeDecl->interfaceDeclaration->interfaceBody->interfaceBodyDeclaration)
+						{
+							if (ibd->interfaceMemberDeclaration != nullptr)
+							{
+								Modifier::ModifierEnum modifierForInterfaceMember = Modifier::UNKNOWN;
+								for (const NodeModifier* m : ibd->interfaceMemberDeclaration->modifier)
+								{
+									modifierForInterfaceMember = GetModifier(m);
+									if (modifierForInterfaceMember != Modifier::UNKNOWN)
+										break;
+								}
+								if (ibd->interfaceMemberDeclaration->constDeclaration != nullptr)
+								{
+									auto fields = GetAttributeFromConstDeclaration(ibd->interfaceMemberDeclaration->constDeclaration, modifierForInterfaceMember);
+									for (const auto& f : fields)
+										interface1.attributes.push_back(f);
+								}
+								else if (ibd->interfaceMemberDeclaration->interfaceMethodDeclaration != nullptr)
+								{
+									interface1.methods.push_back(GetMethodFromInterfaceMethodDeclaration(ibd->interfaceMemberDeclaration->interfaceMethodDeclaration, modifierForInterfaceMember));
+								}
+								else if (ibd->interfaceMemberDeclaration->genericInterfaceMethodDeclaration != nullptr)
+								{
+									interface1.methods.push_back(GetMethodFromInterfaceMethodDeclaration(ibd->interfaceMemberDeclaration->genericInterfaceMethodDeclaration->interfaceMethodDeclaration, modifierForInterfaceMember));
+								}
+							}
+						}
+						javaPackages[packageName].interfaces.push_back(interface1);
 					}
 				}
             }

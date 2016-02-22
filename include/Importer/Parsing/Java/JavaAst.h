@@ -9,7 +9,6 @@ namespace Importer
 		#pragma region forward declaration
 
 		struct NodeExpression;
-		struct NodeExpression2;
 		struct NodeBlock;
 		struct NodeVariableInitializer;
 
@@ -18,15 +17,34 @@ namespace Importer
         #define astVal(type) const type*
         #define astList(type) const AstList<type>&
 
+		struct NodeExpressionBracketBefore : NodeTerm
+		{
+		};
+
+		struct NodeExpressionBracketAfter : NodeTerm
+		{
+		};
+
 		struct NodeExpressionBracket : NodeContainer
 		{
-			AstValue<NodeExpression2> expression2;
-			AstValue<NodeExpression> expression;
+			AstValue<NodeExpressionBracketBefore> expressionBracketBefore;
+			AstValue<NodeExpressionBracket, true> expressionBracket;
+			AstValue<NodeExpressionBracketAfter> expressionBracketAfter;
+		};
+
+		struct NodeExpressionRoundBefore : NodeTerm
+		{
+		};
+
+		struct NodeExpressionRoundAfter : NodeTerm
+		{
 		};
 
 		struct NodeExpressionRound : NodeContainer
 		{
-			AstList<NodeExpression> expression;
+			AstValue<NodeExpressionRoundBefore> expressionRoundBefore;
+			AstValue<NodeExpressionRound, true> expressionRound;
+			AstValue<NodeExpressionRoundAfter> expressionRoundAfter;
 		};
 
 		struct NodeExpressionString : NodeContainer
@@ -39,26 +57,10 @@ namespace Importer
 			AstValue<NodeExpressionString, true> expressionString;
 			AstValue<NodeExpressionRound, true> expressionRound;
 			AstValue<NodeExpressionBracket, true> expressionBracket;
+			AstValue<NodeExpression, true> expression;
 		};
 
 		struct NodeExpression : NodeContainer
-		{
-			AstValue<NodeExpressionPostfix> expressionPostfix;
-		};
-
-		struct NodeExpressionString2 : NodeContainer
-		{
-			AstValue<NodeExpression2> expression2;
-		};
-
-		struct NodeExpression2 : NodeContainer
-		{
-			AstValue<NodeExpressionString2, true> expressionString2;
-			AstValue<NodeExpression2, true> expression2;
-			AstValue<NodeExpressionBracket, true> expressionBracket;
-		};
-
-		struct NodeExpression3 : NodeContainer
 		{
 			AstValue<NodeExpressionPostfix> expressionPostfix;
 		};
@@ -76,7 +78,7 @@ namespace Importer
 		{
 			AstList<NodeIdentifier> identifier;
 		};
-		/*
+		
 		struct NodeAnnotationIdentifier : NodeTerm
 		{
 		};
@@ -106,7 +108,7 @@ namespace Importer
 			AstValue<NodeAnnotationName> annotationName;
 			AstValue<NodeAnnotationSequence, true> annotationSequence;
 		};
-		*/
+		
 		struct NodePackageDeclaration : NodeContainer
 		{
 			//AstList<NodeAnnotation> annotation;
@@ -224,9 +226,9 @@ namespace Importer
 		{
 		};
 
-		struct NodeVariableModifier : /*NodeContainer*/NodeTerm
+		struct NodeVariableModifier : NodeContainer
 		{
-			//AstValue<NodeAnnotation, true> annotation;
+			AstValue<NodeAnnotation, true> annotation;
 		};
 
 		struct NodeVariableDeclaratorId : NodeContainer
@@ -335,6 +337,7 @@ namespace Importer
 		struct NodeConstantDeclarator : NodeContainer
 		{
 			AstValue<NodeIdentifier> identifier;
+			AstList<NodeTypeArray> typeArray;
 			AstValue<NodeVariableInitializer> variableInitializer;
 		};
 
@@ -410,6 +413,7 @@ namespace Importer
 
 		struct NodeMemberDeclaration : NodeContainer
 		{
+			AstList<NodeAnnotation> annotation;
 			AstList<NodeModifier> modifier;
 			AstValue<NodeMethodDeclaration, true> methodDeclaration;
 			AstValue<NodeGenericMethodDeclaration, true> genericMethodDeclaration;
@@ -478,7 +482,7 @@ namespace Importer
 			AstList<NodeModifier> modifier;
 			AstValue<NodeConstDeclaration, true> constDeclaration;
 			AstValue<NodeInterfaceMethodDeclaration, true> interfaceMethodDeclaration;
-			AstValue<NodeGenericMethodDeclaration, true> genericInterfaceMethodDeclaration;
+			AstValue<NodeGenericInterfaceMethodDeclaration, true> genericInterfaceMethodDeclaration;
 			AstValue<NodeInterfaceDeclarationInner, true> interfaceDeclarationInner;
 			AstValue<NodeAnnotationTypeDeclarationInner, true> annotationTypeDeclarationInner;
 			AstValue<NodeClassDeclarationInner, true> classDeclarationInner;
@@ -515,7 +519,7 @@ namespace Importer
 			AstValue<NodeClassDeclaration, true> classDeclaration;
 			AstValue<NodeEnumDeclaration, true> enumDeclaration;
 			AstValue<NodeInterfaceDeclaration, true> interfaceDeclaration;
-			AstValue<NodeAnnotationTypeDeclaration, true> annotationTypeDeclaration;
+			//AstValue<NodeAnnotationTypeDeclaration, true> annotationTypeDeclaration;
 		};
 
 		struct SourceFileCompilationUnit : NodeContainer

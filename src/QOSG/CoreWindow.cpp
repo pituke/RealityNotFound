@@ -3565,12 +3565,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 	Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
 	std::string errorMessage;
-	if (!javaParser.Parse("C:/Users/pituke/Desktop/Traffic", softTree, errorMessage))
+	if (!javaParser.Parse("C:/Users/horvath/Desktop/argouml", softTree, errorMessage))
 		QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
 	else
 	{
 		auto a = softTree.ToString();
-		QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
+		QFile f("C:/Users/horvath/Desktop/SoftTree.txt");
 		f.open(QFile::WriteOnly);
 		QTextStream(&f) << QString::fromStdString(a);
 	}

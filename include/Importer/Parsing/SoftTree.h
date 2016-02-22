@@ -36,12 +36,14 @@ namespace Importer
 
         struct Attribute
         {
+			Modifier::ModifierEnum modifier;
 			string type;
             string name;
 
             string ToString(int tabs) const
             {
-                return TABS(tabs) + type + " " + name + '\n';
+				auto modifierStr = Modifier::ToString(modifier);
+				return TABS(tabs) + (modifierStr.empty() ? "" : modifierStr + " ") + type + " " + name;
             }
         };
 
@@ -52,7 +54,7 @@ namespace Importer
 
 			string ToString(int tabs) const
 			{
-				return TABS(tabs) + type + " " + name + '\n';
+				return TABS(tabs) + type + " " + name;
 			}
 		};
 
@@ -68,7 +70,8 @@ namespace Importer
 				string s;
 				for (const auto& p : parameters)
 					s += (s.empty() ? "" : ", ") + p.ToString(0);
-				return TABS(tabs) + Modifier::ToString(modifier) + " " + returnType + " " + name + "(" + s + ")";
+				auto modifierStr = Modifier::ToString(modifier);
+				return TABS(tabs) + (modifierStr.empty() ? "" : modifierStr + " ") + (returnType.empty() ? "" : returnType + " ") + name + "(" + s + ")";
 			}
         };
 
@@ -86,13 +89,18 @@ namespace Importer
 
             string ToString(int tabs) const
             {
-                string s = TABS(tabs) + "class " + name + '\n';
-                s += TABS(tabs) + "attributes:\n";
-                for (const auto& attribute : attributes)
-					s += attribute.ToString(tabs + 1) + '\n';
-                s += TABS(tabs) + "methods:\n";
+                string s = TABS(tabs) + "class " + name + "\n" + TABS(tabs) + "{\n";
+				for (const auto& attribute : attributes)
+					s += attribute.ToString(tabs + 1) + ";\n";
+				if (!attributes.empty()) s += '\n';
+				bool mFirst = true;
 				for (const auto& method : methods)
-					s += method.ToString(tabs + 1) + '\n';
+				{
+					if (!mFirst) s += "\n";
+					s += method.ToString(tabs + 1) + ';';
+					mFirst = false;
+				}
+				s += "\n" + TABS(tabs) + "}";
                 return s;
             }
         };
@@ -122,16 +130,56 @@ namespace Importer
 
 			string ToString(int tabs) const
 			{
-				string s = TABS(tabs) + "enum " + name + '\n';
-				s += TABS(tabs) + "enums:\n";
+				string s = TABS(tabs) + "enum " + name + "\n" + TABS(tabs) + "{\n";
+				bool eFirst = true;
 				for (const auto& e : enums)
-					s += e.ToString(tabs + 1) + '\n';
-				s += TABS(tabs) + "attributes:\n";
+				{
+					if (!eFirst) s += ",\n";
+					s += e.ToString(tabs + 1);
+					eFirst = false;
+				}
+				if (!enums.empty()) s += ";\n\n";
 				for (const auto& attribute : attributes)
-					s += attribute.ToString(tabs + 1) + '\n';
-				s += TABS(tabs) + "methods:\n";
+					s += attribute.ToString(tabs + 1) + ";\n";
+				if (!attributes.empty()) s += '\n';
+				bool mFirst = true;
 				for (const auto& method : methods)
-					s += method.ToString(tabs + 1) + '\n';
+				{
+					if (!mFirst) s += "\n";
+					s += method.ToString(tabs + 1) + ';';
+					mFirst = false;
+				}
+				s += "\n" + TABS(tabs) + "}";
+				return s;
+			}
+		};
+
+		struct Interface
+		{
+			Modifier::ModifierEnum modifier;
+			string name;
+			vector<Attribute> attributes;
+			vector<Method> methods;
+
+			Interface()
+				: modifier(Modifier::UNKNOWN)
+			{
+			}
+
+			string ToString(int tabs) const
+			{
+				string s = TABS(tabs) + "interface " + name + "\n" + TABS(tabs) + "{\n";
+				for (const auto& attribute : attributes)
+					s += attribute.ToString(tabs + 1) + ";\n";
+				if (!attributes.empty()) s += '\n';
+				bool mFirst = true;
+				for (const auto& method : methods)
+				{
+					if (!mFirst) s += "\n";
+					s += method.ToString(tabs + 1) + ';';
+					mFirst = false;
+				}
+				s += "\n" + TABS(tabs) + "}";
 				return s;
 			}
 		};
@@ -141,15 +189,18 @@ namespace Importer
             string name;
             vector<Class> classes;
 			vector<Enum> enums;
+			vector<Interface> interfaces;
 
             string ToString(int tabs) const
             {
-                string s = "namespace " + name + "{\n";
+                string s = "namespace " + (name.empty() ? "(default)" : name) + "\n{\n";
                 for (const auto& c : classes)
-                    s += c.ToString(tabs+1) + '\n';
+                    s += c.ToString(tabs + 1) + '\n';
 				for (const auto& e : enums)
 					s += e.ToString(tabs + 1) + '\n';
-                s += "}\n";
+				for (const auto& i : interfaces)
+					s += i.ToString(tabs + 1) + '\n';
+                s += "}";
                 return s;
             }
         };
