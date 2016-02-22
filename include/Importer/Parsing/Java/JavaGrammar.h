@@ -58,23 +58,24 @@ namespace Importer
 		rule expressionList = expression >> *(',' >> expression);
 		rule identifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
 		rule qualifiedName = identifier >> *('.' >> identifier);
-		rule annotationIdentifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
-		rule annotationName = annotationIdentifier >> *('.' >> annotationIdentifier);
-		rule annotationSequenceBefore = EVERYTHING_TO(expr('()'));
-		rule annotationSequenceAfter = EVERYTHING_TO(expr('()'));
-		rule annotationSequence = '(' >> annotationSequenceBefore >> -annotationSequence >> annotationSequenceAfter >> ')';
-		rule annotation = expr('@') >> annotationName >> -annotationSequence;
-		rule packageDeclaration = *annotation >> "package" >> qualifiedName >> ';';
+		//rule annotationIdentifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
+		//rule annotationName = annotationIdentifier >> *('.' >> annotationIdentifier);
+		//rule annotationSequenceBefore = EVERYTHING_TO(set("()"));
+		//rule annotationSequenceAfter = EVERYTHING_TO(set("()"));
+		//rule annotationSequence = '(' >> annotationSequenceBefore >> -annotationSequence >> annotationSequenceAfter >> ')';
+		//rule annotation = expr('@') >> annotationName >> -annotationSequence;
+		rule packageDeclaration = /**annotation >>*/ "package" >> qualifiedName >> ';';
 		rule importDeclaration = expr("import") >> -expr("static") >> qualifiedName >> -expr(".*") >> ';';
 		rule classOrInterfaceModifierBasic = CLASS_OR_INTERFACE_MODIFIER;
-		rule classOrInterfaceModifier = annotation | classOrInterfaceModifierBasic;
+		rule classOrInterfaceModifier = classOrInterfaceModifierBasic/* | annotation*/;
 		rule typeArgumentsBefore = EVERYTHING_TO(set("<>"));
 		rule typeArgumentsAfter = EVERYTHING_TO(set("<>"));
 		rule typeArguments = '<' >> typeArgumentsBefore >> -typeArguments >> typeArgumentsAfter >> '>';
 		rule classOrInterfaceTypePart = identifier >> -typeArguments;
 		rule classOrInterfaceType = classOrInterfaceTypePart >> *('.' >> classOrInterfaceTypePart);
 		rule primitiveType = expr("boolean") | "char" | "byte" | "short" | "int" | "long" | "float" | "double";
-		rule type = (classOrInterfaceType | primitiveType) >> *(expr('[') >> ']');
+		rule typeArray = expr('[') >> ']';
+		rule type = (classOrInterfaceType | primitiveType) >> *typeArray;
 		rule typeBound = type >> *('&' >> type);
 		rule typeParameter = identifier >> -("extends" >> typeBound);
 		rule typeParameters = "<" >> typeParameter >> *(',' >> typeParameter) >> ">";
@@ -86,8 +87,8 @@ namespace Importer
 		rule blockWithTextAfter = block >> blockTextAfter;
 		rule block = '{' >> blockTextBefore >> *blockWithTextAfter >> '}';
 		rule modifier = CLASS_OR_INTERFACE_MODIFIER | (expr("native") | "synchronized" | "transient" | "volatile");
-		rule variableModifier = "final" | annotation;
-		rule variableDeclaratorId = identifier >> *(expr('[') >> ']');
+		rule variableModifier = "final"/* | annotation*/;
+		rule variableDeclaratorId = identifier >> *typeArray;
 		rule formalParameter = *variableModifier >> type >> variableDeclaratorId;
 		rule lastFormalParameter = *variableModifier >> type >> "..." >> variableDeclaratorId;
 		rule formalParameterList = (formalParameter >> *(',' >> formalParameter) >> -(',' >> lastFormalParameter)) | lastFormalParameter;
@@ -121,7 +122,7 @@ namespace Importer
 		rule classBody = expr('{') >> *classBodyDeclaration >> '}';
 		rule classDeclaration = "class" >> identifier >> -typeParameters >> -classDeclarationExtend >> -classDeclarationImplement >> classBody;
 		rule arguments = expr('(') >> -expressionList >> ')';
-		rule enumConstant = *annotation >> identifier >> -arguments >> -classBody;
+		rule enumConstant = /**annotation >>*/ identifier >> -arguments >> -classBody;
 		rule enumConstants = enumConstant >> *(',' >> enumConstant);
 		rule enumBodyDeclarations = ';' >> *classBodyDeclaration;
 		rule enumDeclaration = expr("enum") >> identifier >> -("implements" >> typeList) >> '{' >> -enumConstants >> -expr(',') >> -enumBodyDeclarations >> '}';
@@ -130,7 +131,7 @@ namespace Importer
 		rule interfaceBody = expr('{') >> *interfaceBodyDeclaration >> '}';
 		rule interfaceDeclaration = "interface" >> identifier >> -typeParameters >> -("extends" >> typeList) >> interfaceBody;
 		rule annotationTypeDeclaration = expr('@') >> "interface" >> identifier >> annotationTypeBody;
-		rule typeDeclaration = (*classOrInterfaceModifier >> (classDeclaration | enumDeclaration | interfaceDeclaration | annotationTypeDeclaration)) | ';';
+		rule typeDeclaration = *classOrInterfaceModifier >> (classDeclaration | enumDeclaration | interfaceDeclaration | annotationTypeDeclaration) | ';';
 		rule compilationUnit = -packageDeclaration >> *importDeclaration >> *typeDeclaration;
 	}
 }

@@ -76,7 +76,7 @@ namespace Importer
 		{
 			AstList<NodeIdentifier> identifier;
 		};
-
+		/*
 		struct NodeAnnotationIdentifier : NodeTerm
 		{
 		};
@@ -106,10 +106,10 @@ namespace Importer
 			AstValue<NodeAnnotationName> annotationName;
 			AstValue<NodeAnnotationSequence, true> annotationSequence;
 		};
-
+		*/
 		struct NodePackageDeclaration : NodeContainer
 		{
-			AstList<NodeAnnotation> annotation;
+			//AstList<NodeAnnotation> annotation;
 			AstValue<NodeQualifiedName> qualifiedName;
 		};
 
@@ -124,8 +124,8 @@ namespace Importer
 
 		struct NodeClassOrInterfaceModifier : NodeContainer
 		{
-			AstValue<NodeAnnotation, true> annotation;
-			AstValue<NodeClassOrInterfaceModifierBasic, true> classOrInterfaceModifierBasic;
+			AstValue<NodeClassOrInterfaceModifierBasic/*, true*/> classOrInterfaceModifierBasic;
+			//AstValue<NodeAnnotation, true> annotation;
 		};
 
 		struct NodeTypeArgumentsBefore : NodeTerm
@@ -158,10 +158,15 @@ namespace Importer
 		{
 		};
 
+		struct NodeTypeArray : NodeTerm
+		{
+		};
+
 		struct NodeType : NodeContainer
 		{
 			AstValue<NodeClassOrInterfaceType, true> classOrInterfaceType;
 			AstValue<NodePrimitiveType, true> primitiveType;
+			AstList<NodeTypeArray> typeArray;
 		};
 
 		struct NodeTypeBound : NodeContainer
@@ -219,14 +224,15 @@ namespace Importer
 		{
 		};
 
-		struct NodeVariableModifier : NodeContainer
+		struct NodeVariableModifier : /*NodeContainer*/NodeTerm
 		{
-			AstValue<NodeAnnotation, true> annotation;
+			//AstValue<NodeAnnotation, true> annotation;
 		};
 
 		struct NodeVariableDeclaratorId : NodeContainer
 		{
 			AstValue<NodeIdentifier> identifier;
+			AstList<NodeTypeArray> typeArray;
 		};
 
 		struct NodeFormalParameter : NodeContainer
@@ -443,7 +449,7 @@ namespace Importer
 
 		struct NodeEnumConstant : NodeContainer
 		{
-			AstList<NodeAnnotation> annotation;
+			//AstList<NodeAnnotation> annotation;
 			AstValue<NodeIdentifier> identifier;
 			AstValue<NodeArguments, true> arguments;
 			AstValue<NodeClassBody, true> classBody;

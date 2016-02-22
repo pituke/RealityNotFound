@@ -3567,6 +3567,13 @@ void CoreWindow::showEvent(QShowEvent* e)
 	std::string errorMessage;
 	if (!javaParser.Parse("C:/Users/pituke/Desktop/Traffic", softTree, errorMessage))
 		QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+	else
+	{
+		auto a = softTree.ToString();
+		QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
+		f.open(QFile::WriteOnly);
+		QTextStream(&f) << QString::fromStdString(a);
+	}
 
 	QList<Clustering::Floor*> fs;
 	const uint floorCount = random(2, 10);
