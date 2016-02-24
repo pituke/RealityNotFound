@@ -108,7 +108,7 @@ namespace Importer
 			AstValue<NodeAnnotationName> annotationName;
 			AstValue<NodeAnnotationSequence, true> annotationSequence;
 		};
-		
+
 		struct NodePackageDeclaration : NodeContainer
 		{
 			//AstList<NodeAnnotation> annotation;
@@ -126,8 +126,8 @@ namespace Importer
 
 		struct NodeClassOrInterfaceModifier : NodeContainer
 		{
-			AstValue<NodeClassOrInterfaceModifierBasic/*, true*/> classOrInterfaceModifierBasic;
-			//AstValue<NodeAnnotation, true> annotation;
+			AstValue<NodeClassOrInterfaceModifierBasic, true> classOrInterfaceModifierBasic;
+			AstList<NodeAnnotation> annotation;
 		};
 
 		struct NodeTypeArgumentsBefore : NodeTerm
@@ -479,6 +479,7 @@ namespace Importer
 
 		struct NodeInterfaceMemberDeclaration : NodeContainer
 		{
+			AstList<NodeAnnotation> annotation;
 			AstList<NodeModifier> modifier;
 			AstValue<NodeConstDeclaration, true> constDeclaration;
 			AstValue<NodeInterfaceMethodDeclaration, true> interfaceMethodDeclaration;
@@ -519,7 +520,7 @@ namespace Importer
 			AstValue<NodeClassDeclaration, true> classDeclaration;
 			AstValue<NodeEnumDeclaration, true> enumDeclaration;
 			AstValue<NodeInterfaceDeclaration, true> interfaceDeclaration;
-			//AstValue<NodeAnnotationTypeDeclaration, true> annotationTypeDeclaration;
+			AstValue<NodeAnnotationTypeDeclaration, true> annotationTypeDeclaration;
 		};
 
 		struct SourceFileCompilationUnit : NodeContainer

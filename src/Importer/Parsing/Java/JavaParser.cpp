@@ -198,12 +198,15 @@ namespace Importer
 
 		Modifier::ModifierEnum GetClassOrInterfaceModifier(const NodeClassOrInterfaceModifier* classOrInterfaceModifier)
 		{
-			string coim = classOrInterfaceModifier->classOrInterfaceModifierBasic->GetValue();
-			QString upperCoim = QString::fromStdString(coim).toUpper();
-			if (upperCoim == "PUBLIC") return Modifier::PUBLIC;
-			else if (upperCoim == "PROTECTED") return Modifier::PROTECTED;
-			else if (upperCoim == "PRIVATE") return Modifier::PRIVATE;
-			else return Modifier::UNKNOWN;
+			if (classOrInterfaceModifier->classOrInterfaceModifierBasic != nullptr)
+			{
+				string coim = classOrInterfaceModifier->classOrInterfaceModifierBasic->GetValue();
+				QString upperCoim = QString::fromStdString(coim).toUpper();
+				if (upperCoim == "PUBLIC") return Modifier::PUBLIC;
+				if (upperCoim == "PROTECTED") return Modifier::PROTECTED;
+				if (upperCoim == "PRIVATE") return Modifier::PRIVATE;
+			}
+			return Modifier::UNKNOWN;
 		}
 
 		string GetTypeArguments(const NodeTypeArguments* typeArguments)

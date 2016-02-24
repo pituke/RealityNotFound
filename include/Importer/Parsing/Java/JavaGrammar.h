@@ -12,29 +12,34 @@ namespace Importer
 		using parserlib::rule;
 		using parserlib::term;
 		using parserlib::range;
-		
-		#pragma region externs
+
+#pragma region externs
 
 		extern rule expression;
 		extern rule block;
 		extern rule variableInitializer;
 
-		#pragma endregion
+#pragma endregion
 
-		#pragma region defines
+#pragma region defines
 
 		#define JAVA_LETTER (range('a', 'z') | range('A', 'Z') | set("$_"))
 		#define JAVA_DIGIT range('0', '9')
 		#define JAVA_LETTER_OR_DIGIT (JAVA_LETTER | JAVA_DIGIT)
 		#define NEWLINE nl(expr("\r\n") | "\n\r" | '\n' | '\r')
 		#define WHITECHAR (' ' | set("\t\v\f"))
+		#define ESCAPE_AND_COMMENT_CHAR (expr("\\t") | "\\b" | "\\n" | "\\r" | "\\f" | "\\'" | "\\\"" | "\\\\" | "//" | "/*" | "*/")
 		#define ANY_CHAR range(0, 255)
 		#define EVERYTHING_TO(endChar) term(*(!(endChar) >> (NEWLINE | ANY_CHAR)))
+		#define CHAR_EXPR term(expr("'") >> ESCAPE_AND_COMMENT_CHAR | ANY_CHAR >> "'")
+		#define STRING_EXPR term(expr('"') >> *(ESCAPE_AND_COMMENT_CHAR | !expr('"') >> (NEWLINE | ANY_CHAR)) >> '"')
+		#define STRING term(STRING_EXPR | CHAR_EXPR)
 		#define LINE_COMMENT (expr("//") >> EVERYTHING_TO(NEWLINE) >> NEWLINE)
 		#define COMMENT (expr("/*") >> EVERYTHING_TO(expr("*/")) >> "*/")
+		#define EVERYTHING_VALID_TO(endChar) term(*(STRING | LINE_COMMENT | COMMENT | !(endChar) >> (NEWLINE | ANY_CHAR)))
 
 		#define CLASS_OR_INTERFACE_MODIFIER expr("public") | "protected" | "private" | "static" | "abstract" | "final" | "strictfp"
-		#define MODIFIER CLASS_OR_INTERFACE_MODIFIER | (expr("native") | "synchronized" | "transient" | "volatile")
+		#define MODIFIER CLASS_OR_INTERFACE_MODIFIER | expr("native") | "synchronized" | "transient" | "volatile"
 
 		#pragma endregion
 
@@ -54,13 +59,13 @@ namespace Importer
 		rule expressionRoundBefore = EVERYTHING_TO(set("()"));
 		rule expressionRoundAfter = EVERYTHING_TO(set("()"));
 		rule expressionRound = '(' >> expressionRoundBefore >> -expressionRound >> expressionRoundAfter >> ')';
-		rule expressionString = expr('"') >> EVERYTHING_TO(expr('"')) >> '"' >> expression;
+		rule expressionString = STRING >> expression;
 		rule expressionPostfix = -expressionString >> -(expressionRound >> -('.' >> expression)) >> -expressionBracket;
 		rule expression = EVERYTHING_TO(set("();{}\"")) >> expressionPostfix;
 		rule expressionList = expression >> *(',' >> expression);
 		rule identifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
 		rule qualifiedName = identifier >> *('.' >> identifier);
-		rule annotationIdentifier = term(!(MODIFIER) >> JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
+		rule annotationIdentifier = term(!(MODIFIER | "interface") >> JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
 		rule annotationName = annotationIdentifier >> *('.' >> annotationIdentifier);
 		rule annotationSequenceBefore = EVERYTHING_TO(set("()"));
 		rule annotationSequenceAfter = EVERYTHING_TO(set("()"));
@@ -69,7 +74,7 @@ namespace Importer
 		rule packageDeclaration = /**annotation >>*/ "package" >> qualifiedName >> ';';
 		rule importDeclaration = expr("import") >> -expr("static") >> qualifiedName >> -expr(".*") >> ';';
 		rule classOrInterfaceModifierBasic = CLASS_OR_INTERFACE_MODIFIER;
-		rule classOrInterfaceModifier = classOrInterfaceModifierBasic/* | annotation*/;
+		rule classOrInterfaceModifier = classOrInterfaceModifierBasic | annotation;
 		rule typeArgumentsBefore = EVERYTHING_TO(set("<>"));
 		rule typeArgumentsAfter = EVERYTHING_TO(set("<>"));
 		rule typeArguments = '<' >> typeArgumentsBefore >> -typeArguments >> typeArgumentsAfter >> '>';
@@ -84,8 +89,8 @@ namespace Importer
 		rule classDeclarationExtend = "extends" >> type;
 		rule typeList = type >> *(',' >> type);
 		rule classDeclarationImplement = "implements" >> typeList;
-		rule blockTextBefore = EVERYTHING_TO(set("{}"));
-		rule blockTextAfter = EVERYTHING_TO(set("{}"));
+		rule blockTextBefore = EVERYTHING_VALID_TO(set("{}"));
+		rule blockTextAfter = EVERYTHING_VALID_TO(set("{}"));
 		rule blockWithTextAfter = block >> blockTextAfter;
 		rule block = '{' >> blockTextBefore >> *blockWithTextAfter >> '}';
 		rule modifier = MODIFIER;
@@ -114,7 +119,7 @@ namespace Importer
 		rule interfaceBodyInner = block;
 		rule interfaceDeclarationInner = "interface" >> identifier >> -typeParameters >> -("extends" >> typeList) >> interfaceBodyInner;
 		rule annotationTypeBody = block;
-		rule annotationTypeDeclarationInner = expr("@interface") >> identifier >> annotationTypeBody;
+		rule annotationTypeDeclarationInner = expr('@') >> "interface" >> identifier >> annotationTypeBody;
 		rule classBodyInner = block;
 		rule classDeclarationInner = "class" >> identifier >> -typeParameters >> -classDeclarationExtend >> -classDeclarationImplement >> classBodyInner;
 		rule enumConstantsAndBodyDeclarationsInner = block;
@@ -128,11 +133,11 @@ namespace Importer
 		rule enumConstants = enumConstant >> *(',' >> enumConstant);
 		rule enumBodyDeclarations = ';' >> *classBodyDeclaration;
 		rule enumDeclaration = expr("enum") >> identifier >> -("implements" >> typeList) >> '{' >> -enumConstants >> -expr(',') >> -enumBodyDeclarations >> '}';
-		rule interfaceMemberDeclaration = *modifier >> (constDeclaration | interfaceMethodDeclaration | genericInterfaceMethodDeclaration | interfaceDeclarationInner | annotationTypeDeclarationInner | classDeclarationInner | enumDeclarationInner);
+		rule interfaceMemberDeclaration = *annotation >> *modifier >> (constDeclaration | interfaceMethodDeclaration | genericInterfaceMethodDeclaration | interfaceDeclarationInner | annotationTypeDeclarationInner | classDeclarationInner | enumDeclarationInner);
 		rule interfaceBodyDeclaration = interfaceMemberDeclaration | ';';
 		rule interfaceBody = expr('{') >> *interfaceBodyDeclaration >> '}';
 		rule interfaceDeclaration = "interface" >> identifier >> -typeParameters >> -("extends" >> typeList) >> interfaceBody;
-		rule annotationTypeDeclaration = expr("@interface") >> identifier >> annotationTypeBody;
+		rule annotationTypeDeclaration = expr('@') >> "interface" >> identifier >> annotationTypeBody;
 		rule typeDeclaration = *classOrInterfaceModifier >> (classDeclaration | enumDeclaration | interfaceDeclaration | annotationTypeDeclaration) | ';';
 		rule compilationUnit = -packageDeclaration >> *importDeclaration >> *typeDeclaration;
 	}
