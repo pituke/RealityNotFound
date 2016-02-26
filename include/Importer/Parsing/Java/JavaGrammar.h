@@ -12,16 +12,20 @@ namespace Importer
 		using parserlib::rule;
 		using parserlib::term;
 		using parserlib::range;
+		using parserlib::any;
 
-#pragma region externs
+		#pragma region externs
 
+		extern rule expressionBracket;
+		extern rule expressionRound;
 		extern rule expression;
+		extern rule typeArguments;
 		extern rule block;
 		extern rule variableInitializer;
 
-#pragma endregion
+		#pragma endregion
 
-#pragma region defines
+		#pragma region defines
 
 		#define JAVA_LETTER (range('a', 'z') | range('A', 'Z') | set("$_"))
 		#define JAVA_DIGIT range('0', '9')
@@ -29,11 +33,11 @@ namespace Importer
 		#define NEWLINE nl(expr("\r\n") | "\n\r" | '\n' | '\r')
 		#define WHITECHAR (' ' | set("\t\v\f"))
 		#define ESCAPE_AND_COMMENT_CHAR (expr("\\t") | "\\b" | "\\n" | "\\r" | "\\f" | "\\'" | "\\\"" | "\\\\" | "//" | "/*" | "*/")
-		#define ANY_CHAR range(0, 255)
+		#define ANY_CHAR any()
 		#define EVERYTHING_TO(endChar) term(*(!(endChar) >> (NEWLINE | ANY_CHAR)))
-		#define CHAR_EXPR term(expr("'") >> ESCAPE_AND_COMMENT_CHAR | ANY_CHAR >> "'")
-		#define STRING_EXPR term(expr('"') >> *(ESCAPE_AND_COMMENT_CHAR | !expr('"') >> (NEWLINE | ANY_CHAR)) >> '"')
-		#define STRING term(STRING_EXPR | CHAR_EXPR)
+		#define CHAR_EXPR (expr("'") >> (ESCAPE_AND_COMMENT_CHAR | ANY_CHAR) >> "'")
+		#define STRING_EXPR (expr('"') >> *(ESCAPE_AND_COMMENT_CHAR | !expr('"') >> (NEWLINE | ANY_CHAR)) >> '"')
+		#define STRING term(CHAR_EXPR | STRING_EXPR)
 		#define LINE_COMMENT (expr("//") >> EVERYTHING_TO(NEWLINE) >> NEWLINE)
 		#define COMMENT (expr("/*") >> EVERYTHING_TO(expr("*/")) >> "*/")
 		#define EVERYTHING_VALID_TO(endChar) term(*(STRING | LINE_COMMENT | COMMENT | !(endChar) >> (NEWLINE | ANY_CHAR)))
@@ -55,12 +59,14 @@ namespace Importer
 		rule whitespace = *(WHITECHAR | NEWLINE | LINE_COMMENT | COMMENT);
 		rule expressionBracketBefore = EVERYTHING_TO(set("{}"));
 		rule expressionBracketAfter = EVERYTHING_TO(set("{}"));
-		rule expressionBracket = '{' >> expressionBracketBefore >> -expressionBracket >> expressionBracketAfter >> '}';
+		rule expressionBracketWithTextAfter = expressionBracket >> expressionBracketAfter;
+		rule expressionBracket = '{' >> expressionBracketBefore >> *expressionBracketWithTextAfter >> '}';
 		rule expressionRoundBefore = EVERYTHING_TO(set("()"));
 		rule expressionRoundAfter = EVERYTHING_TO(set("()"));
-		rule expressionRound = '(' >> expressionRoundBefore >> -expressionRound >> expressionRoundAfter >> ')';
+		rule expressionRoundWithTextAfter = expressionRound >> expressionRoundAfter;
+		rule expressionRound = '(' >> expressionRoundBefore >> *expressionRoundWithTextAfter >> ')';
 		rule expressionString = STRING >> expression;
-		rule expressionPostfix = -expressionString >> -(expressionRound >> -('.' >> expression)) >> -expressionBracket;
+		rule expressionPostfix = -expressionString >> -(expressionRound >> -('.' >> expression)) >> -(expressionBracket | EVERYTHING_TO(expr(";")));
 		rule expression = EVERYTHING_TO(set("();{}\"")) >> expressionPostfix;
 		rule expressionList = expression >> *(',' >> expression);
 		rule identifier = term(JAVA_LETTER >> *JAVA_LETTER_OR_DIGIT);
@@ -77,7 +83,8 @@ namespace Importer
 		rule classOrInterfaceModifier = classOrInterfaceModifierBasic | annotation;
 		rule typeArgumentsBefore = EVERYTHING_TO(set("<>"));
 		rule typeArgumentsAfter = EVERYTHING_TO(set("<>"));
-		rule typeArguments = '<' >> typeArgumentsBefore >> -typeArguments >> typeArgumentsAfter >> '>';
+		rule typeArgumentsWithTextAfter = typeArguments >> typeArgumentsAfter;
+		rule typeArguments = '<' >> typeArgumentsBefore >> *typeArgumentsWithTextAfter >> '>';
 		rule classOrInterfaceTypePart = identifier >> -typeArguments;
 		rule classOrInterfaceType = classOrInterfaceTypePart >> *('.' >> classOrInterfaceTypePart);
 		rule primitiveType = expr("boolean") | "char" | "byte" | "short" | "int" | "long" | "float" | "double";

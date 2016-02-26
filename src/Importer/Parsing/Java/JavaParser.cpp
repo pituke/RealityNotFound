@@ -33,9 +33,11 @@ namespace Importer
 
 			CONNECT_RULE_AST(NodeExpressionBracketBefore, expressionBracketBefore);
 			CONNECT_RULE_AST(NodeExpressionBracketAfter, expressionBracketAfter);
+			CONNECT_RULE_AST(NodeExpressionBracketWithTextAfter, expressionBracketWithTextAfter);
 			CONNECT_RULE_AST(NodeExpressionBracket, expressionBracket);
 			CONNECT_RULE_AST(NodeExpressionRoundBefore, expressionRoundBefore);
 			CONNECT_RULE_AST(NodeExpressionRoundAfter, expressionRoundAfter);
+			CONNECT_RULE_AST(NodeExpressionRoundWithTextAfter, expressionRoundWithTextAfter);
 			CONNECT_RULE_AST(NodeExpressionRound, expressionRound);
 			CONNECT_RULE_AST(NodeExpressionString, expressionString);
 			CONNECT_RULE_AST(NodeExpressionPostfix, expressionPostfix);
@@ -55,6 +57,7 @@ namespace Importer
 			CONNECT_RULE_AST(NodeClassOrInterfaceModifier, classOrInterfaceModifier);
 			CONNECT_RULE_AST(NodeTypeArgumentsBefore, typeArgumentsBefore);
 			CONNECT_RULE_AST(NodeTypeArgumentsAfter, typeArgumentsAfter);
+			CONNECT_RULE_AST(NodeTypeArgumentsWithTextAfter, typeArgumentsWithTextAfter);
 			CONNECT_RULE_AST(NodeTypeArguments, typeArguments);
 			CONNECT_RULE_AST(NodeClassOrInterfaceTypePart, classOrInterfaceTypePart);
 			CONNECT_RULE_AST(NodeClassOrInterfaceType, classOrInterfaceType);
@@ -214,9 +217,11 @@ namespace Importer
 			string s;
 			s += "<";
 			s += typeArguments->typeArgumentsBefore->GetValue();
-			if (typeArguments->typeArguments != nullptr)
-				s += GetTypeArguments(typeArguments->typeArguments);
-			s += typeArguments->typeArgumentsAfter->GetValue();
+			for (const auto& t : typeArguments->typeArgumentsWithTextAfter)
+			{
+				s += GetTypeArguments(t->typeArguments);
+				s += t->typeArgumentsAfter->GetValue();
+			}
 			s += ">";
 			return s;
 		}

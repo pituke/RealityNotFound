@@ -8,7 +8,10 @@ namespace Importer
 	{
 		#pragma region forward declaration
 
+		struct NodeExpressionBracket;
+		struct NodeExpressionRound;
 		struct NodeExpression;
+		struct NodeTypeArguments;
 		struct NodeBlock;
 		struct NodeVariableInitializer;
 
@@ -25,11 +28,16 @@ namespace Importer
 		{
 		};
 
+		struct NodeExpressionBracketWithTextAfter : NodeContainer
+		{
+			AstValue<NodeExpressionBracket> expressionBracket;
+			AstValue<NodeExpressionBracketAfter> expressionBracketAfter;
+		};
+
 		struct NodeExpressionBracket : NodeContainer
 		{
 			AstValue<NodeExpressionBracketBefore> expressionBracketBefore;
-			AstValue<NodeExpressionBracket, true> expressionBracket;
-			AstValue<NodeExpressionBracketAfter> expressionBracketAfter;
+			AstList<NodeExpressionBracketWithTextAfter> expressionBracketWithTextAfter;
 		};
 
 		struct NodeExpressionRoundBefore : NodeTerm
@@ -40,11 +48,16 @@ namespace Importer
 		{
 		};
 
+		struct NodeExpressionRoundWithTextAfter : NodeContainer
+		{
+			AstValue<NodeExpressionRound> expressionRound;
+			AstValue<NodeExpressionRoundAfter> expressionRoundAfter;
+		};
+
 		struct NodeExpressionRound : NodeContainer
 		{
 			AstValue<NodeExpressionRoundBefore> expressionRoundBefore;
-			AstValue<NodeExpressionRound, true> expressionRound;
-			AstValue<NodeExpressionRoundAfter> expressionRoundAfter;
+			AstList<NodeExpressionRoundWithTextAfter> expressionRoundWithTextAfter;
 		};
 
 		struct NodeExpressionString : NodeContainer
@@ -138,11 +151,16 @@ namespace Importer
 		{
 		};
 
+		struct NodeTypeArgumentsWithTextAfter : NodeContainer
+		{
+			AstValue<NodeTypeArguments> typeArguments;
+			AstValue<NodeTypeArgumentsAfter> typeArgumentsAfter;
+		};
+
 		struct NodeTypeArguments : NodeContainer
 		{
 			AstValue<NodeTypeArgumentsBefore> typeArgumentsBefore;
-			AstValue<NodeTypeArguments, true> typeArguments;
-			AstValue<NodeTypeArgumentsAfter> typeArgumentsAfter;
+			AstList<NodeTypeArgumentsWithTextAfter> typeArgumentsWithTextAfter;
 		};
 
 		struct NodeClassOrInterfaceTypePart : NodeContainer
