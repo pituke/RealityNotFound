@@ -11,7 +11,7 @@ namespace Importer
 		{
 		public:
 			JavaParser();
-            bool Parse(const string& javaProjectDirectory, SoftTree& softTree, string& errorMessage = string());
+			bool Parse(const QString& javaProjectDirectory, SoftTree& softTree, QString& errorMessage = QString());
 		};
 	}
 }

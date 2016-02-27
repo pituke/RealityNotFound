@@ -17,8 +17,8 @@ namespace Importer
 
         struct CompileResult
         {
-            string file;
-            string errorMessage;
+			QString file;
+			QString errorMessage;
             SourceFileCompilationUnit* astRoot;
             CompileResult() : astRoot(NULL)
             {
@@ -125,16 +125,16 @@ namespace Importer
 			#pragma endregion
 		}
 
-        bool JavaParser::Parse(const string& javaProjectDirectory, SoftTree& softTree, string& errorMessage)
+		bool JavaParser::Parse(const QString& javaProjectDirectory, SoftTree& softTree, QString& errorMessage)
 		{
-            QDirIterator dirIt(QString::fromStdString(javaProjectDirectory), QStringList("*.java"), QDir::Files, QDirIterator::Subdirectories);
+            QDirIterator dirIt(javaProjectDirectory, QStringList("*.java"), QDir::Files, QDirIterator::Subdirectories);
             vector<CompileResult> compileResults;
             while (dirIt.hasNext())
             {
                 QString filePath = dirIt.next();
 
                 CompileResult cr;
-                cr.file = filePath.toStdString();
+                cr.file = filePath;
 
                 QFile f(filePath);
                 if (!f.open(QFile::ReadOnly | QFile::Text))
@@ -142,8 +142,9 @@ namespace Importer
                     cr.errorMessage = "Cannot open file";
                     continue;
                 }
-                string fileContent = QTextStream(&f).readAll().toStdString();
-                input input(fileContent.begin(), fileContent.end());
+				QString fileContent = QTextStream(&f).readAll();
+				string fileContentStd = fileContent.toStdString();
+				input input(fileContentStd.begin(), fileContentStd.end());
                 bool pass = false;
                 error_list errors;
                 try
@@ -167,22 +168,22 @@ namespace Importer
                         oss << "line " << e.m_begin.m_line << ", col " << e.m_begin.m_col << ": ";
                         oss << endl;
                     }
-                    cr.errorMessage = oss.str();
+					cr.errorMessage = QString::fromStdString(oss.str());
                 }
                 compileResults.push_back(cr);
             }
 
             foreach (const CompileResult& cr, compileResults)
             {
-                if (!cr.errorMessage.empty())
+                if (!cr.errorMessage.isEmpty())
                 {
-                    if (!errorMessage.empty())
+                    if (!errorMessage.isEmpty())
                         errorMessage += "\n";
                     errorMessage += cr.file + ":\n" + cr.errorMessage;
                 }
             }
 
-            if (errorMessage.empty())
+            if (errorMessage.isEmpty())
             {
                 ProcessParseResult(compileResults, softTree);
                 return true;
@@ -191,11 +192,11 @@ namespace Importer
                 return false;
         }
 
-		string GetQualifiedName(const NodeQualifiedName* qualifiedName)
+		QString GetQualifiedName(const NodeQualifiedName* qualifiedName)
 		{
-			string s;
+			QString s;
 			for (const auto& i : qualifiedName->identifier)
-				s += (s.empty() ? "" : ".") + i->GetValue();
+				s += (s.isEmpty() ? "" : ".") + i->GetValue();
 			return s;
 		}
 
@@ -203,8 +204,8 @@ namespace Importer
 		{
 			if (classOrInterfaceModifier->classOrInterfaceModifierBasic != nullptr)
 			{
-				string coim = classOrInterfaceModifier->classOrInterfaceModifierBasic->GetValue();
-				QString upperCoim = QString::fromStdString(coim).toUpper();
+				QString coim = classOrInterfaceModifier->classOrInterfaceModifierBasic->GetValue();
+				QString upperCoim = coim.toUpper();
 				if (upperCoim == "PUBLIC") return Modifier::PUBLIC;
 				if (upperCoim == "PROTECTED") return Modifier::PROTECTED;
 				if (upperCoim == "PRIVATE") return Modifier::PRIVATE;
@@ -212,9 +213,9 @@ namespace Importer
 			return Modifier::UNKNOWN;
 		}
 
-		string GetTypeArguments(const NodeTypeArguments* typeArguments)
+		QString GetTypeArguments(const NodeTypeArguments* typeArguments)
 		{
-			string s;
+			QString s;
 			s += "<";
 			s += typeArguments->typeArgumentsBefore->GetValue();
 			for (const auto& t : typeArguments->typeArgumentsWithTextAfter)
@@ -226,24 +227,24 @@ namespace Importer
 			return s;
 		}
 
-		string GenTypeArray(uint count)
+		QString GenTypeArray(uint count)
 		{
-			string s;
+			QString s;
 			for (uint i = 0; i < count; ++i)
 				s += "[]";
 			return s;
 		}
 
-		string GetType(const NodeType* type)
+		QString GetType(const NodeType* type)
 		{
-			string s;
+			QString s;
 			if (type)
 			{
 				if (type->classOrInterfaceType != nullptr)
 				{
 					for (const NodeClassOrInterfaceTypePart* coitp : type->classOrInterfaceType->classOrInterfaceTypePart)
 					{
-						if (!s.empty()) s += '.';
+						if (!s.isEmpty()) s += '.';
 						s += coitp->identifier->GetValue();
 						if (coitp->typeArguments != nullptr)
 							s += GetTypeArguments(coitp->typeArguments);
@@ -260,9 +261,9 @@ namespace Importer
 			return s;
 		}
 
-		string GetBlockContent(const NodeBlock* block)
+		QString GetBlockContent(const NodeBlock* block)
 		{
-			string s;
+			QString s;
 			s += "{";
 			s += block->blockTextBefore->GetValue();
 			for (const auto& b : block->blockWithTextAfter)
@@ -276,17 +277,17 @@ namespace Importer
 
 		Modifier::ModifierEnum GetModifier(const NodeModifier* modifier)
 		{
-			string coim = modifier->GetValue();
-			QString upperCoim = QString::fromStdString(coim).toUpper();
+			QString coim = modifier->GetValue();
+			QString upperCoim = coim.toUpper();
 			if (upperCoim == "PUBLIC") return Modifier::PUBLIC;
 			else if (upperCoim == "PROTECTED") return Modifier::PROTECTED;
 			else if (upperCoim == "PRIVATE") return Modifier::PRIVATE;
 			else return Modifier::UNKNOWN;
 		}
 
-		vector<Parameter> GetParametersFromFormalParameterList(const NodeFormalParameterList* fpl)
+		QVector<Parameter> GetParametersFromFormalParameterList(const NodeFormalParameterList* fpl)
 		{
-			vector<Parameter> parameters;
+			QVector<Parameter> parameters;
 			for (const NodeFormalParameter* fp : fpl->formalParameter)
 			{
 				Parameter parameter;
@@ -316,9 +317,9 @@ namespace Importer
 			return method;
 		}
 
-		vector<Attribute> GetAttributeFromFieldDeclaration(const NodeFieldDeclaration* fieldDeclaration, Modifier::ModifierEnum modifier)
+		QVector<Attribute> GetAttributeFromFieldDeclaration(const NodeFieldDeclaration* fieldDeclaration, Modifier::ModifierEnum modifier)
 		{
-			vector<Attribute> attributes;
+			QVector<Attribute> attributes;
 			auto type = GetType(fieldDeclaration->type);
 			for (const NodeVariableDeclarator* vdi : fieldDeclaration->variableDeclarators->variableDeclarator)
 			{
@@ -372,13 +373,13 @@ namespace Importer
 
         void ProcessParseResult(const vector<CompileResult>& compileResults, SoftTree& softTree)
         {
-            QMap<string, Namespace> javaPackages;
+			QMap<QString, Namespace> javaPackages;
 
 			for (const auto& cr : compileResults)
             {
 				const SourceFileCompilationUnit* javaAstRoot = cr.astRoot;
 
-				string packageName;
+				QString packageName;
 				if (!javaAstRoot->packageDeclaration.Empty())
 					packageName = GetQualifiedName(javaAstRoot->packageDeclaration.First()->qualifiedName);
 				javaPackages[packageName].name = packageName;

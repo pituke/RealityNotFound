@@ -8,10 +8,11 @@ namespace Importer
 		using parserlib::error_list;
 		using parserlib::input;
 
-        ast_node* ParserAlgorithms::ParseInternal(const string& sourceCode, rule& rootRule, rule& whitespaceRule, vector<ParseError>& errorList)
+		ast_node* ParserAlgorithms::ParseInternal(const QString& sourceCode, rule& rootRule, rule& whitespaceRule, QVector<ParseError>& errorList)
 		{
 			error_list errors;
-			ast_node* astNode = parse(input(sourceCode.begin(), sourceCode.end()), rootRule, whitespaceRule, errors);
+			std::string sourceCodeStd = sourceCode.toStdString();
+			ast_node* astNode = parse(input(sourceCodeStd.begin(), sourceCodeStd.end()), rootRule, whitespaceRule, errors);
 			if (!astNode)
 			{
 				errors.sort();

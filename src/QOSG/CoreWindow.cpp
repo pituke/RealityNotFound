@@ -1263,17 +1263,17 @@ void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* g
 
     foreach (const Importer::Parsing::Namespace& _namespace, softTree.namespaces)
     {
-        auto namespaceNode = graph->addNode(QString::fromStdString(_namespace.name), nodeType);
+        auto namespaceNode = graph->addNode(_namespace.name, nodeType);
 
         foreach (const Importer::Parsing::Class& _class, _namespace.classes)
         {
-            auto classNode = graph->addNode(QString::fromStdString(_class.name), nodeType);
-            auto edgeNamespaceClass = graph->addEdge(QString::fromStdString(_namespace.name + " " + _class.name), namespaceNode, classNode, edgeType, true);
+            auto classNode = graph->addNode(_class.name, nodeType);
+            auto edgeNamespaceClass = graph->addEdge(_namespace.name + " " + _class.name, namespaceNode, classNode, edgeType, true);
 
             foreach (const Importer::Parsing::Method _method, _class.methods)
             {
-                auto methodNode = graph->addNode(QString::fromStdString(_method.name), nodeType);
-                auto edgeClassMethod = graph->addEdge(QString::fromStdString(_class.name + " " + _method.name), classNode, methodNode, edgeType, true);
+                auto methodNode = graph->addNode(_method.name, nodeType);
+                auto edgeClassMethod = graph->addEdge(_class.name + " " + _method.name, classNode, methodNode, edgeType, true);
             }
         }
     }
@@ -1299,9 +1299,9 @@ void CoreWindow::loadJavaProject(const QString& projectDir)
 {
     Importer::Parsing::JavaParser javaParser;
     Importer::Parsing::SoftTree softTree;
-    std::string errorMessage;
-    if (!javaParser.Parse(projectDir.toStdString(), softTree, errorMessage))
-        QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+    QString errorMessage;
+    if (!javaParser.Parse(projectDir, softTree, errorMessage))
+        QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
 
     auto manager = Manager::GraphManager::getInstance();
     auto graph = manager->createGraph("SoftwareGraph");
@@ -3564,15 +3564,14 @@ void CoreWindow::showEvent(QShowEvent* e)
 
 	/*Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
-	std::string errorMessage;
+	QString errorMessage;
 	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
-		QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
+		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
 	else
 	{
-		auto a = softTree.ToString();
 		QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
 		f.open(QFile::WriteOnly);
-		QTextStream(&f) << QString::fromStdString(a);
+		QTextStream(&f) << softTree.ToString();
 	}*/
 
 	QList<Clustering::Floor*> fs;

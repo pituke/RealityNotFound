@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <QString>
 #include <sstream>
 #include <vector>
 #include <parserlib.hpp>
@@ -11,7 +11,6 @@ namespace Importer
 {
 	namespace Parsing
 	{
-		using std::string;
 		using std::vector;
 		using std::list;
 		using parserlib::ast_ptr;
@@ -100,7 +99,7 @@ namespace Importer
 			template <class T> friend class ast;
 
 		private:
-			string value;
+			QString value;
 
 		public:
 			NodeTerm()
@@ -113,7 +112,7 @@ namespace Importer
 			{
 			}
 
-			NodeTerm(const string& val)
+			NodeTerm(const QString& val)
 				: ast_node(), value(val)
 			{
 			}
@@ -124,16 +123,16 @@ namespace Importer
 
             void construct(ast_stack &st)
             {
-                value = string(m_begin.m_it, m_end.m_it);
+				value = QString::fromStdString(std::string(m_begin.m_it, m_end.m_it));
             }
 
 
-			virtual string GetValue() const
+			virtual QString GetValue() const
 			{
 				return value;
 			}
 
-			void SetValue(const string& str)
+			void SetValue(const QString& str)
 			{
 				value = str;
 			}
@@ -164,7 +163,7 @@ namespace Importer
 			template<typename _ROOT_AST_NODE_TYPE> friend class FFParser;
 
 		private:
-            static ast_node* ParseInternal(const string& sourceCode, rule& rootRule, rule& whitespaceRule, vector<ParseError>& errorList);
+			static ast_node* ParseInternal(const QString& sourceCode, rule& rootRule, rule& whitespaceRule, QVector<ParseError>& errorList);
 		};
 
 		template <typename _ROOT_AST_NODE_TYPE>
@@ -173,7 +172,7 @@ namespace Importer
 		private:
 			rule& rootRule;
 			rule& whitespaceRule;
-            vector<ParseError> errorList;
+            QVector<ParseError> errorList;
 
 		public:
             Parser(rule& rootRule, rule& whitespaceRule)
@@ -185,12 +184,12 @@ namespace Importer
 			{
 			}
 
-			_ROOT_AST_NODE_TYPE* Parse(const string& sourceCode)
+			_ROOT_AST_NODE_TYPE* Parse(const QString& sourceCode)
 			{
 				return static_cast<_ROOT_AST_NODE_TYPE*>(FFParserAlgorithms::ParseInternal(sourceCode, rootRule, whitespaceRule, errorList));
 			}
 
-			string GetErrorMessage() const
+			QString GetErrorMessage() const
 			{
 				ostringstream oss;
 				oss << "found " << errorList.size() << " " << (errorList.size() > 1 ? "errors" : "error") << ":\n";
@@ -198,7 +197,7 @@ namespace Importer
 				{
 					oss << "    line " << error.line << ", col " << error.column << ": " << endl;
 				}
-				return oss.str();
+				return QString::fromStdString(oss.str());
 			}
 		};
 
