@@ -99,7 +99,7 @@ namespace Importer
 		rule blockTextBefore = EVERYTHING_VALID_TO(set("{}"));
 		rule blockTextAfter = EVERYTHING_VALID_TO(set("{}"));
 		rule blockWithTextAfter = block >> blockTextAfter;
-		rule block = '{' >> blockTextBefore >> *blockWithTextAfter >> '}';
+		rule block = term('{' >> blockTextBefore) >> *blockWithTextAfter >> '}';
 		rule modifier = MODIFIER;
 		rule variableModifier = "final" | annotation;
 		rule variableDeclaratorId = identifier >> *typeArray;

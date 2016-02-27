@@ -3565,7 +3565,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 	/*Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
 	std::string errorMessage;
-	if (!javaParser.Parse("C:/Users/pituke/Desktop/argouml", softTree, errorMessage))
+	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
 		QMessageBox::critical(this, "Java parse error", QString::fromStdString(errorMessage), QMessageBox::Close);
 	else
 	{

@@ -312,6 +312,7 @@ namespace Importer
 			method.name = methodDeclaration->identifier->GetValue();
 			if (methodDeclaration->formalParameters->formalParameterList != nullptr)
 				method.parameters = GetParametersFromFormalParameterList(methodDeclaration->formalParameters->formalParameterList);
+			method.content = GetBlockContent(methodDeclaration->methodBody->block);
 			return method;
 		}
 
@@ -338,6 +339,7 @@ namespace Importer
 			method.name = constructorDeclaration->identifier->GetValue();
 			if (constructorDeclaration->formalParameters->formalParameterList != nullptr)
 				method.parameters = GetParametersFromFormalParameterList(constructorDeclaration->formalParameters->formalParameterList);
+			method.content = GetBlockContent(constructorDeclaration->constructorBody->block);
 			return method;
 		}
 

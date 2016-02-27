@@ -64,14 +64,23 @@ namespace Importer
 			string returnType;
 			string name;
 			vector<Parameter> parameters;
+			string content;
 
 			string ToString(int tabs) const
 			{
-				string s;
+				string params;
 				for (const auto& p : parameters)
-					s += (s.empty() ? "" : ", ") + p.ToString(0);
+					params += (params.empty() ? "" : ", ") + p.ToString(0);
 				auto modifierStr = Modifier::ToString(modifier);
-				return TABS(tabs) + (modifierStr.empty() ? "" : modifierStr + " ") + (returnType.empty() ? "" : returnType + " ") + name + "(" + s + ")";
+				return TABS(tabs) + (modifierStr.empty() ? "" : modifierStr + " ") + (IsConstructor() ? "" : returnType + " ") + name + "(" + params + ")" + (IsInterface() ? "" : "\n" + TABS(tabs) + content);
+			}
+			bool IsConstructor() const
+			{
+				return returnType.empty();
+			}
+			bool IsInterface() const
+			{
+				return content.empty();
 			}
         };
 
@@ -96,8 +105,8 @@ namespace Importer
 				bool mFirst = true;
 				for (const auto& method : methods)
 				{
-					if (!mFirst) s += "\n";
-					s += method.ToString(tabs + 1) + ';';
+					if (!mFirst) s += "\n\n";
+					s += method.ToString(tabs + 1) + (method.IsInterface() ? ";" : "");
 					mFirst = false;
 				}
 				s += "\n" + TABS(tabs) + "}";
@@ -145,8 +154,8 @@ namespace Importer
 				bool mFirst = true;
 				for (const auto& method : methods)
 				{
-					if (!mFirst) s += "\n";
-					s += method.ToString(tabs + 1) + ';';
+					if (!mFirst) s += "\n\n";
+					s += method.ToString(tabs + 1) + (method.IsInterface() ? ";" : "");
 					mFirst = false;
 				}
 				s += "\n" + TABS(tabs) + "}";
@@ -175,8 +184,8 @@ namespace Importer
 				bool mFirst = true;
 				for (const auto& method : methods)
 				{
-					if (!mFirst) s += "\n";
-					s += method.ToString(tabs + 1) + ';';
+					if (!mFirst) s += "\n\n";
+					s += method.ToString(tabs + 1) + (method.IsInterface() ? ";" : "");
 					mFirst = false;
 				}
 				s += "\n" + TABS(tabs) + "}";
@@ -193,14 +202,13 @@ namespace Importer
 
             string ToString(int tabs) const
             {
-                string s = "namespace " + (name.empty() ? "(default)" : name) + "\n{\n";
+                string s = "namespace " + (name.empty() ? "(default)" : name) + " --> \n\n";
                 for (const auto& c : classes)
-                    s += c.ToString(tabs + 1) + '\n';
+                    s += c.ToString(tabs) + "\n\n";
 				for (const auto& e : enums)
-					s += e.ToString(tabs + 1) + '\n';
+					s += e.ToString(tabs) + "\n\n";
 				for (const auto& i : interfaces)
-					s += i.ToString(tabs + 1) + '\n';
-                s += "}";
+					s += i.ToString(tabs) + "\n\n";
                 return s;
             }
         };
