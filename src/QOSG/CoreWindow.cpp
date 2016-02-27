@@ -60,6 +60,7 @@
 #include <osgDB/ReadFile>
 #include <Clustering/Floor.h>
 #include <Clustering/Building.h>
+#include <Importer/Parsing/InvocationGraph.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -3562,17 +3563,18 @@ void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
 
-	/*Importer::Parsing::JavaParser javaParser;
+	Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
 	QString errorMessage;
 	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
 		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
 	else
 	{
-		QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
+		/*QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
 		f.open(QFile::WriteOnly);
-		QTextStream(&f) << softTree.ToString();
-	}*/
+		QTextStream(&f) << softTree.ToString();*/
+		Importer::Parsing::InvocationGraph ig = Importer::Parsing::InvocationGraph::AnalyzeClass(softTree.namespaces.first().classes.first());
+	}
 
 	QList<Clustering::Floor*> fs;
 	const uint floorCount = random(2, 10);
