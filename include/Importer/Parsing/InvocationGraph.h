@@ -12,57 +12,101 @@ namespace Importer
 
 		struct GetterSetterDirectAttrAccess
 		{
-			uint callingMethodIndex;
-			uint accessedAttributeIndex;
+			int callingMethodIndex;
+			int accessedAttributeIndex;
 		};
 
 		struct MethodInvocation
 		{
-			uint callingMethodIndex;
-			QVector<uint> calledMethodsIndexes;
-			QVector<uint> calledGettersSettersIndexes;
-			QVector<uint> calledDirectAttributesIndexes;
+			int callingMethodIndex;
+			QList<int> calledMethodsIndexes;
 		};
 
 		struct InvocationGraph
 		{
-			QVector<GetterSetterDirectAttrAccess> gettersSetters;
-			QVector<MethodInvocation> internalMethods;
-			QVector<MethodInvocation> interfaceMethods;
-			QVector<MethodInvocation> constructors;
+			QList<GetterSetterDirectAttrAccess> gettersSetters;
+			QList<MethodInvocation> internalMethods;
+			QList<MethodInvocation> interfaceMethods;
+			QList<MethodInvocation> constructors;
 
 			static InvocationGraph AnalyzeClass(const Class& class1)
 			{
+				static const QString RETURN_SPACE_STR("return ");
+				static const QString THIS_DOT_STR("this.");
+
 				InvocationGraph res;
 
 				QMap<QString, GetterSetterDirectAttrAccess> gettersSettersMap;
 				QMap<QString, MethodInvocation> internalMethodsMap;
 				QMap<QString, MethodInvocation> interfaceMethodsMap;
 				QMap<QString, MethodInvocation> constructorsMap;
-				QMap<const Method&, uint> allMethods;
+				QMap<QString, int> allAttributesName;
+				QMap<QString, int> allMethodsName;
 
-				for (uint i = 0; i < class1.methods.count(); ++i)
-					allMethods.insert(class1.methods[i], i);
+				for (int i = 0; i < class1.attributes.count(); ++i)
+					allAttributesName.insert(class1.attributes[i].name, i);
 
-				QMapIterator<const Method&, uint> m(allMethods);
-				while (m.hasNext())
+				for (int i = 0; i < class1.methods.count(); ++i)
+					allMethodsName.insert(class1.methods[i].name, i);
+
+				for (const auto& method : class1.methods)
 				{
+					int callingMethodIndex = allMethodsName.value(method.name);
 					// cekni ci je to getter setter - nazov get/set, vnutri return atribut - spoj ho z atributom s ktorym pracuje
-					const auto& method = m.key();
-					if (method.name.toLower().startsWith("get") || method.name.toLower().startsWith("set"))
+					bool getter = method.name.startsWith("get", Qt::CaseInsensitive);
+					bool setter = method.name.startsWith("set", Qt::CaseInsensitive);
+					if (getter || setter)
 					{
-						QRegExp re("return\\w+;");
+						QRegExp re;
+						if (getter) re.setPattern("return\\s+(this\\s*.\\s*)?\\w+\\s*;");
+						else /*setter*/ re.setPattern("(this\\s*.\\s*)?\\w+\\s*=\\s*\\w+\\s*;");
 						int pos = 0;
-						while ((pos = re.indexIn(method.content, pos)) != -1)
+						int accessedAttributeIndex = -1;
+						while ((pos = re.indexIn(method.content, pos)) != -1 && accessedAttributeIndex == -1)
 						{
-							
+							auto returnCaptured = re.cap();
+							QString returnName;
+							if (getter)
+							{
+								returnCaptured = returnCaptured.mid(returnCaptured.indexOf(RETURN_SPACE_STR) + RETURN_SPACE_STR.length());
+								returnCaptured = returnCaptured.remove(' ');
+								if (returnCaptured.contains(THIS_DOT_STR))
+									returnCaptured = returnCaptured.mid(returnCaptured.indexOf(THIS_DOT_STR) + THIS_DOT_STR.length());
+								returnName = returnCaptured.left(returnCaptured.length() - 1);
+							}
+							else // setter
+							{
+								returnCaptured = returnCaptured.remove(' ');
+								if (returnCaptured.contains(THIS_DOT_STR))
+									returnCaptured = returnCaptured.mid(returnCaptured.indexOf(THIS_DOT_STR) + THIS_DOT_STR.length());
+								returnName = returnCaptured.left(returnCaptured.indexOf('='));
+							}
+							accessedAttributeIndex = allAttributesName.value(returnName, -1);
 							pos += re.matchedLength();
 						}
+						gettersSettersMap.insert(method.name, { callingMethodIndex, accessedAttributeIndex });
+					}
+					else if (method.IsConstructor())
+					{
+						constructorsMap.insert(method.name, { callingMethodIndex, QList<int>() });
+					}
+					else if (method.modifier == Modifier::PUBLIC)
+					{
+						interfaceMethodsMap.insert(method.name, { callingMethodIndex, QList<int>() });
+					}
+					else // protected, private
+					{
+						internalMethodsMap.insert(method.name, { callingMethodIndex, QList<int>() });
 					}
 
 					// cekni ci je to constructor, public, private/protected metoda a podla toho zarad
 					// cekni volania metod, get/setterov, atributov a podla toho napln asociacie - cekuj relativne k zoznamom znamych metod v mapach
 				}
+
+				res.gettersSetters = gettersSettersMap.values();
+				res.internalMethods = internalMethodsMap.values();
+				res.interfaceMethods = interfaceMethodsMap.values();
+				res.constructors = constructorsMap.values();
 
 				return res;
 			}

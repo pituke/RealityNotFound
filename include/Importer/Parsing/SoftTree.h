@@ -39,7 +39,7 @@ namespace Importer
 			Modifier::ModifierEnum modifier;
 			QString returnType;
 			QString name;
-			QVector<Parameter> parameters;
+			QList<Parameter> parameters;
 			QString content;
 
 			QString ToString(int tabs) const;
@@ -51,8 +51,8 @@ namespace Importer
         {
 			Modifier::ModifierEnum modifier;
             QString name;
-            QVector<Attribute> attributes;
-            QVector<Method> methods;
+			QList<Attribute> attributes;
+			QList<Method> methods;
 
 			Class();
 			QString ToString(int tabs) const;
@@ -69,9 +69,9 @@ namespace Importer
 		{
 			Modifier::ModifierEnum modifier;
 			QString name;
-			QVector<EnumConstant> enums;
-			QVector<Attribute> attributes;
-			QVector<Method> methods;
+			QList<EnumConstant> enums;
+			QList<Attribute> attributes;
+			QList<Method> methods;
 
 			Enum();
 			QString ToString(int tabs) const;
@@ -81,8 +81,8 @@ namespace Importer
 		{
 			Modifier::ModifierEnum modifier;
 			QString name;
-			QVector<Attribute> attributes;
-			QVector<Method> methods;
+			QList<Attribute> attributes;
+			QList<Method> methods;
 
 			Interface();
 			QString ToString(int tabs) const;
@@ -91,16 +91,16 @@ namespace Importer
         struct Namespace
         {
             QString name;
-            QVector<Class> classes;
-			QVector<Enum> enums;
-			QVector<Interface> interfaces;
+			QList<Class> classes;
+			QList<Enum> enums;
+			QList<Interface> interfaces;
 
 			QString ToString(int tabs) const;
         };
 
         struct SoftTree
         {
-            QVector<Namespace> namespaces;
+			QList<Namespace> namespaces;
 
 			QString ToString() const;
         };

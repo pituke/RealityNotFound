@@ -285,9 +285,9 @@ namespace Importer
 			else return Modifier::UNKNOWN;
 		}
 
-		QVector<Parameter> GetParametersFromFormalParameterList(const NodeFormalParameterList* fpl)
+		QList<Parameter> GetParametersFromFormalParameterList(const NodeFormalParameterList* fpl)
 		{
-			QVector<Parameter> parameters;
+			QList<Parameter> parameters;
 			for (const NodeFormalParameter* fp : fpl->formalParameter)
 			{
 				Parameter parameter;
