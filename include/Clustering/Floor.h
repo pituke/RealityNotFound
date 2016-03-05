@@ -1,26 +1,22 @@
 #pragma once
 
-#include "Clustering/Window.h"
 #include <osg/PositionAttitudeTransform>
-#include <QList>
 
 namespace Clustering
 {
 	class Floor : public osg::PositionAttitudeTransform
 	{
 	private:
-		QString displayText;
-		QList<osg::ref_ptr<Window>> nearWall, leftWall;
-		QString cornerText;
-		float reqFloorSize;
-		uint priority;
+		float baseSize;
+		float floorHeight;
 
 	public:
-		Floor(const QString& displayText, const QList<Window*>& windows, const QString& cornerText, uint priority);
-		void setFloorSize(float floorSize);
-		float getFloorSize() const;
-		uint getPriority() const;
+		Floor();
+		void setBaseSize(float size);
+		float getBaseSize() const;
+		void setFloorHeight(float height);
+		float getFloorHeight() const;
 		void refresh();
-		static float getFloorHeight();
+		static float getFloorMinHeight();
 	};
 }

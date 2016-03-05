@@ -1,20 +1,22 @@
 #pragma once
 
 #include <osg/PositionAttitudeTransform>
-#include <QList>
 #include "Floor.h"
-#include "Vehicle.h"
+#include <QList>
 
 namespace Clustering
 {
 	class Building : public osg::PositionAttitudeTransform
 	{
 	private:
-		float floorsBaseSize, buildingBaseSize, buldingHeight;
+		QList<Floor*> floors;
+		float buildingHeight;
 
 	public:
-		Building(const QList<Floor*>& inputFloors, const QList<Vehicle*>& inputVehicles);
-		float getWidth() const;
+		Building(const QList<Floor*>& inputFloors);
+		void setHeight(float height);
 		float getHeight() const;
+		void refresh();
+		static float getMinHeight();
 	};
 }

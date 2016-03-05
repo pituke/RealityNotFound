@@ -3563,34 +3563,27 @@ void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
 
-	Importer::Parsing::JavaParser javaParser;
+	/*Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
 	QString errorMessage;
 	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
-		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
-	else
 	{
-		/*QFile f("C:/Users/pituke/Desktop/SoftTree.txt");
-		f.open(QFile::WriteOnly);
-		QTextStream(&f) << softTree.ToString();*/
-		Importer::Parsing::InvocationGraph ig = Importer::Parsing::InvocationGraph::AnalyzeClass(softTree.namespaces.first().classes.first());
+		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
+		return;
 	}
+	Importer::Parsing::InvocationGraph ig = Importer::Parsing::InvocationGraph::AnalyzeClass(softTree.namespaces.first().classes.first());*/
 
 	QList<Clustering::Floor*> fs;
 	const uint floorCount = random(2, 10);
 	for (uint fi = 0; fi < floorCount; ++fi)
 	{
-		QList<Clustering::Window*> ws;
-		const uint windowCount = random(1, 15);
-		for (uint wi = 0; wi < windowCount; ++wi)
-			ws << new Clustering::Window("window", static_cast<Clustering::Window::WindowType>(random(0,2)));
-		fs << new Clustering::Floor("floor", ws, random(0, 1) == 0 ? "corner" : QString(), windowCount);
+		auto f = new Clustering::Floor();
+		f->setBaseSize(1);
+		fs << f;
 	}
-	QList<Clustering::Vehicle*> vs;
-	const uint vehicleCount = 23;
-	for (uint vi = 0; vi < vehicleCount; ++vi)
-		vs << new Clustering::Vehicle("vehicle");
-	auto b = new Clustering::Building(fs, vs);
+	auto b = new Clustering::Building(fs);
+	b->setHeight(1);
+	b->refresh();
 	viewerWidget->setSceneData(b);
 }
 

@@ -49,6 +49,7 @@ namespace Importer
 				for (int i = 0; i < class1.methods.count(); ++i)
 					allMethodsName.insert(class1.methods[i].name, i);
 
+				QStringList methodList;
 				for (const auto& method : class1.methods)
 				{
 					int callingMethodIndex = allMethodsName.value(method.name);
@@ -102,6 +103,12 @@ namespace Importer
 					// cekni ci je to constructor, public, private/protected metoda a podla toho zarad
 					// cekni volania metod, get/setterov, atributov a podla toho napln asociacie - cekuj relativne k zoznamom znamych metod v mapach
 				}
+
+				QFile f("C:/Users/pituke/Desktop/methodList.txt");
+				f.open(QFile::WriteOnly);
+				QTextStream fs(&f);
+				for (auto m : methodList)
+					fs << m << '\n';
 
 				res.gettersSetters = gettersSettersMap.values();
 				res.internalMethods = internalMethodsMap.values();

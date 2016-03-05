@@ -3,6 +3,7 @@
 #include <osg/Geometry>
 #include <QString>
 #include <QtCore/QMap>
+#include <functional>
 
 namespace Manager
 {
@@ -17,11 +18,15 @@ namespace Manager
      */
 	class ResourceManager
 	{
+	public:
+		typedef std::function<osg::Geode*(const QString&)> GeodeCreator;
+
 	private:
 		ResourceManager();
 
 	public:
 		static ResourceManager* getInstance();
 		osg::ref_ptr<osg::Node> getMesh(const QString& path);
+		osg::ref_ptr<osg::Geode> getShape(const QString& params, GeodeCreator creator);
 	};
 }

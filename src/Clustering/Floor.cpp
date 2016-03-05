@@ -1,235 +1,55 @@
 #include "Clustering/Floor.h"
-#include <osg/Geode>
-#include <osgDB/ReadFile>
-#include <QVector>
-#include <QtCore/QMap>
+#include <Manager/ResourceManager.h>
+#include <Clustering/Cuboid.h>
 
 namespace Clustering
 {
-	// distances from specific border of floor mesh which define a region for merge vertices to moving belong the side when the floor is resizing
-	static const float FLOOR_LEFT_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
-	static const float FLOOR_LEFT_SIDE_VERTICES_MERGE_DISTANCE_CORNER = 0.4;
-	static const float FLOOR_RIGHT_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
-	static const float FLOOR_BOTTOM_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
-	static const float FLOOR_TOP_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
-	static const float FLOOR_FAR_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
-	static const float FLOOR_FAR_SIDE_VERTICES_MERGE_DISTANCE_CORNER = 0.4;
-	static const float FLOOR_NEAR_SIDE_VERTICES_MERGE_DISTANCE = 0.1;
+	static const float FLOOR_MIN_HEIGHT = 0.1f;
+	static const float FLOOR_DIVIDE_BORDER_STICK_UP = 0.05;
+	static const float FLOOR_DIVIDE_BORDER_HEIGHT = 0.02;
 
-	static const float WINDOW_TOP_MARGIN = 0.05f; // space between window and top edge of floor
-	static const float WINDOW_BOTTOM_MARGIN = 0.05f; // space between window and bottom edge of floor
-	static const float WINDOW_SPACING = 0.2f; // constant space between windows belong to floor wall
-	static const float FLOOR_MIN_SIZE = 0.4f;
-
-	struct GeometrySet
+	Floor::Floor()
 	{
-		QVector<osg::Vec3> vertices;
-		osg::ref_ptr<osg::Array> normals;
-		osg::Geometry::PrimitiveSetList primitives;
-		QList<uint> viLeft, viRight, viBottom, viTop, viFar, viNear;
-		osg::BoundingBox boundBox;
-	};
-
-	static GeometrySet floorNoncorner, floorCorner;
-	static float floorHeight, wallHeight, windowHeight, wallVertCenter, cornerSize, borderSize;
-	static QMap<QString, osg::ref_ptr<osg::Geometry>> floorGeometries;
-	static bool initedFloor = false;
-
-	osg::BoundingBox findBoundBox(const QVector<osg::Vec3>& vertices, const QList<uint>& vIndexes)
-	{
-		osg::BoundingBox b(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
-		foreach(auto i, vIndexes)
-		{
-			const auto& v = vertices[i];
-			if (v.x() < b.xMin()) b.xMin() = v.x();
-			if (v.x() > b.xMax()) b.xMax() = v.x();
-			if (v.y() < b.yMin()) b.yMin() = v.y();
-			if (v.y() > b.yMax()) b.yMax() = v.y();
-			if (v.z() < b.zMin()) b.zMin() = v.z();
-			if (v.z() > b.zMax()) b.zMax() = v.z();
-		}
-		return b;
+		baseSize = 0;
+		floorHeight = FLOOR_MIN_HEIGHT;
 	}
 
-	void fillGeometrySet(const QString& meshFilepath, GeometrySet& gs)
+	void Floor::setBaseSize(float size)
 	{
-		osg::ref_ptr<osg::Geode> geode = osgDB::readNodeFile(meshFilepath.toStdString())->asGroup()->getChild(0)->asGeode();
-
-		const bool isCornerFloor = &gs == &floorCorner;
-
-		auto geom = geode->getDrawable(0)->asGeometry();
-
-		auto va = geom->getVertexArray();
-		gs.vertices.resize(va->getNumElements());
-		const auto& vs = static_cast<const osg::Vec3*>(va->getDataPointer());
-		for (uint i = 0; i < va->getNumElements(); ++i)
-			gs.vertices[i] = vs[i];
-		gs.normals = geom->getNormalArray();
-		gs.primitives = geom->getPrimitiveSetList();
-		gs.boundBox = geode->getBoundingBox();
-
-		// osg use different coordinate system --> +x to right, +y into screen, +z to up
-		const float leftTreshold = gs.boundBox.xMin() + (isCornerFloor ? FLOOR_LEFT_SIDE_VERTICES_MERGE_DISTANCE_CORNER : FLOOR_LEFT_SIDE_VERTICES_MERGE_DISTANCE);
-		const float rightTreshold = gs.boundBox.xMax() - FLOOR_RIGHT_SIDE_VERTICES_MERGE_DISTANCE;
-		const float bottomTreshold = gs.boundBox.zMin() + FLOOR_BOTTOM_SIDE_VERTICES_MERGE_DISTANCE;
-		const float topTreshold = gs.boundBox.zMax() - FLOOR_TOP_SIDE_VERTICES_MERGE_DISTANCE;
-		const float farTreshold = gs.boundBox.yMin() + (isCornerFloor ? FLOOR_FAR_SIDE_VERTICES_MERGE_DISTANCE_CORNER : FLOOR_FAR_SIDE_VERTICES_MERGE_DISTANCE);
-		const float nearTreshold = gs.boundBox.yMax() - FLOOR_NEAR_SIDE_VERTICES_MERGE_DISTANCE;
-		for (uint vi = 0; vi < gs.vertices.count(); ++vi)
-		{
-			const auto& v = gs.vertices[vi];
-			if (v.x() < leftTreshold) gs.viLeft << vi;
-			if (v.x() > rightTreshold) gs.viRight << vi;
-			if (v.z() < bottomTreshold) gs.viBottom << vi;
-			if (v.z() > topTreshold) gs.viTop << vi;
-			if (v.y() < farTreshold) gs.viFar << vi;
-			if (v.y() > nearTreshold) gs.viNear << vi;
-		}
+		baseSize = size;
 	}
 
-	void initFloor()
+	float Floor::getBaseSize() const
 	{
-		fillGeometrySet("..\\..\\resources\\mesh\\floor_void.obj", floorNoncorner);
-		fillGeometrySet("..\\..\\resources\\mesh\\floor_out.obj", floorCorner);
-
-		floorHeight = floorCorner.boundBox.zMax() - floorCorner.boundBox.zMin();
-		auto bottomBoundBox = findBoundBox(floorCorner.vertices, floorCorner.viBottom);
-		wallHeight = floorCorner.boundBox.zMax() - bottomBoundBox.zMax();
-		wallVertCenter = bottomBoundBox.zMax() + wallHeight / 2;
-		auto rightBoundBox = findBoundBox(floorCorner.vertices, floorCorner.viRight);
-		borderSize = rightBoundBox.xMax() - rightBoundBox.xMin();
-		auto leftBoundBox = findBoundBox(floorCorner.vertices, floorCorner.viLeft);
-		cornerSize = leftBoundBox.xMax() - leftBoundBox.xMin() - borderSize;
-		windowHeight = wallHeight - WINDOW_TOP_MARGIN - WINDOW_BOTTOM_MARGIN;
+		return baseSize;
 	}
 
-	osg::Geometry* generateFloorGeometry(float wallSize, bool corner)
+	void Floor::setFloorHeight(float height)
 	{
-		const auto& geomSet = corner ? floorCorner : floorNoncorner;
-		const float totalFloorSize = wallSize + 2 * borderSize + (corner ? cornerSize : 0);
-		const float position = totalFloorSize / 2;
-		auto g = new osg::Geometry();
-		auto vs = geomSet.vertices;
-		const float leftOffset = position + geomSet.boundBox.xMin();
-		const float rightOffset = position - geomSet.boundBox.xMax();
-		const float farOffset = position + geomSet.boundBox.yMin();
-		const float nearOffset = position - geomSet.boundBox.yMax();
-		foreach(auto vi, geomSet.viLeft)
-			vs[vi].x() -= leftOffset;
-		foreach(auto vi, geomSet.viRight)
-			vs[vi].x() += rightOffset;
-		foreach(auto vi, geomSet.viFar)
-			vs[vi].y() -= farOffset;
-		foreach(auto vi, geomSet.viNear)
-			vs[vi].y() += nearOffset;
-		g->setVertexArray(new osg::Vec3Array(vs.count(), vs.data()));
-		g->setNormalArray(geomSet.normals);
-		g->setPrimitiveSetList(geomSet.primitives);
-		return g;
+		floorHeight = std::max(height, FLOOR_MIN_HEIGHT);
 	}
 
-	osg::ref_ptr<osg::Geometry> getFloorGeometry(float wallSize, bool corner)
+	float Floor::getFloorHeight() const
 	{
-		const QString key = (corner ? 'c' : 'n') + QString::number(wallSize, 'f', 3);
-		osg::ref_ptr<osg::Geometry> g;
-		g = floorGeometries.value(key);
-		if (!g.valid())
-		{
-			g = generateFloorGeometry(wallSize, corner);
-			floorGeometries.insert(key, g);
-		}
-		return g;
-	}
-
-	Floor::Floor(const QString& displayText, const QList<Window*>& windows, const QString& cornerText, uint priority)
-	{
-		if (!initedFloor)
-		{
-			initFloor();
-			initedFloor = true;
-		}
-
-		this->displayText = displayText;
-		this->cornerText = cornerText;
-		this->priority = priority;
-
-		// calculate floor size, order windows among wall1 and wall2
-		float nearWallWidth = 0, leftWallWidth = 0;
-		foreach(auto w, windows)
-		{
-			w->setHeight(windowHeight);
-			if (nearWallWidth <= leftWallWidth)
-			{
-				nearWallWidth += WINDOW_SPACING + w->getWidth();
-				nearWall << w;
-			}
-			else
-			{
-				leftWallWidth += WINDOW_SPACING + w->getWidth();
-				leftWall << w;
-			}
-		}
-		if (!nearWall.empty()) nearWallWidth += WINDOW_SPACING;
-		if (!leftWall.empty()) leftWallWidth += WINDOW_SPACING;
-
-		// final wall size (temporary) is logner one but at least FLOOR_MIN_SIZE
-		// final size will set by setSize and generate
-		auto reqWallSize = std::max(FLOOR_MIN_SIZE, std::max(nearWallWidth, leftWallWidth));
-		reqFloorSize = reqWallSize + 2 * borderSize + (cornerText.isEmpty() ? 0 : cornerSize);
-	}
-
-	void Floor::setFloorSize(float floorSize)
-	{
-		this->reqFloorSize = floorSize;
-	}
-
-	float Floor::getFloorSize() const
-	{
-		return reqFloorSize	;
-	}
-
-	uint Floor::getPriority() const
-	{
-		return priority;
+		return floorHeight;
 	}
 
 	void Floor::refresh()
 	{
-		removeChildren(0, getNumChildren());
+		const float floorDivideBorderBaseSize = baseSize + FLOOR_DIVIDE_BORDER_STICK_UP;
+		const float floorDivideBorderGroundOffset = FLOOR_DIVIDE_BORDER_HEIGHT / 2;
+		const float floorWallHeight = floorHeight - FLOOR_DIVIDE_BORDER_HEIGHT;
+		const float floorGroundOffset = FLOOR_DIVIDE_BORDER_HEIGHT + floorWallHeight / 2;
 
-		auto geode = new osg::Geode();
-		auto reqWallSize = reqFloorSize - 2 * borderSize - (cornerText.isEmpty() ? 0 : cornerSize);
-		geode->addDrawable(getFloorGeometry(reqWallSize, !cornerText.isEmpty()));
-		const auto bb = geode->getBoundingBox();
-		const auto totalSize = bb.xMax() - bb.xMin();
-		const auto wallHorPosition = totalSize / 2 - borderSize;
-		
-		// calculate and set windows position to wall1 relative to floor
-		osg::Vec3 f1StartWindowPosition(-wallHorPosition + (cornerText.isEmpty() ? 0.0f : cornerSize), -wallHorPosition, wallVertCenter);
-		for (uint i = 0; i < nearWall.count(); ++i)
-		{
-			auto& w = nearWall[i];
-			f1StartWindowPosition.x() += WINDOW_SPACING + (i == 0 ? w->getWidth() / 2 : w->getWidth());
-			w->setPosition(f1StartWindowPosition);
-			addChild(w);
-		}
+		if (getNumChildren() > 0)
+			removeChildren(0, getNumChildren());
 
-		// calculate and set windows position to wall2 relative to floor
-		osg::Vec3 f2StartWindowPosition(-wallHorPosition, -wallHorPosition + (cornerText.isEmpty() ? 0.0f : cornerSize), wallVertCenter);
-		for (uint i = 0; i < leftWall.count(); ++i)
-		{
-			auto& w = leftWall[i];
-			f2StartWindowPosition.y() += WINDOW_SPACING + (i == 0 ? w->getWidth() / 2 : w->getWidth());
-			w->setPosition(f2StartWindowPosition);
-			w->setAttitude(osg::Quat(osg::PI_2, osg::Vec3(0, 0, 1)));
-			addChild(w);
-		}
-		
-		addChild(geode);
+		addChild(Manager::ResourceManager::getInstance()->getShape("floorBase", [&](const QString& params) { return new Cuboid(floorDivideBorderBaseSize, FLOOR_DIVIDE_BORDER_HEIGHT, floorDivideBorderBaseSize, osg::Vec3(0.0f, 0.0f, floorDivideBorderGroundOffset)); }));
+		addChild(Manager::ResourceManager::getInstance()->getShape("floor", [&](const QString& params) { return new Cuboid(baseSize, floorWallHeight, baseSize, osg::Vec3(0.0f, 0.0f, floorGroundOffset)); }));
 	}
 
-	float Floor::getFloorHeight()
+	float Floor::getFloorMinHeight()
 	{
-		return floorHeight;
+		return FLOOR_MIN_HEIGHT;
 	}
 }

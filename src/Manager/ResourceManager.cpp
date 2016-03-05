@@ -5,6 +5,7 @@ namespace Manager
 {
 	static ResourceManager* instance = nullptr;
 	static QMap<QString, osg::ref_ptr<osg::Node>> meshes;
+	static QMap<QString, osg::ref_ptr<osg::Geode>> shapes;
 
 	ResourceManager::ResourceManager()
 	{
@@ -26,5 +27,16 @@ namespace Manager
 			meshes.insert(path, n);
 		}
 		return n;
+	}
+
+	osg::ref_ptr<osg::Geode> ResourceManager::getShape(const QString& params, GeodeCreator creator)
+	{
+		osg::ref_ptr<osg::Geode> s = shapes.value(params);
+		if (!s.valid())
+		{
+			s = creator(params);
+			shapes.insert(params, s);
+		}
+		return s;
 	}
 }
