@@ -33,6 +33,12 @@ namespace Clustering
 		return buildingHeight;
 	}
 
+	osg::BoundingBox Building::getBoundingBox() const
+	{
+		static const float BUILDING_BASE_SIZE_HALF = BUILDING_BASE_SIZE / 2;
+		return osg::BoundingBox(-BUILDING_BASE_SIZE_HALF, -BUILDING_BASE_SIZE_HALF, 0, BUILDING_BASE_SIZE_HALF, BUILDING_BASE_SIZE_HALF, getHeight());
+	}
+
 	void Building::refresh()
 	{
 		osg::Vec3 pos(0.0f, 0.0f, 0.0f);

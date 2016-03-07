@@ -61,6 +61,7 @@
 #include <Clustering/Floor.h>
 #include <Clustering/Building.h>
 #include <Importer/Parsing/InvocationGraph.h>
+#include <Layout/LayoutAlgorithms.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -3563,7 +3564,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
 
-	/*Importer::Parsing::JavaParser javaParser;
+	Importer::Parsing::JavaParser javaParser;
 	Importer::Parsing::SoftTree softTree;
 	QString errorMessage;
 	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
@@ -3571,20 +3572,34 @@ void CoreWindow::showEvent(QShowEvent* e)
 		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
 		return;
 	}
-	Importer::Parsing::InvocationGraph ig = Importer::Parsing::InvocationGraph::AnalyzeClass(softTree.namespaces.first().classes.first());*/
 
-	QList<Clustering::Floor*> fs;
-	const uint floorCount = random(2, 10);
-	for (uint fi = 0; fi < floorCount; ++fi)
+	auto residenceNode = new osg::Group();
+	for (const auto& namespace_ : softTree.namespaces)
 	{
-		auto f = new Clustering::Floor();
-		f->setBaseSize(1);
-		fs << f;
+		for (const auto& class_ : namespace_.classes)
+		{
+			//auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
+			QList<Clustering::Building*> attrBuildings;
+			for (const auto& attribute : class_.attributes)
+			{
+				auto b = new Clustering::Building();
+				b->refresh();
+				attrBuildings << b;
+				residenceNode->addChild(b);
+			}
+			QList<Layout::ElementLayout> outputs;
+			Layout::LayoutAlgorithms::layoutInsideRegion(attrBuildings.first()->getBoundingBox(), attrBuildings.count(), 0, 0.2, &outputs);
+			for (uint i = 0; i < attrBuildings.count(); ++i)
+			{
+				attrBuildings[i]->setPosition(outputs[i].position);
+				attrBuildings[i]->setAttitude(osg::Quat(outputs[i].yawRotation, osg::Vec3(0, 0, 1)));
+			}
+			break;
+		}
+		break;
 	}
-	auto b = new Clustering::Building(fs);
-	b->setHeight(1);
-	b->refresh();
-	viewerWidget->setSceneData(b);
+
+	viewerWidget->setSceneData(residenceNode);
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )
@@ -4067,3 +4082,4 @@ void CoreWindow::createEvolutionLuaGraph()
 }
 
 } // namespace QOSG
+
