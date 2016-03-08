@@ -14,12 +14,8 @@
 #include "Viewer/CoreGraph.h"
 #include "Viewer/CameraManipulator.h"
 #include "Viewer/PickHandler.h"
-#include "Viewer/DataHelper.h"
 
 #include "Manager/Manager.h"
-
-#include "Model/DB.h"
-#include "Model/GraphLayoutDAO.h"
 
 #include "Data/GraphLayout.h"
 #include "Data/GraphSpanningTree.h"
@@ -38,7 +34,6 @@
 #include "Layout/ShapeGetter_Cube.h"
 
 #include "Importer/GraphOperations.h"
-#include "Util/Cleaner.h"
 #include "Core/Core.h"
 
 #include "QDebug"
@@ -46,8 +41,6 @@
 #include "LuaGraph/LuaGraph.h"
 #include "LuaInterface/LuaInterface.h"
 #include "LuaGraph/LuaGraphVisualizer.h"
-#include "LuaGraph/FullHyperGraphVisualizer.h"
-#include "LuaGraph/HyperGraphVisualizer.h"
 #include "LuaGraph/SimpleGraphVisualizer.h"
 
 #include "Diluculum/LuaState.hpp"
@@ -56,12 +49,9 @@
 #include <iostream>
 #include <osg/ref_ptr>
 #include <string>
-#include <Manager/ResourceManager.h>
-#include <osgDB/ReadFile>
-#include <Clustering/Floor.h>
 #include <Clustering/Building.h>
 #include <Importer/Parsing/InvocationGraph.h>
-#include <Layout/LayoutAlgorithms.h>
+#include <Clustering/Residence.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -3573,33 +3563,23 @@ void CoreWindow::showEvent(QShowEvent* e)
 		return;
 	}
 
-	auto residenceNode = new osg::Group();
+	auto residence = new Clustering::Residence();
 	for (const auto& namespace_ : softTree.namespaces)
 	{
 		for (const auto& class_ : namespace_.classes)
 		{
 			//auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
-			QList<Clustering::Building*> attrBuildings;
 			for (const auto& attribute : class_.attributes)
 			{
-				auto b = new Clustering::Building();
-				b->refresh();
-				attrBuildings << b;
-				residenceNode->addChild(b);
-			}
-			QList<Layout::ElementLayout> outputs;
-			Layout::LayoutAlgorithms::layoutInsideRegion(attrBuildings.first()->getBoundingBox(), attrBuildings.count(), 0, 0.2, &outputs);
-			for (uint i = 0; i < attrBuildings.count(); ++i)
-			{
-				attrBuildings[i]->setPosition(outputs[i].position);
-				attrBuildings[i]->setAttitude(osg::Quat(outputs[i].yawRotation, osg::Vec3(0, 0, 1)));
+				residence->addAttributeBuilding(new Clustering::Building());
 			}
 			break;
 		}
 		break;
 	}
 
-	viewerWidget->setSceneData(residenceNode);
+	residence->refresh();
+	viewerWidget->setSceneData(residence);
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )

@@ -16,6 +16,8 @@ namespace Clustering
 		Building(const QList<Floor*>& inputFloors = QList<Floor*>());
 		void setHeight(float height);
 		float getHeight() const;
+		void setBaseSize(float size);
+		float getBaseSize() const;
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
 		static float getMinHeight();

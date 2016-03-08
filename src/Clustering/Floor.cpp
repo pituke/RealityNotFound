@@ -41,8 +41,7 @@ namespace Clustering
 		const float floorWallHeight = floorHeight - FLOOR_DIVIDE_BORDER_HEIGHT;
 		const float floorGroundOffset = FLOOR_DIVIDE_BORDER_HEIGHT + floorWallHeight / 2;
 
-		if (getNumChildren() > 0)
-			removeChildren(0, getNumChildren());
+		removeChildren(0, getNumChildren());
 
 		addChild(Manager::ResourceManager::getInstance()->getShape("floorBase", [&](const QString& params) { return new Cuboid(floorDivideBorderBaseSize, FLOOR_DIVIDE_BORDER_HEIGHT, floorDivideBorderBaseSize, osg::Vec3(0.0f, 0.0f, floorDivideBorderGroundOffset)); }));
 		addChild(Manager::ResourceManager::getInstance()->getShape("floor", [&](const QString& params) { return new Cuboid(baseSize, floorWallHeight, baseSize, osg::Vec3(0.0f, 0.0f, floorGroundOffset)); }));

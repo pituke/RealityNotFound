@@ -2,7 +2,7 @@
 
 namespace Clustering
 {
-	static const float BUILDING_BASE_SIZE = 1.0f;
+	static const float BUILDING_DEFAULT_BASE_SIZE = 1.0f;
 
 	Building::Building(const QList<Floor*>& inputFloors)
 	{
@@ -11,10 +11,7 @@ namespace Clustering
 			floors << new Floor();
 		buildingHeight = Floor::getFloorMinHeight() * floors.count();
 		for (const auto& f : floors)
-		{
-			f->setBaseSize(BUILDING_BASE_SIZE);
-			Group::addChild(f);
-		}
+			f->setBaseSize(BUILDING_DEFAULT_BASE_SIZE);
 	}
 
 	void Building::setHeight(float height)
@@ -33,9 +30,20 @@ namespace Clustering
 		return buildingHeight;
 	}
 
+	void Building::setBaseSize(float size)
+	{
+		for (auto& f : floors)
+			f->setBaseSize(size);
+	}
+
+	float Building::getBaseSize() const
+	{
+		return floors.first()->getBaseSize();
+	}
+
 	osg::BoundingBox Building::getBoundingBox() const
 	{
-		static const float BUILDING_BASE_SIZE_HALF = BUILDING_BASE_SIZE / 2;
+		static const float BUILDING_BASE_SIZE_HALF = getBaseSize() / 2;
 		return osg::BoundingBox(-BUILDING_BASE_SIZE_HALF, -BUILDING_BASE_SIZE_HALF, 0, BUILDING_BASE_SIZE_HALF, BUILDING_BASE_SIZE_HALF, getHeight());
 	}
 
@@ -44,9 +52,10 @@ namespace Clustering
 		osg::Vec3 pos(0.0f, 0.0f, 0.0f);
 		for (auto& f : floors)
 		{
-			f->refresh();
 			f->setPosition(pos);
 			pos.z() += f->getFloorHeight();
+			f->refresh();
+			addChild(f);
 		}
 	}
 
