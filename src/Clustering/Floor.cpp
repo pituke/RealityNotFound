@@ -8,8 +8,9 @@ namespace Clustering
 	static const float FLOOR_DIVIDE_BORDER_STICK_UP = 0.05;
 	static const float FLOOR_DIVIDE_BORDER_HEIGHT = 0.02;
 
-	Floor::Floor()
+	Floor::Floor(bool divideBorder)
 	{
+		this->divideBorder = divideBorder;
 		baseSize = 0;
 		floorHeight = FLOOR_MIN_HEIGHT;
 	}
@@ -36,14 +37,16 @@ namespace Clustering
 
 	void Floor::refresh()
 	{
+		const float realFloorDivideBorderHeight = divideBorder ? FLOOR_DIVIDE_BORDER_HEIGHT : 0.0f;
 		const float floorDivideBorderBaseSize = baseSize + FLOOR_DIVIDE_BORDER_STICK_UP;
-		const float floorDivideBorderGroundOffset = FLOOR_DIVIDE_BORDER_HEIGHT / 2;
-		const float floorWallHeight = floorHeight - FLOOR_DIVIDE_BORDER_HEIGHT;
-		const float floorGroundOffset = FLOOR_DIVIDE_BORDER_HEIGHT + floorWallHeight / 2;
+		const float floorDivideBorderGroundOffset = realFloorDivideBorderHeight / 2;
+		const float floorWallHeight = floorHeight - realFloorDivideBorderHeight;
+		const float floorGroundOffset = realFloorDivideBorderHeight + floorWallHeight / 2;
 
 		removeChildren(0, getNumChildren());
 
-		addChild(Manager::ResourceManager::getInstance()->getShape("floorBase", [&](const QString& params) { return new Cuboid(floorDivideBorderBaseSize, FLOOR_DIVIDE_BORDER_HEIGHT, floorDivideBorderBaseSize, osg::Vec3(0.0f, 0.0f, floorDivideBorderGroundOffset)); }));
+		if (divideBorder)
+			addChild(Manager::ResourceManager::getInstance()->getShape("floorBase", [&](const QString& params) { return new Cuboid(floorDivideBorderBaseSize, FLOOR_DIVIDE_BORDER_HEIGHT, floorDivideBorderBaseSize, osg::Vec3(0.0f, 0.0f, floorDivideBorderGroundOffset)); }));
 		addChild(Manager::ResourceManager::getInstance()->getShape("floor", [&](const QString& params) { return new Cuboid(baseSize, floorWallHeight, baseSize, osg::Vec3(0.0f, 0.0f, floorGroundOffset)); }));
 	}
 

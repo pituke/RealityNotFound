@@ -8,7 +8,7 @@ namespace Clustering
 	{
 		floors = inputFloors;
 		if (floors.empty())
-			floors << new Floor();
+			floors << new Floor(false);
 		buildingHeight = Floor::getFloorMinHeight() * floors.count();
 		for (const auto& f : floors)
 			f->setBaseSize(BUILDING_DEFAULT_BASE_SIZE);

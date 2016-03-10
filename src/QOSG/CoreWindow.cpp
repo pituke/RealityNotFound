@@ -3571,7 +3571,10 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)
 			{
-				residence->addAttributeBuilding(new Clustering::Building());
+				auto b = new Clustering::Building();
+				b->setBaseSize(0.8);
+				b->setHeight(0.2);
+				residence->addAttributeBuilding(b);
 			}
 			break;
 		}

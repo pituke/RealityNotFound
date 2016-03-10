@@ -11,6 +11,9 @@ namespace Clustering
 	{
 		attributesBuildingsNode = new osg::PositionAttitudeTransform();
 		addChild(attributesBuildingsNode);
+		addChild(gettersSettersBuildingsNode);
+		addChild(internalMethodsBuildingsNode);
+		addChild(interfaceMethodsBuildingsNode);
 	}
 
 	void Residence::addAttributeBuilding(Building* attrBuilding)
@@ -18,17 +21,28 @@ namespace Clustering
 		attributesBuildings << attrBuilding;
 	}
 
+	void Residence::addGetterSeterBuilding(Building* getSetBuilding)
+	{
+		gettersSettersBuildings << getSetBuilding;
+	}
+
+	void Residence::addInternalBuilding(Building* internalBuilding)
+	{
+		internalMethodsBuildings << internalBuilding;
+	}
+
+	void Residence::addInterfaceBuilding(Building* interfaceBuilding)
+	{
+		interfaceMethodsBuildings << interfaceBuilding;
+	}
+
 	void Residence::refresh()
 	{
 		attributesBuildingsNode->removeChildren(0, attributesBuildingsNode->getNumChildren());
 
-		for (auto& b : attributesBuildings)
-		{
-			b->setBaseSize(0.8);
-			b->setHeight(1);
-		}
 		QList<osg::Vec3> outputs;
-		Layout::LayoutAlgorithms::layoutInsideRegion(attributesBuildings.first()->getBoundingBox(), attributesBuildings.count(), RESIDENCE_SECTOR_HEIGHT, BUILDING_SPACING, &outputs);
+		osg::BoundingBox region;
+		Layout::LayoutAlgorithms::layoutInsideRegion(attributesBuildings.first()->getBoundingBox(), attributesBuildings.count(), RESIDENCE_SECTOR_HEIGHT, BUILDING_SPACING, &outputs, &region);
 		for (uint i = 0; i < attributesBuildings.count(); ++i)
 		{
 			auto& b = attributesBuildings[i];
@@ -36,5 +50,6 @@ namespace Clustering
 			b->refresh();
 			attributesBuildingsNode->addChild(b);
 		}
+		attributesBuildingsNode->addChild(new Clustering::Cuboid(region.xMax() - region.xMin(), RESIDENCE_SECTOR_HEIGHT, region.yMax() - region.yMin(), osg::Vec3(0, 0, RESIDENCE_SECTOR_HEIGHT / 2)));
 	}
 }

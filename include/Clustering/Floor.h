@@ -9,9 +9,10 @@ namespace Clustering
 	private:
 		float baseSize;
 		float floorHeight;
+		bool divideBorder;
 
 	public:
-		Floor();
+		Floor(bool divideBorder = true);
 		void setBaseSize(float size);
 		float getBaseSize() const;
 		void setFloorHeight(float height);

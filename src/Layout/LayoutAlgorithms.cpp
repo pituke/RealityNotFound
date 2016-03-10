@@ -3,7 +3,7 @@
 
 namespace Layout
 {
-	void LayoutAlgorithms::layoutInsideRegion(const osg::BoundingBox& elementDimension, uint elementCount, float groundTopPosition, float spacing, QList<osg::Vec3>* layouts)
+	void LayoutAlgorithms::layoutInsideRegion(const osg::BoundingBox& elementDimension, uint elementCount, float groundTopPosition, float spacing, QList<osg::Vec3>* layouts, osg::BoundingBox* aroundRegion)
 	{
 		layouts->clear();
 		const float width = elementDimension.xMax() - elementDimension.xMin();
@@ -50,5 +50,136 @@ namespace Layout
 			l.x() += centerCorrectionOffsetX;
 			l.y() += centerCorrectionOffsetY;
 		}
+		if (aroundRegion != nullptr)
+		{
+			const float regionX = xMax / 2 + spacing;
+			const float regionY = yMax / 2 + spacing;
+			*aroundRegion = osg::BoundingBox(-regionX, -regionY, 0, regionX, regionY, 0);
+		}
+	}
+
+	struct Element
+	{
+		osg::BoundingBox boundingBox;
+		uint index;
+		ElementLayout layout;
+	};
+
+	struct ElementLine
+	{
+		enum StickSide { NONE, LEFT, RIGHT };
+
+		float maxSize;
+		float curSize;
+		QList<Element> elements;
+		StickSide stickSide;
+
+		ElementLine()
+		{
+			this->maxSize = 0;
+			this->curSize = 0;
+			this->stickSide = NONE;
+		}
+
+		bool tryAddElement(const Element& e, float spacing)
+		{
+			const auto nextSize = curSize + (e.boundingBox.xMax() - e.boundingBox.xMin()) + elements.empty() ? 0.0f : spacing;
+			if (nextSize <= maxSize)
+			{
+				elements << e;
+				curSize = nextSize;
+				return true;
+			}
+			return false;
+		}
+	};
+
+	struct IndentLines : public QVector<ElementLine>
+	{
+		IndentLines(uint count) : QVector<ElementLine>(count) {};
+	};
+	//typedef QVector<ElementLine> RegionRound;
+
+	void LayoutAlgorithms::layoutAroundRegion(const osg::BoundingBox& elementDimension, uint elementCount, const osg::BoundingBox& region, float spacing, QList<ElementLayout>* layouts)
+	{
+		static const uint EDGES_COUNT = 4;
+
+		const uint elementsOnEdgeCount = elementCount / EDGES_COUNT;
+		const uint elementsRemainCount = elementCount % EDGES_COUNT;
+		const float regionWidth = region.xMax() - region.xMin();
+		const float regionDepth = region.yMax() - region.yMin();
+		const float elementWidth = elementDimension.xMax() - elementDimension.xMin();
+		const float elementDepth = elementDimension.yMax() - elementDimension.yMin();
+		const float elementHeight = elementDimension.zMax() - elementDimension.zMin();
+		const float elementVerticalOffset = region.zMin() + elementHeight / 2;
+
+		QList<IndentLines> indents;
+		float baseMaxWidth = 0;
+		float baseMaxDepth = 0;
+		IndentLines* curIndent = nullptr;
+		uint elementIndex = 0;
+		uint edgeIndex = 0;
+		uint tryCount = 0;
+		while (elementIndex < elementCount)
+		{
+			if (!curIndent)
+			{
+				baseMaxWidth = baseMaxWidth == 0 ? regionWidth : baseMaxWidth + elementDepth + spacing;
+				baseMaxDepth = baseMaxDepth == 0 ? regionWidth : baseMaxDepth + elementDepth + spacing;
+				indents << IndentLines(EDGES_COUNT);
+				curIndent = &indents.last();
+				for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+					(*curIndent)[edgeIndex].maxSize = edgeIndex % 2 == 0 ? baseMaxWidth : baseMaxDepth;
+				edgeIndex = 0;
+			}
+			if ((*curIndent)[edgeIndex].tryAddElement(Element{ elementDimension, elementIndex }, spacing))
+			{
+				tryCount = 0;
+				elementIndex++;
+			}
+			else
+				tryCount++;
+			edgeIndex = edgeIndex % EDGES_COUNT;
+			if (tryCount == EDGES_COUNT)
+				curIndent = nullptr;
+		}
+		float indentEdgeValue = 0;
+		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
+		{
+			indentEdgeValue += indentEdgeValue == 0 ? elementDepth / 2 : elementDepth + spacing;
+			auto& indent = indents[indentIndex];
+			for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+			{
+				auto& edge = indent[edgeIndex];
+				const float rot = edgeIndex * osg::PI_2;
+				const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
+				const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
+				float alongEdgeValue = edge.maxSize / 2 * coefForAlong + elementWidth / 2 * -coefForAlong;
+				float spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
+				if (spacingForUse < spacing)
+				{
+					spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() - 1);
+					alongEdgeValue += spacingForUse * -coefForAlong;
+				}
+				for (auto& element : edge.elements)
+				{
+					element.layout.position = osg::Vec3(edgeIndex % 2 == 0 ? alongEdgeValue : indentEdgeValue, edgeIndex % 2 == 1 ? alongEdgeValue : indentEdgeValue, elementVerticalOffset);
+					element.layout.yawRotation = rot;
+					alongEdgeValue += (elementWidth + spacing) * -coefForAlong;
+				}
+			}
+		}
+		QVector<ElementLayout> tmpLayouts(elementCount);
+		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
+		{
+			auto& indent = indents[indentIndex];
+			for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+			{
+				auto& edge = indent[edgeIndex];
+				for (auto& element : edge.elements)
+					tmpLayouts[element.index] = element.layout;
+			}
+		}
+		*layouts = tmpLayouts.toList();
 	}
 }
