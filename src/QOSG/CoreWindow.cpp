@@ -3568,13 +3568,23 @@ void CoreWindow::showEvent(QShowEvent* e)
 	{
 		for (const auto& class_ : namespace_.classes)
 		{
-			//auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
+			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)
 			{
 				auto b = new Clustering::Building();
-				b->setBaseSize(0.8);
+				b->setBaseSize(1.0);
 				b->setHeight(0.2);
 				residence->addAttributeBuilding(b);
+			}
+
+			//for (const auto& igGetterSetter : ig.gettersSetters)
+			for (uint i = 0; i < 100; ++i)
+			{
+				//auto& getterSetter = class_.methods[igGetterSetter.callingMethodIndex];
+				auto b = new Clustering::Building();
+				b->setBaseSize(1.0);
+				b->setHeight(0.8);
+				residence->addGetterSeterBuilding(b);
 			}
 			break;
 		}

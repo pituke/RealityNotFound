@@ -71,6 +71,7 @@ namespace Layout
 
 		float maxSize;
 		float curSize;
+		bool full;
 		QList<Element> elements;
 		StickSide stickSide;
 
@@ -78,18 +79,20 @@ namespace Layout
 		{
 			this->maxSize = 0;
 			this->curSize = 0;
+			this->full = false;
 			this->stickSide = NONE;
 		}
 
 		bool tryAddElement(const Element& e, float spacing)
 		{
-			const auto nextSize = curSize + (e.boundingBox.xMax() - e.boundingBox.xMin()) + elements.empty() ? 0.0f : spacing;
+			const float nextSize = curSize + (e.boundingBox.xMax() - e.boundingBox.xMin()) + (elements.empty() ? 0.0f : spacing);
 			if (nextSize <= maxSize)
 			{
 				elements << e;
 				curSize = nextSize;
 				return true;
 			}
+			full = true;
 			return false;
 		}
 	};
@@ -111,7 +114,7 @@ namespace Layout
 		const float elementWidth = elementDimension.xMax() - elementDimension.xMin();
 		const float elementDepth = elementDimension.yMax() - elementDimension.yMin();
 		const float elementHeight = elementDimension.zMax() - elementDimension.zMin();
-		const float elementVerticalOffset = region.zMin() + elementHeight / 2;
+		const float elementVerticalOffset = -(region.zMin() + elementDimension.zMin());
 
 		QList<IndentLines> indents;
 		float baseMaxWidth = 0;
@@ -124,8 +127,8 @@ namespace Layout
 		{
 			if (!curIndent)
 			{
-				baseMaxWidth = baseMaxWidth == 0 ? regionWidth : baseMaxWidth + elementDepth + spacing;
-				baseMaxDepth = baseMaxDepth == 0 ? regionWidth : baseMaxDepth + elementDepth + spacing;
+				baseMaxWidth = baseMaxWidth == 0 ? regionWidth : baseMaxWidth + 2 * (elementDepth + spacing);
+				baseMaxDepth = baseMaxDepth == 0 ? regionWidth : baseMaxDepth + 2 * (elementDepth + spacing);
 				indents << IndentLines(EDGES_COUNT);
 				curIndent = &indents.last();
 				for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
@@ -139,14 +142,12 @@ namespace Layout
 			}
 			else
 				tryCount++;
-			edgeIndex = edgeIndex % EDGES_COUNT;
+			edgeIndex = (edgeIndex + 1) % EDGES_COUNT;
 			if (tryCount == EDGES_COUNT)
 				curIndent = nullptr;
 		}
-		float indentEdgeValue = 0;
 		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
 		{
-			indentEdgeValue += indentEdgeValue == 0 ? elementDepth / 2 : elementDepth + spacing;
 			auto& indent = indents[indentIndex];
 			for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 			{
@@ -155,17 +156,20 @@ namespace Layout
 				const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
 				const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
 				float alongEdgeValue = edge.maxSize / 2 * coefForAlong + elementWidth / 2 * -coefForAlong;
-				float spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
-				if (spacingForUse < spacing)
-				{
+				const float indentEdgeValue = ((edgeIndex % 2 == 0 ? regionDepth / 2 : regionWidth / 2) + elementDepth / 2 + spacing + indentIndex * (elementDepth + spacing)) * coefForIndent;
+				float spacingForUse;
+				if (edge.full)
 					spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() - 1);
+				else
+				{
+					spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
 					alongEdgeValue += spacingForUse * -coefForAlong;
 				}
 				for (auto& element : edge.elements)
 				{
 					element.layout.position = osg::Vec3(edgeIndex % 2 == 0 ? alongEdgeValue : indentEdgeValue, edgeIndex % 2 == 1 ? alongEdgeValue : indentEdgeValue, elementVerticalOffset);
 					element.layout.yawRotation = rot;
-					alongEdgeValue += (elementWidth + spacing) * -coefForAlong;
+					alongEdgeValue += (elementWidth + spacingForUse) * -coefForAlong;
 				}
 			}
 		}
