@@ -50,7 +50,7 @@ namespace Layout
 			l.x() += centerCorrectionOffsetX;
 			l.y() += centerCorrectionOffsetY;
 		}
-		if (aroundRegion != nullptr)
+		if (aroundRegion)
 		{
 			const float regionX = xMax / 2 + spacing;
 			const float regionY = yMax / 2 + spacing;
@@ -101,9 +101,8 @@ namespace Layout
 	{
 		IndentLines(uint count) : QVector<ElementLine>(count) {};
 	};
-	//typedef QVector<ElementLine> RegionRound;
 
-	void LayoutAlgorithms::layoutAroundRegion(const osg::BoundingBox& elementDimension, uint elementCount, const osg::BoundingBox& region, float spacing, QList<ElementLayout>* layouts)
+	void LayoutAlgorithms::layoutAroundRegion(const osg::BoundingBox& elementDimension, uint elementCount, const osg::BoundingBox& region, float spacing, QList<ElementLayout>* layouts, osg::BoundingBox* aroundRegion)
 	{
 		static const uint EDGES_COUNT = 4;
 
@@ -185,5 +184,24 @@ namespace Layout
 			}
 		}
 		*layouts = tmpLayouts.toList();
+		if (aroundRegion)
+		{
+			if (indents.empty())
+				*aroundRegion = osg::BoundingBox(region.xMin() - spacing, region.yMin() - spacing, 0, region.xMax() + spacing, region.yMax() + spacing, 0);
+			else
+			{
+				const int indentLastIndex = indents.count() - 1;
+				const int indentPrevLastIndex = indentLastIndex - 1;
+				float left, right, near, far;
+				QVector<float*> aroundRegionEdges;
+				aroundRegionEdges << &near << &right << &far << &left;
+				for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+				{
+					//uint indentCount = indents[indentLastIndex][edgeIndex].elements.count() > 0 ? indents.count() : (indentPrevLastIndex >= 0 ? indents[indentPrevLastIndex][edgeIndex].elements.count() : 0);
+					*aroundRegionEdges[edgeIndex] = indents.count() * elementDepth + (indents.count() + 1) * spacing;
+				}
+				*aroundRegion = osg::BoundingBox(region.xMin() - left, region.yMin() - near, 0, region.xMax() + right, region.yMax() + far, 0);
+			}
+		}
 	}
 }
