@@ -60,113 +60,154 @@ namespace Layout
 
 	struct Element
 	{
+		Element(const osg::BoundingBox& boundingBox, uint index)
+		{
+			this->boundingBox = boundingBox;
+			this->index = index;
+		}
 		osg::BoundingBox boundingBox;
 		uint index;
 		ElementLayout layout;
 	};
 
-	struct ElementLine
+	struct Edge
 	{
-		enum StickSide { NONE, LEFT, RIGHT };
-
-		float maxSize;
-		float curSize;
+		float maxEdgeSize;
 		bool full;
 		QList<Element> elements;
-		StickSide stickSide;
 
-		ElementLine()
+		Edge()
 		{
-			this->maxSize = 0;
-			this->curSize = 0;
+			this->maxEdgeSize = 0;
 			this->full = false;
-			this->stickSide = NONE;
-		}
-
-		bool tryAddElement(const Element& e, float spacing)
-		{
-			const float nextSize = curSize + (e.boundingBox.xMax() - e.boundingBox.xMin()) + (elements.empty() ? 0.0f : spacing);
-			if (nextSize <= maxSize)
-			{
-				elements << e;
-				curSize = nextSize;
-				return true;
-			}
-			full = true;
-			return false;
 		}
 	};
 
-	struct IndentLines : public QVector<ElementLine>
+	struct IndentEdges : public QVector<Edge>
 	{
-		IndentLines(uint count) : QVector<ElementLine>(count) {};
+		IndentEdges(uint count) : QVector<Edge>(count) {};
 	};
 
 	void LayoutAlgorithms::layoutAroundRegion(const osg::BoundingBox& elementDimension, uint elementCount, const osg::BoundingBox& region, float spacing, QList<ElementLayout>* layouts, osg::BoundingBox* aroundRegion)
 	{
 		static const uint EDGES_COUNT = 4;
 
-		const uint elementsOnEdgeCount = elementCount / EDGES_COUNT;
-		const uint elementsRemainCount = elementCount % EDGES_COUNT;
 		const float regionWidth = region.xMax() - region.xMin();
+		const float regionHalfWidth = regionWidth / 2;
 		const float regionDepth = region.yMax() - region.yMin();
+		const float regionHalfDepth = regionDepth / 2;
 		const float elementWidth = elementDimension.xMax() - elementDimension.xMin();
+		const float elementHalfWidth = elementWidth / 2;
 		const float elementDepth = elementDimension.yMax() - elementDimension.yMin();
-		const float elementHeight = elementDimension.zMax() - elementDimension.zMin();
+		const float elementHalfDepth = elementDepth / 2;
+		const float elementAlongOffset = elementWidth + spacing;
+		const float elementIndentOffset = elementDepth + spacing;
 		const float elementVerticalOffset = -(region.zMin() + elementDimension.zMin());
+		const float origRegionValuesForEdges[] = { region.yMin(), region.xMax(), region.yMax(), region.xMin() };
+		const float offsetX = region.center().x();
+		const float offsetY = region.center().y();
 
-		QList<IndentLines> indents;
-		float baseMaxWidth = 0;
-		float baseMaxDepth = 0;
-		IndentLines* curIndent = nullptr;
+		float curWidth = regionWidth + (regionWidth <= regionDepth ? elementIndentOffset * 2 : 0);
+		float curDepth = regionDepth + (regionWidth > regionDepth ? elementIndentOffset * 2 : 0);
+		QList<IndentEdges> indents;
+		IndentEdges* curIndent = nullptr;
+		IndentEdges* prevIndent = nullptr;
+		uint remainedElementsCount = elementCount;
 		uint elementIndex = 0;
-		uint edgeIndex = 0;
-		uint tryCount = 0;
-		while (elementIndex < elementCount)
+
+		while (remainedElementsCount > 0)
 		{
-			if (!curIndent)
+			indents << IndentEdges(EDGES_COUNT);
+			curIndent = &indents.last();
+			const uint maxCountOnWidth = floorf((curWidth + spacing) / (elementWidth + spacing));
+			const uint maxCountOnDepth = floorf((curDepth + spacing) / (elementWidth + spacing));
+			const uint maxCountOnIndent = (maxCountOnWidth + maxCountOnDepth) * 2;
+			const float fillCoef = 0.5;
+			const uint elementsCountToAddForIndent = std::min(remainedElementsCount, maxCountOnIndent);
+			remainedElementsCount -= elementsCountToAddForIndent;
+			if ((float)elementsCountToAddForIndent < (float)maxCountOnIndent * fillCoef) // zaplna po stranach a plni ako sa len da
 			{
-				baseMaxWidth = baseMaxWidth == 0 ? regionWidth : baseMaxWidth + 2 * (elementDepth + spacing);
-				baseMaxDepth = baseMaxDepth == 0 ? regionWidth : baseMaxDepth + 2 * (elementDepth + spacing);
-				indents << IndentLines(EDGES_COUNT);
-				curIndent = &indents.last();
-				for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
-					(*curIndent)[edgeIndex].maxSize = edgeIndex % 2 == 0 ? baseMaxWidth : baseMaxDepth;
-				edgeIndex = 0;
+				uint remainedElementsCountToAddForIndent = elementsCountToAddForIndent;
+				uint edgeIndex = 0;
+				while (remainedElementsCountToAddForIndent > 0)
+				{
+					const uint maxElemenstCountOnEdge = edgeIndex % 2 == 0 ? maxCountOnWidth : maxCountOnDepth;
+					const uint elemenstCountOnEdge = std::min(maxElemenstCountOnEdge, remainedElementsCountToAddForIndent);
+					auto& edge = (*curIndent)[edgeIndex];
+					edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
+					edge.full = elemenstCountOnEdge == maxElemenstCountOnEdge;
+					edgeIndex++;
+					for (uint i = 0; i < elemenstCountOnEdge; ++i)
+						edge.elements << Element(elementDimension, elementIndex++);
+					remainedElementsCountToAddForIndent -= elemenstCountOnEdge;
+				}
 			}
-			if ((*curIndent)[edgeIndex].tryAddElement(Element{ elementDimension, elementIndex }, spacing))
+			else // zaplna rovnomerne dokola
 			{
-				tryCount = 0;
-				elementIndex++;
+				if (elementsCountToAddForIndent == maxCountOnIndent)
+				{
+					for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+					{
+						auto& edge = (*curIndent)[edgeIndex];
+						edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
+						edge.full = true;
+						const uint countOnEdge = edgeIndex % 2 == 0 ? maxCountOnWidth : maxCountOnDepth;
+						for (uint i = 0; i < countOnEdge; ++i)
+							edge.elements << Element(elementDimension, elementIndex++);
+					}
+				}
+				else
+				{
+					const float tmpBase = curWidth + curDepth;
+					const float widthRatio = curWidth / tmpBase;
+					const float depthRatio = curDepth / tmpBase;
+					uint countOnWidth = roundf(elementsCountToAddForIndent / 2 * widthRatio);
+					uint countOnDepth = roundf(elementsCountToAddForIndent / 2 * depthRatio);
+					if (countOnWidth + countOnDepth > elementsCountToAddForIndent)
+					{
+						if (countOnWidth > countOnDepth) countOnWidth--;
+						else countOnDepth--;
+					}
+					for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+					{
+						auto& edge = (*curIndent)[edgeIndex];
+						edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
+						edge.full = edgeIndex % 2 == 0 ? countOnWidth == maxCountOnWidth : countOnDepth == maxCountOnDepth;
+						const uint countOnEdge = edgeIndex % 2 == 0 ? countOnWidth : countOnDepth;
+						for (uint i = 0; i < countOnEdge; ++i)
+							edge.elements << Element(elementDimension, elementIndex++);
+					}
+				}
+				
 			}
-			else
-				tryCount++;
-			edgeIndex = (edgeIndex + 1) % EDGES_COUNT;
-			if (tryCount == EDGES_COUNT)
-				curIndent = nullptr;
+			curWidth += elementIndentOffset * 2;
+			curDepth += elementIndentOffset * 2;
 		}
+
 		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
 		{
 			auto& indent = indents[indentIndex];
-			for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+			for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 			{
 				auto& edge = indent[edgeIndex];
 				const float rot = edgeIndex * osg::PI_2;
 				const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
 				const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
-				float alongEdgeValue = edge.maxSize / 2 * coefForAlong + elementWidth / 2 * -coefForAlong;
-				const float indentEdgeValue = ((edgeIndex % 2 == 0 ? regionDepth / 2 : regionWidth / 2) + elementDepth / 2 + spacing + indentIndex * (elementDepth + spacing)) * coefForIndent;
+				const float baseAlongPos = edge.maxEdgeSize / 2;
+				float alongEdgeValue = (baseAlongPos - elementHalfWidth) * coefForAlong;
+				const float baseIndentPos = edgeIndex % 2 == 0 ? regionHalfDepth : regionHalfWidth;
+				const float indentEdgeValue = (baseIndentPos + elementHalfDepth + spacing + indentIndex * elementIndentOffset) * coefForIndent;
 				float spacingForUse;
 				if (edge.full)
-					spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() - 1);
+					spacingForUse = (edge.maxEdgeSize - edge.elements.count() * elementWidth) / (edge.elements.count() - 1);
 				else
 				{
-					spacingForUse = (edge.maxSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
+					spacingForUse = (edge.maxEdgeSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
 					alongEdgeValue += spacingForUse * -coefForAlong;
 				}
 				for (auto& element : edge.elements)
 				{
-					element.layout.position = osg::Vec3(edgeIndex % 2 == 0 ? alongEdgeValue : indentEdgeValue, edgeIndex % 2 == 1 ? alongEdgeValue : indentEdgeValue, elementVerticalOffset);
+					element.layout.position = osg::Vec3((edgeIndex % 2 == 0 ? alongEdgeValue : indentEdgeValue) + offsetX, (edgeIndex % 2 == 1 ? alongEdgeValue : indentEdgeValue) + offsetY, elementVerticalOffset);
 					element.layout.yawRotation = rot;
 					alongEdgeValue += (elementWidth + spacingForUse) * -coefForAlong;
 				}
@@ -176,7 +217,7 @@ namespace Layout
 		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
 		{
 			auto& indent = indents[indentIndex];
-			for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+			for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 			{
 				auto& edge = indent[edgeIndex];
 				for (auto& element : edge.elements)
@@ -190,17 +231,19 @@ namespace Layout
 				*aroundRegion = osg::BoundingBox(region.xMin() - spacing, region.yMin() - spacing, 0, region.xMax() + spacing, region.yMax() + spacing, 0);
 			else
 			{
-				const int indentLastIndex = indents.count() - 1;
-				const int indentPrevLastIndex = indentLastIndex - 1;
-				float left, right, near, far;
-				QVector<float*> aroundRegionEdges;
-				aroundRegionEdges << &near << &right << &far << &left;
-				for (edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+				float newAroundRegionValuesForEdges[4];
+				for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 				{
-					//uint indentCount = indents[indentLastIndex][edgeIndex].elements.count() > 0 ? indents.count() : (indentPrevLastIndex >= 0 ? indents[indentPrevLastIndex][edgeIndex].elements.count() : 0);
-					*aroundRegionEdges[edgeIndex] = indents.count() * elementDepth + (indents.count() + 1) * spacing;
+					const uint indentCountForEdge = indents.last()[edgeIndex].elements.count() > 0 ? indents.count() : indents.count() - 1;
+					const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
+					newAroundRegionValuesForEdges[edgeIndex] = origRegionValuesForEdges[edgeIndex] + (indentCountForEdge * elementIndentOffset + spacing) * coefForIndent;
 				}
-				*aroundRegion = osg::BoundingBox(region.xMin() - left, region.yMin() - near, 0, region.xMax() + right, region.yMax() + far, 0);
+
+				const float& newNear = newAroundRegionValuesForEdges[0];
+				const float& newRight = newAroundRegionValuesForEdges[1];
+				const float& newFar = newAroundRegionValuesForEdges[2];
+				const float& newLeft = newAroundRegionValuesForEdges[3];
+				*aroundRegion = osg::BoundingBox(newLeft, newNear, 0, newRight, newFar, 0);
 			}
 		}
 	}

@@ -6,13 +6,18 @@
 namespace Clustering
 {
 	Cuboid::Cuboid(float width, float height, float depth, const osg::Vec3& offset)
+		: Cuboid(osg::BoundingBox(-width / 2 + offset.x(), -depth / 2 + offset.y(), -height / 2 + offset.z(), width / 2 + offset.x(), depth / 2 + offset.y(), height / 2 + offset.z()))
 	{
-		const float right = (width / 2) + offset.x();
-		const float left = -(width / 2) + offset.x();
-		const float top = (height / 2) + offset.z();
-		const float bottom = -(height / 2) + offset.z();
-		const float farr = (depth / 2) + offset.y();
-		const float nearr = -(depth / 2) + offset.y();
+	}
+
+	Cuboid::Cuboid(const osg::BoundingBox& boundingBox)
+	{
+		const float right = boundingBox.xMax();
+		const float left = boundingBox.xMin();
+		const float top = boundingBox.zMax();
+		const float bottom = boundingBox.zMin();
+		const float farr = boundingBox.yMax();
+		const float nearr = boundingBox.yMin();
 
 		const osg::Vec3 vs[] =
 		{
@@ -49,7 +54,7 @@ namespace Clustering
 		QVector<osg::Vec3> vertices;
 		QVector<osg::Vec3> normals;
 		QVector<GLuint> quads;
-		for (GLuint i = 0; i < sizeof(fs)/sizeof(GLuint); ++i)
+		for (GLuint i = 0; i < sizeof(fs) / sizeof(GLuint); ++i)
 		{
 			vertices << vs[fs[i]];
 			normals << ns[i / 4];

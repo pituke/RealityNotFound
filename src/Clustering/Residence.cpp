@@ -4,7 +4,7 @@
 
 namespace Clustering
 {
-	static const float RESIDENCE_SECTOR_HEIGHT = 0.2;
+	static const float RESIDENCE_SECTOR_HEIGHT = 0.5;
 	static const float BUILDING_SPACING = 0.5;
 
 	Residence::Residence()
@@ -69,12 +69,14 @@ namespace Clustering
 			for (uint i = 0; i < gettersSettersBuildings.count(); ++i)
 			{
 				auto& b = gettersSettersBuildings[i];
+				getSetLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;
 				b->setPosition(getSetLayouts[i].position);
 				b->setAttitude(osg::Quat(getSetLayouts[i].yawRotation, osg::Vec3(0.0f, 0.0f, 1.0f)));
 				b->refresh();
 				gettersSettersBuildingsNode->addChild(b);
 			}
-			gettersSettersBuildingsNode->addChild(new Cuboid(getSetRegion.xMax() - getSetRegion.xMin(), RESIDENCE_SECTOR_HEIGHT, getSetRegion.yMax() - getSetRegion.yMin(), osg::Vec3(0, 0, RESIDENCE_SECTOR_HEIGHT / 2)));
+			osg::BoundingBox getSetPlane(getSetRegion.xMin(), getSetRegion.yMin(), 0, getSetRegion.xMax(), getSetRegion.yMax(), RESIDENCE_SECTOR_HEIGHT);
+			gettersSettersBuildingsNode->addChild(new Cuboid(getSetPlane));
 		}
 
 		osg::BoundingBox internalRegion;
@@ -85,12 +87,14 @@ namespace Clustering
 			for (uint i = 0; i < internalMethodsBuildings.count(); ++i)
 			{
 				auto& b = internalMethodsBuildings[i];
+				internalLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;
 				b->setPosition(internalLayouts[i].position);
 				b->setAttitude(osg::Quat(internalLayouts[i].yawRotation, osg::Vec3(0.0f, 0.0f, 1.0f)));
 				b->refresh();
 				internalMethodsBuildingsNode->addChild(b);
 			}
-			internalMethodsBuildingsNode->addChild(new Cuboid(internalRegion.xMax() - internalRegion.xMin(), RESIDENCE_SECTOR_HEIGHT, internalRegion.yMax() - internalRegion.yMin(), osg::Vec3(0, 0, RESIDENCE_SECTOR_HEIGHT / 2)));
+			osg::BoundingBox internalPlane(internalRegion.xMin(), internalRegion.yMin(), 0, internalRegion.xMax(), internalRegion.yMax(), RESIDENCE_SECTOR_HEIGHT);
+			internalMethodsBuildingsNode->addChild(new Cuboid(internalPlane));
 		}
 
 		osg::BoundingBox interfaceRegion;
@@ -101,33 +105,36 @@ namespace Clustering
 			for (uint i = 0; i < interfaceMethodsBuildings.count(); ++i)
 			{
 				auto& b = interfaceMethodsBuildings[i];
+				interfaceLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;
 				b->setPosition(interfaceLayouts[i].position);
 				b->setAttitude(osg::Quat(interfaceLayouts[i].yawRotation, osg::Vec3(0.0f, 0.0f, 1.0f)));
 				b->refresh();
 				interfaceMethodsBuildingsNode->addChild(b);
 			}
-			interfaceMethodsBuildingsNode->addChild(new Cuboid(interfaceRegion.xMax() - interfaceRegion.xMin(), RESIDENCE_SECTOR_HEIGHT, interfaceRegion.yMax() - interfaceRegion.yMin(), osg::Vec3(0, 0, RESIDENCE_SECTOR_HEIGHT / 2)));
+			osg::BoundingBox interfacePlane(interfaceRegion.xMin(), interfaceRegion.yMin(), 0, interfaceRegion.xMax(), interfaceRegion.yMax(), RESIDENCE_SECTOR_HEIGHT);
+			interfaceMethodsBuildingsNode->addChild(new Cuboid(interfacePlane));
 		}
 
+		const auto offset = interfaceRegion.center();
 		float residenceSectorOffset = 0;
 		if (!interfaceMethodsBuildings.empty())
 		{
-			interfaceMethodsBuildingsNode->setPosition(osg::Vec3(0, 0, residenceSectorOffset));
+			interfaceMethodsBuildingsNode->setPosition(osg::Vec3(-offset.x(), -offset.y(), residenceSectorOffset));
 			residenceSectorOffset += RESIDENCE_SECTOR_HEIGHT;
 		}
 		if (!internalMethodsBuildings.empty())
 		{
-			internalMethodsBuildingsNode->setPosition(osg::Vec3(0, 0, residenceSectorOffset));
+			internalMethodsBuildingsNode->setPosition(osg::Vec3(-offset.x(), -offset.y(), residenceSectorOffset));
 			residenceSectorOffset += RESIDENCE_SECTOR_HEIGHT;
 		}
 		if (!gettersSettersBuildings.empty())
 		{
-			gettersSettersBuildingsNode->setPosition(osg::Vec3(0, 0, residenceSectorOffset));
+			gettersSettersBuildingsNode->setPosition(osg::Vec3(-offset.x(), -offset.y(), residenceSectorOffset));
 			residenceSectorOffset += RESIDENCE_SECTOR_HEIGHT;
 		}
 		if (!attributesBuildings.empty())
 		{
-			attributesBuildingsNode->setPosition(osg::Vec3(0, 0, residenceSectorOffset));
+			attributesBuildingsNode->setPosition(osg::Vec3(-offset.x(), -offset.y(), residenceSectorOffset));
 			residenceSectorOffset += RESIDENCE_SECTOR_HEIGHT;
 		}
 	}

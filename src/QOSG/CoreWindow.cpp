@@ -52,6 +52,7 @@
 #include <Clustering/Building.h>
 #include <Importer/Parsing/InvocationGraph.h>
 #include <Clustering/Residence.h>
+#include <Layout/LayoutAlgorithms.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -3569,6 +3570,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 	auto nodeType = graph->addType("defaultNodeType");
 	auto edgeType = graph->addType("defaultEdgeType");
 
+	Clustering::Residence* gResidence;
 	for (const auto& namespace_ : softTree.namespaces)
 	{
 		auto namespaceNode = graph->addNode(namespace_.name, nodeType);
@@ -3578,10 +3580,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 			auto classNode = graph->addNode(class_.name, nodeType);
 			auto edgeNamespaceClass = graph->addEdge(namespace_.name + " " + class_.name, namespaceNode, classNode, edgeType, true);
 			auto residence = new Clustering::Residence();
+			gResidence = residence;
 			classNode->addChild(residence);
 			//classNode->set
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
-			for (const auto& attribute : class_.attributes)
+			//for (const auto& attribute : class_.attributes)
+			for (uint i = 0; i < 6; ++i)
 			{
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
@@ -3589,16 +3593,18 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addAttributeBuilding(b);
 			}
 
-			for (const auto& iggs : ig.gettersSetters)
+			//for (const auto& iggs : ig.gettersSetters)
+			for (uint i = 0; i < 21; ++i)
 			{
 				//auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
-				b->setHeight(0.8);
+				b->setHeight(0.25);
 				residence->addGetterSeterBuilding(b);
 			}
 
-			for (const auto& igin : ig.internalMethods)
+			//for (const auto& igin : ig.internalMethods)
+			for (uint i = 0; i < 50; ++i)
 			{
 				//auto& internalMethod = class_.methods[igin.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3607,7 +3613,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addInternalBuilding(b);
 			}
 
-			for (const auto& igif : ig.interfaceMethods)
+			//for (const auto& igif : ig.interfaceMethods)
+			for (uint i = 0; i < 100; ++i)
 			{
 				//auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3616,7 +3623,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addInterfaceBuilding(b);
 			}
 
-			for (const auto& igc : ig.constructors)
+			for (uint i = 0; i < 0; ++i)
+			//for (const auto& igc : ig.constructors)
 			{
 				//auto& constructorMethod = class_.methods[igc.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3629,7 +3637,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 		}
 	}
 
-	// nastavenie aktivneho grafu
+	/*// nastavenie aktivneho grafu
 	if (manager->getActiveGraph() != NULL)
 	{
 		// ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
@@ -3645,9 +3653,9 @@ void CoreWindow::showEvent(QShowEvent* e)
 	{
 		layout->play();
 		coreGraph->setNodesFreezed(false);
-	}
+	}*/
 
-	//viewerWidget->setSceneData(residence);
+	viewerWidget->setSceneData(gResidence);
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )
