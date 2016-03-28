@@ -471,7 +471,7 @@ void CoreWindow::createActions()
 	le_edgeBundlingalpha->setText( "100" );
 
 	nodeTypeComboBox = new QComboBox();
-	nodeTypeComboBox->insertItems( 0,( QStringList() << "Square" << "Sphere" ) );
+	nodeTypeComboBox->insertItems( 0,( QStringList() << "Square" << "Sphere" << "Residence" ) );
 	nodeTypeComboBox->setFocusPolicy( Qt::NoFocus );
 	connect( nodeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( nodeTypeComboBoxChanged( int ) ) );
 
@@ -1251,8 +1251,8 @@ void CoreWindow::showLoadGraph()
 
 void SoftTreeToGraph(const Importer::Parsing::SoftTree& softTree, Data::Graph* graph)
 {
-    auto nodeType = graph->addType("defaultNodeType");
-    auto edgeType = graph->addType("defaultEdgeType");
+	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
+	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
     foreach (const Importer::Parsing::Namespace& _namespace, softTree.namespaces)
     {
@@ -1789,6 +1789,9 @@ void CoreWindow::nodeTypeComboBoxChanged( int index )
 			break;
 		case 1:
 			coreGraph->setNodeVisual( Data::Node::INDEX_SPHERE );
+			break;
+		case 2:
+			coreGraph->setNodeVisual( Data::Node::INDEX_RESIDENCE );
 			break;
 		default:
 			qDebug() << "CoreWindow:nodeTypeComboBoxChanged do not suported index";
@@ -3567,8 +3570,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 	auto manager = Manager::GraphManager::getInstance();
 	auto graph = manager->createGraph("SoftwareGraph");
 
-	auto nodeType = graph->addType("defaultNodeType");
-	auto edgeType = graph->addType("defaultEdgeType");
+	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
+	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
 	Clustering::Residence* gResidence;
 	for (const auto& namespace_ : softTree.namespaces)
@@ -3581,11 +3584,10 @@ void CoreWindow::showEvent(QShowEvent* e)
 			auto edgeNamespaceClass = graph->addEdge(namespace_.name + " " + class_.name, namespaceNode, classNode, edgeType, true);
 			auto residence = new Clustering::Residence();
 			gResidence = residence;
-			classNode->addChild(residence);
-			//classNode->set
+			classNode->setResidence(residence);
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
-			//for (const auto& attribute : class_.attributes)
-			for (uint i = 0; i < 6; ++i)
+			for (const auto& attribute : class_.attributes)
+			//for (uint i = 0; i < 0; ++i)
 			{
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
@@ -3593,8 +3595,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addAttributeBuilding(b);
 			}
 
-			//for (const auto& iggs : ig.gettersSetters)
-			for (uint i = 0; i < 21; ++i)
+			for (const auto& iggs : ig.gettersSetters)
+			//for (uint i = 0; i < 0; ++i)
 			{
 				//auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3603,8 +3605,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addGetterSeterBuilding(b);
 			}
 
-			//for (const auto& igin : ig.internalMethods)
-			for (uint i = 0; i < 50; ++i)
+			for (const auto& igin : ig.internalMethods)
+			//for (uint i = 0; i < 0; ++i)
 			{
 				//auto& internalMethod = class_.methods[igin.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3613,8 +3615,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addInternalBuilding(b);
 			}
 
-			//for (const auto& igif : ig.interfaceMethods)
-			for (uint i = 0; i < 100; ++i)
+			for (const auto& igif : ig.interfaceMethods)
+			//for (uint i = 0; i < 0; ++i)
 			{
 				//auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3623,8 +3625,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				residence->addInterfaceBuilding(b);
 			}
 
-			for (uint i = 0; i < 0; ++i)
-			//for (const auto& igc : ig.constructors)
+			for (const auto& igc : ig.constructors)
+			//for (uint i = 0; i < 0; ++i)
 			{
 				//auto& constructorMethod = class_.methods[igc.callingMethodIndex];
 				auto b = new Clustering::Building();
@@ -3634,10 +3636,11 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			residence->refresh();
+			break;
 		}
 	}
-
-	/*// nastavenie aktivneho grafu
+	/*
+	// nastavenie aktivneho grafu
 	if (manager->getActiveGraph() != NULL)
 	{
 		// ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
@@ -3653,8 +3656,10 @@ void CoreWindow::showEvent(QShowEvent* e)
 	{
 		layout->play();
 		coreGraph->setNodesFreezed(false);
-	}*/
+	}
 
+	nodeTypeComboBox->setCurrentIndex(2);
+	*/
 	viewerWidget->setSceneData(gResidence);
 }
 

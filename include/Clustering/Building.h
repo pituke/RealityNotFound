@@ -11,6 +11,7 @@ namespace Clustering
 	private:
 		QList<Floor*> floors;
 		float buildingHeight;
+		bool triangleRoof;
 
 	public:
 		Building(const QList<Floor*>& inputFloors = QList<Floor*>());
@@ -18,6 +19,7 @@ namespace Clustering
 		float getHeight() const;
 		void setBaseSize(float size);
 		float getBaseSize() const;
+		void setTriangleRoof(bool state);
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
 		static float getMinHeight();

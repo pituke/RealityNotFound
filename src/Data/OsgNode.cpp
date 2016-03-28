@@ -13,6 +13,7 @@
 #include <osgText/FadeText>
 
 #include <QTextStream>
+#include <Clustering/Cuboid.h>
 
 
 Data::OsgNode::OsgNode( qlonglong id, QString name, Data::Type* type, Data::Graph* graph, float scaling, osg::Vec3f position )
@@ -27,7 +28,8 @@ Data::OsgNode::OsgNode( qlonglong id, QString name, Data::Type* type, Data::Grap
 
 	insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
 	insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ) , false );
-	insertChild( INDEX_SPHERE, createNodeSphere( this->scale, OsgNode::createStateSet( this->type ) ), false );
+	insertChild( INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type)) , false);
+	insertChild( INDEX_RESIDENCE, createNodeResidence(), false);
 	setValue( graph->getNodeVisual(), true );
 
 	this->square = createNode( this->scale * 4, OsgNode::createStateSet( this->type ) );
@@ -166,6 +168,12 @@ osg::ref_ptr<osg::Drawable> Data::OsgNode::createSquare( const float& scale, osg
 	return nodeRect;
 }
 
+void Data::OsgNode::setResidence(osg::Node* residence)
+{
+	if (residence && !setChild(INDEX_RESIDENCE, residence))
+		throw std::exception("Cannot set an osg subgraph for residence");
+}
+
 osg::Vec3f Data::OsgNode::getCurrentPosition( bool calculateNew, float interpolationSpeed )
 {
 	//zisime aktualnu poziciu uzla v danom okamihu
@@ -237,15 +245,17 @@ void Data::OsgNode::setVisual( int index )
 {
 	setValue( INDEX_SQUARE, false );
 	setValue( INDEX_SPHERE, false );
+	setValue( INDEX_RESIDENCE, false);
 	setValue( index, true );
 }
 
 void Data::OsgNode::reloadConfig()
 {
-	removeChildren( 0, 3 );
+	removeChildren( 0, 4 );
 	this->insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
 	this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ), false );
 	this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale, OsgNode::createStateSet( this->type ) ), false );
+	this->insertChild( INDEX_RESIDENCE, createNodeResidence(), false);
 	setSelected( selected );
 	setColor( color );
 	setValue( graph->getNodeVisual(), true );
@@ -360,6 +370,11 @@ osg::ref_ptr<osg::Geode> Data::OsgNode::createNodeSphere( const float& scaling, 
 	geode->addDrawable( nodeSphere );
 
 	return geode;
+}
+
+osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence()
+{
+	return new osg::PositionAttitudeTransform();
 }
 
 osg::ref_ptr<osg::Geode> Data::OsgNode::createLabel( const float& scale, QString name )

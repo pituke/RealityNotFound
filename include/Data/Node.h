@@ -274,16 +274,6 @@ private:
 	bool positionCanBeRestricted;
 
 	/**
-	    *  \fn private static  createSquare
-	    *  \brief Creates square around node
-	    *  \param  scale   square scale
-	    *  \param  bbState     square stateset
-	    *  \return osg::ref_ptr square drawable
-	    */
-	static osg::ref_ptr<osg::Drawable> createSquare( const float& scale, osg::StateSet* bbState );
-
-
-	/**
 	    *  QString labelText
 	    *  \brief Text show in the label
 	    */

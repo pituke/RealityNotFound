@@ -16,40 +16,51 @@ namespace Layout
 		uint limit = 1;
 		uint xNum = 0;
 		uint yNum = 0;
-		float xMax = -FLT_MAX;
-		float yMax = -FLT_MAX;
-		for (uint i = 0; i < elementCount; ++i)
+		float xMax;
+		float yMax;
+		if (elementCount > 0)
 		{
-			osg::Vec3 pos(xNum * offsetX + elementConstOffsetX, yNum * offsetY + elementConstOffsetY, elementConstOffsetZ);
-			if (xMax < pos.x()) xMax = pos.x();
-			if (yMax < pos.y()) yMax = pos.y();
-			*layouts << pos;
-			if (xNum == limit)
+			xMax = -FLT_MAX;
+			yMax = -FLT_MAX;
+			for (uint i = 0; i < elementCount; ++i)
 			{
-				if (yNum == limit)
+				osg::Vec3 pos(xNum * offsetX + elementConstOffsetX, yNum * offsetY + elementConstOffsetY, elementConstOffsetZ);
+				if (xMax < pos.x()) xMax = pos.x();
+				if (yMax < pos.y()) yMax = pos.y();
+				*layouts << pos;
+				if (xNum == limit)
 				{
-					limit++;
-					yNum = 0;
-					xNum = limit;
+					if (yNum == limit)
+					{
+						limit++;
+						yNum = 0;
+						xNum = limit;
+					}
+					else
+					{
+						yNum++;
+						xNum = (yNum == limit) ? 0 : limit;
+					}
 				}
 				else
-				{
-					yNum++;
-					xNum = (yNum == limit) ? 0 : limit;
-				}
+					xNum++;
 			}
-			else
-				xNum++;
+			xMax += width / 2;
+			yMax += depth / 2;
+			const float centerCorrectionOffsetX = -xMax / 2;
+			const float centerCorrectionOffsetY = -yMax / 2;
+			for (auto& l : *layouts)
+			{
+				l.x() += centerCorrectionOffsetX;
+				l.y() += centerCorrectionOffsetY;
+			}
 		}
-		xMax += width / 2;
-		yMax += depth / 2;
-		const float centerCorrectionOffsetX = -xMax / 2;
-		const float centerCorrectionOffsetY = -yMax / 2;
-		for (auto& l : *layouts)
+		else
 		{
-			l.x() += centerCorrectionOffsetX;
-			l.y() += centerCorrectionOffsetY;
+			xMax = 0;
+			yMax = 0;
 		}
+
 		if (aroundRegion)
 		{
 			const float regionX = xMax / 2 + spacing;
@@ -74,12 +85,16 @@ namespace Layout
 	{
 		float maxEdgeSize;
 		bool full;
+		float beginAlongPos;
+		float alongOffsetCoef;
 		QList<Element> elements;
 
 		Edge()
 		{
 			this->maxEdgeSize = 0;
 			this->full = false;
+			this->beginAlongPos = 0;
+			this->alongOffsetCoef = 0;
 		}
 	};
 
@@ -92,20 +107,28 @@ namespace Layout
 	{
 		static const uint EDGES_COUNT = 4;
 
+		// rozmery regionu (oblast okolo ktorej sa umiestnuje)
 		const float regionWidth = region.xMax() - region.xMin();
 		const float regionHalfWidth = regionWidth / 2;
 		const float regionDepth = region.yMax() - region.yMin();
 		const float regionHalfDepth = regionDepth / 2;
+
+		// rozmery elementu (kvader ktory je umiestnovany)
 		const float elementWidth = elementDimension.xMax() - elementDimension.xMin();
 		const float elementHalfWidth = elementWidth / 2;
 		const float elementDepth = elementDimension.yMax() - elementDimension.yMin();
 		const float elementHalfDepth = elementDepth / 2;
+
+		// posuny
 		const float elementAlongOffset = elementWidth + spacing;
 		const float elementIndentOffset = elementDepth + spacing;
 		const float elementVerticalOffset = -(region.zMin() + elementDimension.zMin());
 		const float origRegionValuesForEdges[] = { region.yMin(), region.xMax(), region.yMax(), region.xMin() };
 		const float offsetX = region.center().x();
 		const float offsetY = region.center().y();
+
+		if (regionWidth < elementWidth || regionDepth < elementDepth)
+			throw std::exception("Region is too small for layouting even one element");
 
 		float curWidth = regionWidth + (regionWidth <= regionDepth ? elementIndentOffset * 2 : 0);
 		float curDepth = regionDepth + (regionWidth > regionDepth ? elementIndentOffset * 2 : 0);
@@ -115,75 +138,84 @@ namespace Layout
 		uint remainedElementsCount = elementCount;
 		uint elementIndex = 0;
 
+		// analyza - na ktorej stene bude kolko elementov
 		while (remainedElementsCount > 0)
 		{
-			indents << IndentEdges(EDGES_COUNT);
+			indents << IndentEdges(EDGES_COUNT); // nove odsadenie od regionu (jedno obkolesenie kvadrov - 4 strany)
 			curIndent = &indents.last();
-			const uint maxCountOnWidth = floorf((curWidth + spacing) / (elementWidth + spacing));
+			const uint maxCountOnWidth = floorf((curWidth + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na sirku a hlbku
 			const uint maxCountOnDepth = floorf((curDepth + spacing) / (elementWidth + spacing));
-			const uint maxCountOnIndent = (maxCountOnWidth + maxCountOnDepth) * 2;
-			const float fillCoef = 0.5;
-			const uint elementsCountToAddForIndent = std::min(remainedElementsCount, maxCountOnIndent);
+			const uint maxCountOnIndent = (maxCountOnWidth + maxCountOnDepth) * 2; // maximalny pocet elementov celkovo okolo regionu pre dane odsadenie
+			const float fillCoef = 0.5; // threshold podla ktoreho sa rozhoduje ktory algoritmus sa pouzije
+			const uint elementsCountToAddForIndent = std::min(remainedElementsCount, maxCountOnIndent); // nesmie sa umiestnit viac ako sa zmesti a zaroven viac kolko ostava
 			remainedElementsCount -= elementsCountToAddForIndent;
-			if ((float)elementsCountToAddForIndent < (float)maxCountOnIndent * fillCoef) // zaplna po stranach a plni ako sa len da
+			if ((float)elementsCountToAddForIndent < (float)maxCountOnIndent * fillCoef) // zaplna po stranach (spusta sa len raz pre posledne odsadenie) - najprv zaplni near, potom right, potom ...
 			{
-				uint remainedElementsCountToAddForIndent = elementsCountToAddForIndent;
-				uint edgeIndex = 0;
-				while (remainedElementsCountToAddForIndent > 0)
+				uint remainedElementsCountToAddForIndent = elementsCountToAddForIndent; // pocitadlo ostavajucich elementov
+				uint edgeIndex = 0; // index strany, near = 0, right = 1, far = 2, left = 3
+				while (remainedElementsCountToAddForIndent > 0) // ak este ostavaju nejake elementy na rozmiestnenie pre odsadenie
 				{
-					const uint maxElemenstCountOnEdge = edgeIndex % 2 == 0 ? maxCountOnWidth : maxCountOnDepth;
-					const uint elemenstCountOnEdge = std::min(maxElemenstCountOnEdge, remainedElementsCountToAddForIndent);
-					auto& edge = (*curIndent)[edgeIndex];
-					edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
-					edge.full = elemenstCountOnEdge == maxElemenstCountOnEdge;
-					edgeIndex++;
+					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1; // znamienko pre posun popri hrane (ci sa ma hodnota pridavat alebo odoberat)
+					const float coefMaxEdgeSizeOffsetSign = edgeIndex % 2 == 0 ? -1 : 1; // koef pre upravu oproti standardnej dlzky pri stene
+					const float coefMaxEdgeSizeOffsetMultiplier = edgeIndex == 0 || edgeIndex == 3 ? 2 : 1; // nasobic pre koef hore, niekde sa pridava/ubera 1, niekde 2-nasobok
+					const float coefBeginAlongPosOffsetSign = edgeIndex == 0 || edgeIndex == 3 ? 1 : -1; // znamienko pre posun zaciatku (ci sa ma hodnota pridavat alebo odoberat)
+					const float coefBeginAlongPosOffset = edgeIndex == 2 ? 0 : elementIndentOffset; // koef pre posun zaciatku
+					const float defaultMaxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth; // standardna max dlzka popri hrane
+					const float defaultBeginAlongPos = (defaultMaxEdgeSize / 2 - elementHalfWidth) * coefForAlong; // standardny zaciatok umiestovania na hrane
+					auto& edge = (*curIndent)[edgeIndex]; // vypocet informacii pre rozmiestnovanie na danej hrane
+					edge.alongOffsetCoef = coefForAlong;
+					edge.maxEdgeSize = defaultMaxEdgeSize + coefMaxEdgeSizeOffsetSign * coefMaxEdgeSizeOffsetMultiplier * elementIndentOffset;
+					edge.beginAlongPos = defaultBeginAlongPos + coefBeginAlongPosOffsetSign * coefBeginAlongPosOffset;
+					const uint maxCountOnCurrentEdge = floorf((edge.maxEdgeSize + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na hrane
+					const uint elemenstCountOnEdge = std::min(maxCountOnCurrentEdge, remainedElementsCountToAddForIndent); // vezme sa bud max pocet alebo zostavajuci - ten mensi
+					edge.full = elemenstCountOnEdge == maxCountOnCurrentEdge; // ak sa vzalo tolko elementov kolko sa zmesti na hranu - oznaci sa ako full zaplnena
 					for (uint i = 0; i < elemenstCountOnEdge; ++i)
 						edge.elements << Element(elementDimension, elementIndex++);
+					
 					remainedElementsCountToAddForIndent -= elemenstCountOnEdge;
+					edgeIndex++;
 				}
 			}
-			else // zaplna rovnomerne dokola
+			else // zaplna rovnomerne dokola - distribuuje elementy tak aby bolo na vsetkych stranach rovnako
 			{
-				if (elementsCountToAddForIndent == maxCountOnIndent)
+				// pocitaju sa pomery, na sirsiu stranu ich pojde viac
+				const float tmpBase = curWidth + curDepth;
+				const float widthRatio = curWidth / tmpBase;
+				const float depthRatio = curDepth / tmpBase;
+				uint countOnWidth = roundf(elementsCountToAddForIndent / 2 * widthRatio);
+				uint countOnDepth = roundf(elementsCountToAddForIndent / 2 * depthRatio);
+				float countOnEdges[] = { countOnWidth, countOnDepth, countOnWidth, countOnDepth };
+				const int diffCount = (countOnWidth + countOnDepth) * 2 - elementsCountToAddForIndent;
+				if (diffCount != 0)
 				{
-					for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
+					if (diffCount > 0)
 					{
-						auto& edge = (*curIndent)[edgeIndex];
-						edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
-						edge.full = true;
-						const uint countOnEdge = edgeIndex % 2 == 0 ? maxCountOnWidth : maxCountOnDepth;
-						for (uint i = 0; i < countOnEdge; ++i)
-							edge.elements << Element(elementDimension, elementIndex++);
+						if (countOnWidth >= countOnDepth) countOnEdges[2]--;
+						else countOnEdges[3]--;
+					}
+					else
+					{
+						if (countOnWidth <= countOnDepth) countOnEdges[0]++;
+						else countOnEdges[1]++;
 					}
 				}
-				else
+				for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 				{
-					const float tmpBase = curWidth + curDepth;
-					const float widthRatio = curWidth / tmpBase;
-					const float depthRatio = curDepth / tmpBase;
-					uint countOnWidth = roundf(elementsCountToAddForIndent / 2 * widthRatio);
-					uint countOnDepth = roundf(elementsCountToAddForIndent / 2 * depthRatio);
-					if (countOnWidth + countOnDepth > elementsCountToAddForIndent)
-					{
-						if (countOnWidth > countOnDepth) countOnWidth--;
-						else countOnDepth--;
-					}
-					for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
-					{
-						auto& edge = (*curIndent)[edgeIndex];
-						edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
-						edge.full = edgeIndex % 2 == 0 ? countOnWidth == maxCountOnWidth : countOnDepth == maxCountOnDepth;
-						const uint countOnEdge = edgeIndex % 2 == 0 ? countOnWidth : countOnDepth;
-						for (uint i = 0; i < countOnEdge; ++i)
-							edge.elements << Element(elementDimension, elementIndex++);
-					}
+					auto& edge = (*curIndent)[edgeIndex];
+					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
+					edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
+					edge.full = edgeIndex % 2 == 0 ? countOnEdges[edgeIndex] == maxCountOnWidth : countOnEdges[edgeIndex] == maxCountOnDepth;
+					edge.alongOffsetCoef = coefForAlong;
+					edge.beginAlongPos = (edge.maxEdgeSize / 2 - elementHalfWidth) * edge.alongOffsetCoef;
+					for (uint i = 0; i < countOnEdges[edgeIndex]; ++i)
+						edge.elements << Element(elementDimension, elementIndex++);
 				}
-				
 			}
-			curWidth += elementIndentOffset * 2;
+			curWidth += elementIndentOffset * 2; // pre dalsie odsadenie sa zvacsi aj velkost popri stene kde sa mozu rozmiestnovat elementy
 			curDepth += elementIndentOffset * 2;
 		}
 
+		// evaluacia pozicii
 		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
 		{
 			auto& indent = indents[indentIndex];
@@ -191,28 +223,28 @@ namespace Layout
 			{
 				auto& edge = indent[edgeIndex];
 				const float rot = edgeIndex * osg::PI_2;
-				const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
 				const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
-				const float baseAlongPos = edge.maxEdgeSize / 2;
-				float alongEdgeValue = (baseAlongPos - elementHalfWidth) * coefForAlong;
+				float alongEdgeValue = edge.beginAlongPos;
 				const float baseIndentPos = edgeIndex % 2 == 0 ? regionHalfDepth : regionHalfWidth;
 				const float indentEdgeValue = (baseIndentPos + elementHalfDepth + spacing + indentIndex * elementIndentOffset) * coefForIndent;
 				float spacingForUse;
-				if (edge.full)
+				if (edge.full) // ak je strana maximalne zaplnena elementami, vynecha sa prva a posledna medzera
 					spacingForUse = (edge.maxEdgeSize - edge.elements.count() * elementWidth) / (edge.elements.count() - 1);
 				else
 				{
 					spacingForUse = (edge.maxEdgeSize - edge.elements.count() * elementWidth) / (edge.elements.count() + 1);
-					alongEdgeValue += spacingForUse * -coefForAlong;
+					alongEdgeValue += spacingForUse * -edge.alongOffsetCoef;
 				}
 				for (auto& element : edge.elements)
 				{
 					element.layout.position = osg::Vec3((edgeIndex % 2 == 0 ? alongEdgeValue : indentEdgeValue) + offsetX, (edgeIndex % 2 == 1 ? alongEdgeValue : indentEdgeValue) + offsetY, elementVerticalOffset);
 					element.layout.yawRotation = rot;
-					alongEdgeValue += (elementWidth + spacingForUse) * -coefForAlong;
+					alongEdgeValue += (elementWidth + spacingForUse) * -edge.alongOffsetCoef;
 				}
 			}
 		}
+
+		// naplnenie pozicii do output-u
 		QVector<ElementLayout> tmpLayouts(elementCount);
 		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
 		{
@@ -225,6 +257,8 @@ namespace Layout
 			}
 		}
 		*layouts = tmpLayouts.toList();
+
+		// ak sa ma vratit aj region ktory pokryva vsetky rozmiestnene elementy - naplnia sa hodnoty
 		if (aroundRegion)
 		{
 			if (indents.empty())
