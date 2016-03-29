@@ -9,7 +9,8 @@ namespace Clustering
 	class Building : public osg::PositionAttitudeTransform
 	{
 	private:
-		QList<Floor*> floors;
+		QList<osg::ref_ptr<Floor>> floors;
+		float minBuildingHeight;
 		float buildingHeight;
 		bool triangleRoof;
 
@@ -22,6 +23,6 @@ namespace Clustering
 		void setTriangleRoof(bool state);
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
-		static float getMinHeight();
+		float getMinHeight() const;
 	};
 }

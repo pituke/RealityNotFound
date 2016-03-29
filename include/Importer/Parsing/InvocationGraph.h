@@ -104,12 +104,6 @@ namespace Importer
 					// cekni volania metod, get/setterov, atributov a podla toho napln asociacie - cekuj relativne k zoznamom znamych metod v mapach
 				}
 
-				QFile f("C:/Users/pituke/Desktop/methodList.txt");
-				f.open(QFile::WriteOnly);
-				QTextStream fs(&f);
-				for (auto m : methodList)
-					fs << m << '\n';
-
 				res.gettersSetters = gettersSettersMap.values();
 				res.internalMethods = internalMethodsMap.values();
 				res.interfaceMethods = interfaceMethodsMap.values();

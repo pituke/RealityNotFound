@@ -3554,6 +3554,19 @@ uint random(uint min, uint max)
 	return (qrand() % (max + 1 - min)) + min;
 }
 
+static const float MIN_MAX_BUILDING_HEIGHT_RATIO = 5;
+
+struct BuildingInfo
+{
+	Clustering::Building* building;
+	uint loc;
+	BuildingInfo(Clustering::Building* building, uint loc)
+	{
+		this->building = building;
+		this->loc = loc;
+	}
+};
+
 void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
@@ -3573,6 +3586,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
+	std::list<BuildingInfo> buildingsInfos;
 	Clustering::Residence* gResidence;
 	for (const auto& namespace_ : softTree.namespaces)
 	{
@@ -3598,47 +3612,65 @@ void CoreWindow::showEvent(QShowEvent* e)
 			for (const auto& iggs : ig.gettersSetters)
 			//for (uint i = 0; i < 0; ++i)
 			{
-				//auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
+				auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
 				b->setHeight(0.25);
 				residence->addGetterSeterBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, getterSetterMethod.GetLineOfCodes()));
 			}
 
 			for (const auto& igin : ig.internalMethods)
 			//for (uint i = 0; i < 0; ++i)
 			{
-				//auto& internalMethod = class_.methods[igin.callingMethodIndex];
+				auto& internalMethod = class_.methods[igin.callingMethodIndex];
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
 				b->setHeight(1.0);
 				residence->addInternalBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, internalMethod.GetLineOfCodes()));
 			}
 
 			for (const auto& igif : ig.interfaceMethods)
 			//for (uint i = 0; i < 0; ++i)
 			{
-				//auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
+				auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
 				b->setHeight(1.5);
 				residence->addInterfaceBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, interfaceMethod.GetLineOfCodes()));
 			}
 
 			for (const auto& igc : ig.constructors)
 			//for (uint i = 0; i < 0; ++i)
 			{
-				//auto& constructorMethod = class_.methods[igc.callingMethodIndex];
+				auto& constructorMethod = class_.methods[igc.callingMethodIndex];
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
 				b->setHeight(1.5);
 				residence->addInterfaceBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, constructorMethod.GetLineOfCodes()));
 			}
 
 			residence->refresh();
 			break;
 		}
 	}
+
+	auto minMaxLocIt = std::minmax_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.loc < b.loc; });
+	auto minHeightIt = std::min_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.building->getMinHeight() < b.building->getMinHeight(); });
+	const float minHeight = minHeightIt->building->getMinHeight();
+	const float maxHeight = minHeight * MIN_MAX_BUILDING_HEIGHT_RATIO;
+	const uint minLoc = minMaxLocIt.first->loc;
+	const uint maxLoc = minMaxLocIt.second->loc;
+	for (auto& bi : buildingsInfos)
+	{
+		const float buildingHeight = minHeight + ((bi.loc - minLoc) / (maxLoc - minLoc)) * (maxHeight - minHeight);
+		bi.building->setHeight(buildingHeight);
+		bi.building->refresh();
+	}
+
 	/*
 	// nastavenie aktivneho grafu
 	if (manager->getActiveGraph() != NULL)

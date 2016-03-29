@@ -9,13 +9,13 @@ namespace Clustering
 	class Residence : public osg::PositionAttitudeTransform
 	{
 	private:
-		QList<Building*> attributesBuildings;
+		QList<osg::ref_ptr<Building>> attributesBuildings;
 		osg::ref_ptr<osg::PositionAttitudeTransform> attributesBuildingsNode;
-		QList<Building*> gettersSettersBuildings;
+		QList<osg::ref_ptr<Building>> gettersSettersBuildings;
 		osg::ref_ptr<osg::PositionAttitudeTransform> gettersSettersBuildingsNode;
-		QList<Building*> internalMethodsBuildings;
+		QList<osg::ref_ptr<Building>> internalMethodsBuildings;
 		osg::ref_ptr<osg::PositionAttitudeTransform> internalMethodsBuildingsNode;
-		QList<Building*> interfaceMethodsBuildings;
+		QList<osg::ref_ptr<Building>> interfaceMethodsBuildings;
 		osg::ref_ptr<osg::PositionAttitudeTransform> interfaceMethodsBuildingsNode;
 
 	public:

@@ -8,11 +8,13 @@ namespace Clustering
 
 	Building::Building(const QList<Floor*>& inputFloors)
 	{
-		floors = inputFloors;
+		for (auto f : inputFloors)
+			floors << f;
 		this->triangleRoof = false;
 		if (floors.empty())
 			floors << new Floor(false);
-		buildingHeight = Floor::getFloorMinHeight() * floors.count();
+		minBuildingHeight = Floor::getFloorMinHeight() * floors.count();
+		buildingHeight = minBuildingHeight;
 		for (const auto& f : floors)
 			f->setBaseSize(BUILDING_DEFAULT_BASE_SIZE);
 	}
@@ -76,8 +78,8 @@ namespace Clustering
 		}
 	}
 
-	float Building::getMinHeight()
+	float Building::getMinHeight() const
 	{
-		return Floor::getFloorMinHeight();
+		return minBuildingHeight;
 	}
 }
