@@ -45,6 +45,7 @@ namespace Importer
 			QString ToString(int tabs) const;
 			bool IsConstructor() const;
 			bool IsInterface() const;
+			bool HasResult() const;
 			uint GetLineOfCodes() const;
         };
 

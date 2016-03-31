@@ -3554,7 +3554,7 @@ uint random(uint min, uint max)
 	return (qrand() % (max + 1 - min)) + min;
 }
 
-static const float MIN_MAX_BUILDING_HEIGHT_RATIO = 5;
+static const float MIN_MAX_BUILDING_HEIGHT_RATIO = 10;
 
 struct BuildingInfo
 {
@@ -3566,6 +3566,15 @@ struct BuildingInfo
 		this->loc = loc;
 	}
 };
+
+osg::StateSet* createMat(const osg::Vec3 color)
+{
+	auto ss = new osg::StateSet();
+	auto mat = new osg::Material();
+	mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(color.x(), color.y(), color.z(), 1.0f));
+	ss->setAttribute(mat);
+	return ss;
+}
 
 void CoreWindow::showEvent(QShowEvent* e)
 {
@@ -3586,6 +3595,11 @@ void CoreWindow::showEvent(QShowEvent* e)
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
+	osg::ref_ptr<osg::StateSet> yellow = createMat(osg::Vec3(1, 1, 0));
+	osg::ref_ptr<osg::StateSet> red = createMat(osg::Vec3(0.941, 0.502, 0.502));
+	osg::ref_ptr<osg::StateSet> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
+	osg::ref_ptr<osg::StateSet> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
+
 	std::list<BuildingInfo> buildingsInfos;
 	Clustering::Residence* gResidence;
 	for (const auto& namespace_ : softTree.namespaces)
@@ -3604,6 +3618,11 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto b = new Clustering::Building();
+				auto ss = new osg::StateSet();
+				auto mat = new osg::Material();
+				mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 0, 1));
+				ss->setAttribute(mat);
+				b->setStateSet(ss);
 				b->setBaseSize(1.0);
 				b->setHeight(0.2);
 				residence->addAttributeBuilding(b);
@@ -3613,9 +3632,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
-				auto b = new Clustering::Building();
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : getterSetterMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
-				b->setHeight(0.25);
+				b->setTriangleRoof(getterSetterMethod.HasResult());
 				residence->addGetterSeterBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, getterSetterMethod.GetLineOfCodes()));
 			}
@@ -3624,9 +3646,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& internalMethod = class_.methods[igin.callingMethodIndex];
-				auto b = new Clustering::Building();
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : internalMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
-				b->setHeight(1.0);
+				b->setTriangleRoof(internalMethod.HasResult());
 				residence->addInternalBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, internalMethod.GetLineOfCodes()));
 			}
@@ -3635,9 +3660,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
-				auto b = new Clustering::Building();
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : interfaceMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
-				b->setHeight(1.5);
+				b->setTriangleRoof(interfaceMethod.HasResult());
 				residence->addInterfaceBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, interfaceMethod.GetLineOfCodes()));
 			}
@@ -3646,9 +3674,12 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& constructorMethod = class_.methods[igc.callingMethodIndex];
-				auto b = new Clustering::Building();
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : constructorMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
-				b->setHeight(1.5);
+				b->setTriangleRoof(constructorMethod.HasResult());
 				residence->addInterfaceBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, constructorMethod.GetLineOfCodes()));
 			}
@@ -3659,14 +3690,14 @@ void CoreWindow::showEvent(QShowEvent* e)
 	}
 
 	auto minMaxLocIt = std::minmax_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.loc < b.loc; });
-	auto minHeightIt = std::min_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.building->getMinHeight() < b.building->getMinHeight(); });
+	auto minHeightIt = std::max_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.building->getMinHeight() < b.building->getMinHeight(); });
 	const float minHeight = minHeightIt->building->getMinHeight();
 	const float maxHeight = minHeight * MIN_MAX_BUILDING_HEIGHT_RATIO;
 	const uint minLoc = minMaxLocIt.first->loc;
 	const uint maxLoc = minMaxLocIt.second->loc;
 	for (auto& bi : buildingsInfos)
 	{
-		const float buildingHeight = minHeight + ((bi.loc - minLoc) / (maxLoc - minLoc)) * (maxHeight - minHeight);
+		const float buildingHeight = minHeight + ((float)(bi.loc - minLoc) / (float)(maxLoc - minLoc)) * (maxHeight - minHeight);
 		bi.building->setHeight(buildingHeight);
 		bi.building->refresh();
 	}

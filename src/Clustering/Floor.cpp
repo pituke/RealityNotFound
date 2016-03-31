@@ -4,13 +4,13 @@
 
 namespace Clustering
 {
-	static const float FLOOR_MIN_HEIGHT = 0.1f;
-	static const float FLOOR_DIVIDE_BORDER_STICK_UP = 0.05;
-	static const float FLOOR_DIVIDE_BORDER_HEIGHT = 0.02;
+	static const float FLOOR_MIN_HEIGHT = 0.15f;
+	static const float FLOOR_DIVIDE_BORDER_STICK_UP = 0.1;
+	static const float FLOOR_DIVIDE_BORDER_HEIGHT = 0.05;
 
-	Floor::Floor(bool divideBorder)
+	Floor::Floor()
 	{
-		this->divideBorder = divideBorder;
+		this->divideBorder = true;
 		baseSize = 0;
 		floorHeight = FLOOR_MIN_HEIGHT;
 	}
@@ -33,6 +33,11 @@ namespace Clustering
 	float Floor::getFloorHeight() const
 	{
 		return floorHeight;
+	}
+
+	void Floor::setDivideBorder(bool state)
+	{
+		divideBorder = state;
 	}
 
 	void Floor::refresh()

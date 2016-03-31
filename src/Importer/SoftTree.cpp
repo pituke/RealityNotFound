@@ -59,6 +59,11 @@ namespace Importer
 			return content.isEmpty();
 		}
 
+		bool Method::HasResult() const
+		{
+			return !returnType.isEmpty();
+		}
+
 		uint Method::GetLineOfCodes() const
 		{
 			return content.count('\n');

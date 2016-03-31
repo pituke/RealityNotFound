@@ -12,7 +12,11 @@ namespace Clustering
 			floors << f;
 		this->triangleRoof = false;
 		if (floors.empty())
-			floors << new Floor(false);
+		{
+			auto f = new Floor();
+			f->setDivideBorder(false);
+			floors << f;
+		}
 		minBuildingHeight = Floor::getFloorMinHeight() * floors.count();
 		buildingHeight = minBuildingHeight;
 		for (const auto& f : floors)
