@@ -4,7 +4,7 @@
 namespace Clustering
 {
 	static const float BUILDING_DEFAULT_BASE_SIZE = 1.0f;
-	static const float BUILDING_DEFAULT_ROOF_HEIGHT = 0.4f;
+	static const float BUILDING_DEFAULT_ROOF_HEIGHT = 0.3f;
 
 	Building::Building(const QList<Floor*>& inputFloors)
 	{

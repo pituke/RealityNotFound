@@ -152,20 +152,19 @@ namespace Layout
 			if ((float)elementsCountToAddForIndent < (float)maxCountOnIndent * fillCoef) // zaplna po stranach (spusta sa len raz pre posledne odsadenie) - najprv zaplni near, potom right, potom ...
 			{
 				uint remainedElementsCountToAddForIndent = elementsCountToAddForIndent; // pocitadlo ostavajucich elementov
-				uint edgeIndex = 0; // index strany, near = 0, right = 1, far = 2, left = 3
+				const uint firstEdgeOffset = curWidth < curDepth ? 0 : 1;
+				uint edgeIndex = firstEdgeOffset; // index strany, near = 0, right = 1, far = 2, left = 3
 				while (remainedElementsCountToAddForIndent > 0) // ak este ostavaju nejake elementy na rozmiestnenie pre odsadenie
 				{
-					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1; // znamienko pre posun popri hrane (ci sa ma hodnota pridavat alebo odoberat)
-					const float coefMaxEdgeSizeOffsetSign = edgeIndex % 2 == 0 ? -1 : 1; // koef pre upravu oproti standardnej dlzky pri stene
-					const float coefMaxEdgeSizeOffsetMultiplier = edgeIndex == 0 || edgeIndex == 3 ? 2 : 1; // nasobic pre koef hore, niekde sa pridava/ubera 1, niekde 2-nasobok
-					const float coefBeginAlongPosOffsetSign = edgeIndex == 0 || edgeIndex == 3 ? 1 : -1; // znamienko pre posun zaciatku (ci sa ma hodnota pridavat alebo odoberat)
-					const float coefBeginAlongPosOffset = edgeIndex == 2 ? 0 : elementIndentOffset; // koef pre posun zaciatku
-					const float defaultMaxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth; // standardna max dlzka popri hrane
-					const float defaultBeginAlongPos = (defaultMaxEdgeSize / 2 - elementHalfWidth) * coefForAlong; // standardny zaciatok umiestovania na hrane
 					auto& edge = (*curIndent)[edgeIndex]; // vypocet informacii pre rozmiestnovanie na danej hrane
+					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1; // znamienko pre posun popri hrane (ci sa ma hodnota pridavat alebo odoberat)
+					const float defaultMaxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth; // max dlzka popri hrane
+					const float defaultBeginAlongPos = (defaultMaxEdgeSize / 2 - elementHalfWidth) * coefForAlong; // zaciatok umiestovania na hrane
+					const float maxEdgeResizer = (edgeIndex - firstEdgeOffset) == 1 ? -elementAlongOffset : ((edgeIndex - firstEdgeOffset) == 2 ? elementAlongOffset : 0);
+					const float beginAlongPosOffset = (edgeIndex - firstEdgeOffset) == 2 ? elementAlongOffset : 0;
 					edge.alongOffsetCoef = coefForAlong;
-					edge.maxEdgeSize = defaultMaxEdgeSize + coefMaxEdgeSizeOffsetSign * coefMaxEdgeSizeOffsetMultiplier * elementIndentOffset;
-					edge.beginAlongPos = defaultBeginAlongPos + coefBeginAlongPosOffsetSign * coefBeginAlongPosOffset;
+					edge.maxEdgeSize = defaultMaxEdgeSize + maxEdgeResizer;
+					edge.beginAlongPos = defaultBeginAlongPos + beginAlongPosOffset;
 					const uint maxCountOnCurrentEdge = floorf((edge.maxEdgeSize + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na hrane
 					const uint elemenstCountOnEdge = std::min(maxCountOnCurrentEdge, remainedElementsCountToAddForIndent); // vezme sa bud max pocet alebo zostavajuci - ten mensi
 					edge.full = elemenstCountOnEdge == maxCountOnCurrentEdge; // ak sa vzalo tolko elementov kolko sa zmesti na hranu - oznaci sa ako full zaplnena
@@ -173,7 +172,7 @@ namespace Layout
 						edge.elements << Element(elementDimension, elementIndex++);
 					
 					remainedElementsCountToAddForIndent -= elemenstCountOnEdge;
-					edgeIndex++;
+					edgeIndex = (edgeIndex + 1) % EDGES_COUNT;
 				}
 			}
 			else // zaplna rovnomerne dokola - distribuuje elementy tak aby bolo na vsetkych stranach rovnako

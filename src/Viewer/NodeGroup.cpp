@@ -36,7 +36,7 @@ NodeGroup::~NodeGroup( void )
  */
 void NodeGroup::initNodes()
 {
-	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform;
+	//osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform;
 	//at->setPosition(node->getTargetPosition() * graphScale);
 	//at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
 	//at->addChild(node);

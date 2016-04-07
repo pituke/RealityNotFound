@@ -3567,13 +3567,11 @@ struct BuildingInfo
 	}
 };
 
-osg::StateSet* createMat(const osg::Vec3 color)
+osg::Material* createMat(const osg::Vec3 color)
 {
-	auto ss = new osg::StateSet();
 	auto mat = new osg::Material();
 	mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(color.x(), color.y(), color.z(), 1.0f));
-	ss->setAttribute(mat);
-	return ss;
+	return mat;
 }
 
 void CoreWindow::showEvent(QShowEvent* e)
@@ -3590,15 +3588,15 @@ void CoreWindow::showEvent(QShowEvent* e)
 	}
 
 	auto manager = Manager::GraphManager::getInstance();
-	auto graph = manager->createGraph("SoftwareGraph");
+	auto graph = manager->createNewGraph("SoftwareGraph"); // zaroven nastavi graf ako aktivny
 
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
-	osg::ref_ptr<osg::StateSet> yellow = createMat(osg::Vec3(1, 1, 0));
-	osg::ref_ptr<osg::StateSet> red = createMat(osg::Vec3(0.941, 0.502, 0.502));
-	osg::ref_ptr<osg::StateSet> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
-	osg::ref_ptr<osg::StateSet> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
+	osg::ref_ptr<osg::Material> yellow = createMat(osg::Vec3(1, 1, 0));
+	osg::ref_ptr<osg::Material> red = createMat(osg::Vec3(0.941, 0.502, 0.502));
+	osg::ref_ptr<osg::Material> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
+	osg::ref_ptr<osg::Material> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
 
 	std::list<BuildingInfo> buildingsInfos;
 	Clustering::Residence* gResidence;
@@ -3618,13 +3616,10 @@ void CoreWindow::showEvent(QShowEvent* e)
 			//for (uint i = 0; i < 0; ++i)
 			{
 				auto b = new Clustering::Building();
-				auto ss = new osg::StateSet();
-				auto mat = new osg::Material();
-				mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 0, 1));
-				ss->setAttribute(mat);
-				b->setStateSet(ss);
 				b->setBaseSize(1.0);
 				b->setHeight(0.2);
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(yellow);
 				residence->addAttributeBuilding(b);
 			}
 
@@ -3638,6 +3633,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(getterSetterMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(yellow);
 				residence->addGetterSeterBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, getterSetterMethod.GetLineOfCodes()));
 			}
@@ -3652,6 +3649,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(internalMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(internalMethod.modifier == Importer::Parsing::Modifier::PUBLIC ? green : (internalMethod.modifier == Importer::Parsing::Modifier::PROTECTED ? orange : red)); // private, unknown = red
 				residence->addInternalBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, internalMethod.GetLineOfCodes()));
 			}
@@ -3666,6 +3665,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(interfaceMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(green);
 				residence->addInterfaceBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, interfaceMethod.GetLineOfCodes()));
 			}
@@ -3680,6 +3681,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 				auto b = new Clustering::Building(floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(constructorMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(green);
 				residence->addInterfaceBuilding(b);
 				buildingsInfos.push_back(BuildingInfo(b, constructorMethod.GetLineOfCodes()));
 			}
@@ -3702,28 +3705,19 @@ void CoreWindow::showEvent(QShowEvent* e)
 		bi.building->refresh();
 	}
 
-	/*
-	// nastavenie aktivneho grafu
-	if (manager->getActiveGraph() != NULL)
-	{
-		// ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
-		manager->closeGraph(manager->getActiveGraph());
-	}
-	manager->setActiveGraph(graph);
-
 	// robime zakladnu proceduru pre restartovanie layoutu
 	AppCore::Core::getInstance()->restartLayout();
-
+	
 	//treba overit ci funguje
 	if (isPlaying)
 	{
 		layout->play();
 		coreGraph->setNodesFreezed(false);
 	}
-
+	
 	nodeTypeComboBox->setCurrentIndex(2);
-	*/
-	viewerWidget->setSceneData(gResidence);
+	
+	//viewerWidget->setSceneData(gResidence);
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )
