@@ -3613,7 +3613,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			classNode->setResidence(residence);
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)
-			//for (uint i = 0; i < 0; ++i)
 			{
 				auto b = new Clustering::Building();
 				b->setBaseSize(1.0);
@@ -3624,7 +3623,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			for (const auto& iggs : ig.gettersSetters)
-			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
 				QList<Clustering::Floor*> floors;
@@ -3640,7 +3638,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			for (const auto& igin : ig.internalMethods)
-			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& internalMethod = class_.methods[igin.callingMethodIndex];
 				QList<Clustering::Floor*> floors;
@@ -3656,7 +3653,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			for (const auto& igif : ig.interfaceMethods)
-			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
 				QList<Clustering::Floor*> floors;
@@ -3672,7 +3668,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			for (const auto& igc : ig.constructors)
-			//for (uint i = 0; i < 0; ++i)
 			{
 				auto& constructorMethod = class_.methods[igc.callingMethodIndex];
 				QList<Clustering::Floor*> floors;
@@ -3688,7 +3683,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 			}
 
 			residence->refresh();
-			break;
 		}
 	}
 
@@ -3715,7 +3709,8 @@ void CoreWindow::showEvent(QShowEvent* e)
 		coreGraph->setNodesFreezed(false);
 	}
 	
-	nodeTypeComboBox->setCurrentIndex(2);
+	nodeTypeComboBox->setCurrentIndex(2); // residence
+	edgeTypeComboBox->setCurrentIndex(2); // line
 	
 	//viewerWidget->setSceneData(gResidence);
 }

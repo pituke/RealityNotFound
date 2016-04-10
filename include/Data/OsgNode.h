@@ -333,7 +333,7 @@ public:
 	    *  \param  bbState	node stateset
 	    *  \return osg::ref_ptr node geode
 	    */
-	static osg::ref_ptr<osg::Geode> createNodeSquare( const float& scale, osg::StateSet* bbState );
+	static osg::ref_ptr<osg::Node> createNodeSquare( const float& scale, osg::StateSet* bbState );
 
 	/**
 	    *  \fn private static  createNodeSphere(const float & scale, osg::StateSet* bbState)
@@ -342,7 +342,7 @@ public:
 	    *  \param  bbState	node stateset
 	    *  \return osg::ref_ptr node geode
 	    */
-	static osg::ref_ptr<osg::Geode> createNodeSphere( const float& scale, osg::StateSet* bbState );
+	static osg::ref_ptr<osg::Node> createNodeSphere(const float& scale, osg::StateSet* bbState);
 
 	/**
 	*  \fn private static  createNodeResidence(const float & scale, osg::StateSet* bbState)
@@ -368,7 +368,7 @@ public:
 	    *  \param       name     label text
 	    *  \return osg::ref_ptr node label
 	    */
-	static osg::ref_ptr<osg::Geode> createLabel( const float& scale, QString name );
+	static osg::ref_ptr<osg::Node> createLabel(const float& scale, QString name);
 
 	static const int INDEX_LABEL = 0;
 	static const int INDEX_SQUARE = 1;

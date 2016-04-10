@@ -191,7 +191,7 @@ osg::Vec3f Data::OsgNode::getCurrentPosition( bool calculateNew, float interpola
 void Data::OsgNode::setDrawableColor( osg::Vec4 color )
 {
 	//nastavenie farby uzla
-	osg::Geometry* geometry  = getChild( INDEX_SQUARE )->asGeode()->getDrawable( 0 )->asGeometry();
+	osg::Geometry* geometry  = getChild( INDEX_SQUARE )->asGroup()->getChild(0)->asGeode()->getDrawable( 0 )->asGeometry();
 
 	if ( geometry != NULL ) {
 		osg::Vec4Array* colorArray =  dynamic_cast<osg::Vec4Array*>( geometry->getColorArray() );
@@ -200,7 +200,7 @@ void Data::OsgNode::setDrawableColor( osg::Vec4 color )
 		colorArray->push_back( color );
 	}
 
-	( dynamic_cast<osg::ShapeDrawable*>( getChild( INDEX_SPHERE )->asGeode()->getDrawable( 0 ) ) )->setColor( color );
+	( dynamic_cast<osg::ShapeDrawable*>( getChild( INDEX_SPHERE )->asGroup()->getChild(0)->asGeode()->getDrawable( 0 ) ) )->setColor( color );
 }
 
 bool Data::OsgNode::setInvisible( bool invisible )
@@ -293,7 +293,7 @@ osg::ref_ptr<osg::StateSet> Data::OsgNode::createStateSet( Data::Type* type )
 	return stateSet;
 }
 
-osg::ref_ptr<osg::Geode> Data::OsgNode::createNodeSquare( const float& scaling, osg::StateSet* bbState )
+osg::ref_ptr<osg::Node> Data::OsgNode::createNodeSquare(const float& scaling, osg::StateSet* bbState)
 {
 	//vytvorenie uzla, scaling urcuje jeho velkost
 	float width = scaling;
@@ -337,11 +337,15 @@ osg::ref_ptr<osg::Geode> Data::OsgNode::createNodeSquare( const float& scaling, 
 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
 	geode->addDrawable( nodeQuad );
+	
+	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
+	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
+	at->addChild(geode);
 
-	return geode;
+	return at;
 }
 
-osg::ref_ptr<osg::Geode> Data::OsgNode::createNodeSphere( const float& scaling, osg::StateSet* bbState )
+osg::ref_ptr<osg::Node> Data::OsgNode::createNodeSphere(const float& scaling, osg::StateSet* bbState)
 {
 	//vytvorenie uzla, scaling urcuje jeho velkost
 	float radius = scaling ;
@@ -369,7 +373,11 @@ osg::ref_ptr<osg::Geode> Data::OsgNode::createNodeSphere( const float& scaling, 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
 	geode->addDrawable( nodeSphere );
 
-	return geode;
+	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
+	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
+	at->addChild(geode);
+
+	return at;
 }
 
 osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence()
@@ -377,7 +385,7 @@ osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence()
 	return new osg::PositionAttitudeTransform();
 }
 
-osg::ref_ptr<osg::Geode> Data::OsgNode::createLabel( const float& scale, QString name )
+osg::ref_ptr<osg::Node> Data::OsgNode::createLabel(const float& scale, QString name)
 {
 	//vytvorenie popisu uzla
 	osg::ref_ptr<osgText::FadeText> label = new osgText::FadeText;
@@ -414,7 +422,11 @@ osg::ref_ptr<osg::Geode> Data::OsgNode::createLabel( const float& scale, QString
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode;
 	geode->addDrawable( label );
 
-	return geode;
+	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
+	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
+	at->addChild(geode);
+
+	return at;
 }
 
 bool Data::OsgNode::isFocused() const
