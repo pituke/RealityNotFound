@@ -1,14 +1,24 @@
 #include "Clustering/Residence.h"
 #include <Layout/LayoutAlgorithms.h>
 #include <Clustering/Cuboid.h>
+#include <Util/ApplicationConfig.h>
 
 namespace Clustering
 {
-	static const float RESIDENCE_SECTOR_HEIGHT = 0.2;
-	static const float BUILDING_SPACING = 0.5;
+	static bool INITED = false;
+	static float RESIDENCE_SECTOR_HEIGHT = 0.2f;
+	static float BUILDING_SPACING = 0.5f;
 
 	Residence::Residence()
 	{
+		if (!INITED)
+		{
+			auto config = Util::ApplicationConfig::get();
+			RESIDENCE_SECTOR_HEIGHT = config->getFloatValue("City.Residence.SectorPlaneHeight", RESIDENCE_SECTOR_HEIGHT);
+			BUILDING_SPACING = config->getFloatValue("City.Residence.BuildingSpacing", BUILDING_SPACING);
+			INITED = true;
+		}
+
 		attributesBuildingsNode = new osg::PositionAttitudeTransform();
 		gettersSettersBuildingsNode = new osg::PositionAttitudeTransform();
 		internalMethodsBuildingsNode = new osg::PositionAttitudeTransform();

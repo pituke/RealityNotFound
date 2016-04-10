@@ -1,15 +1,26 @@
 #include "Clustering/Floor.h"
 #include <Manager/ResourceManager.h>
 #include <Clustering/Cuboid.h>
+#include <Util/ApplicationConfig.h>
 
 namespace Clustering
 {
-	static const float FLOOR_MIN_HEIGHT = 0.15f;
-	static const float FLOOR_DIVIDE_BORDER_STICK_UP = 0.1;
-	static const float FLOOR_DIVIDE_BORDER_HEIGHT = 0.05;
+	static bool INITED = false;
+	static float FLOOR_MIN_HEIGHT = 0.15f;
+	static float FLOOR_DIVIDE_BORDER_STICK_UP = 0.1f;
+	static float FLOOR_DIVIDE_BORDER_HEIGHT = 0.05f;
 
 	Floor::Floor()
 	{
+		if (!INITED)
+		{
+			auto config = Util::ApplicationConfig::get();
+			FLOOR_MIN_HEIGHT = config->getFloatValue("City.Floor.MinHeight", FLOOR_MIN_HEIGHT);
+			FLOOR_DIVIDE_BORDER_STICK_UP = config->getFloatValue("City.Floor.DivideBorderStickUp", FLOOR_DIVIDE_BORDER_STICK_UP);
+			FLOOR_DIVIDE_BORDER_HEIGHT = config->getFloatValue("City.Floor.DivideBorderHeight", FLOOR_DIVIDE_BORDER_HEIGHT);
+			INITED = true;
+		}
+
 		this->divideBorder = true;
 		baseSize = 0;
 		floorHeight = FLOOR_MIN_HEIGHT;

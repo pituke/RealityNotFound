@@ -1,13 +1,23 @@
 #include "Clustering/Building.h"
 #include <Clustering/QuadPyramide.h>
+#include <Util/ApplicationConfig.h>
 
 namespace Clustering
 {
-	static const float BUILDING_DEFAULT_BASE_SIZE = 1.0f;
-	static const float BUILDING_DEFAULT_ROOF_HEIGHT = 0.3f;
+	static bool INITED = false;
+	static float BUILDING_DEFAULT_BASE_SIZE = 1.0f;
+	static float BUILDING_DEFAULT_ROOF_HEIGHT = 0.3f;
 
 	Building::Building(const QList<Floor*>& inputFloors)
 	{
+		if (!INITED)
+		{
+			auto config = Util::ApplicationConfig::get();
+			BUILDING_DEFAULT_BASE_SIZE = config->getFloatValue("City.Building.DefaultBaseSize", BUILDING_DEFAULT_BASE_SIZE);
+			BUILDING_DEFAULT_ROOF_HEIGHT = config->getFloatValue("City.Building.DefaultRoofHeight", BUILDING_DEFAULT_ROOF_HEIGHT);
+			INITED = true;
+		}
+
 		for (auto f : inputFloors)
 			floors << f;
 		this->triangleRoof = false;
