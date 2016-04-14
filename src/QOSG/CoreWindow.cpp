@@ -480,6 +480,13 @@ void CoreWindow::createActions()
 	edgeTypeComboBox->setFocusPolicy( Qt::NoFocus );
 	connect( edgeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( edgeTypeComboBoxChanged( int ) ) );
 
+	residenceScaleSpinBox = new QDoubleSpinBox();
+	residenceScaleSpinBox->setRange(0.1, 100);
+	residenceScaleSpinBox->setDecimals(1);
+	residenceScaleSpinBox->setSingleStep(0.1);
+	residenceScaleSpinBox->setValue(10);
+	connect(residenceScaleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(residenceScaleSpinBoxValueChanged(double)));
+
 	b_start_server = new QPushButton();
 	b_start_server->setText( "Host session" );
 	connect( b_start_server, SIGNAL( clicked() ), this, SLOT( start_server() ) );
@@ -837,6 +844,8 @@ QWidget* CoreWindow::createGraphTab( QFrame* line )
 	lGraph->addRow( nodeTypeComboBox );
 	edgeTypeComboBox->setMaximumWidth( 136 );
 	lGraph->addRow( edgeTypeComboBox );
+	residenceScaleSpinBox->setMaximumWidth(136);
+	lGraph->addRow(residenceScaleSpinBox);
 
 	wGraph->setLayout( lGraph );
 
@@ -1820,6 +1829,11 @@ void CoreWindow::edgeTypeComboBoxChanged( int index )
 			break;
 
 	}
+}
+
+void CoreWindow::residenceScaleSpinBoxValueChanged(double value)
+{
+	
 }
 
 void CoreWindow::applyColorClick()
