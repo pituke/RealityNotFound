@@ -3725,6 +3725,15 @@ void CoreWindow::showEvent(QShowEvent* e)
 	
 	nodeTypeComboBox->setCurrentIndex(2); // residence
 	edgeTypeComboBox->setCurrentIndex(2); // line
+
+	/*QMapIterator<qlonglong, osg::ref_ptr<Data::Node> > it(*graph->getNodes());
+	while (it.hasNext())
+	{
+		it.next();
+		it.value()->setScale(100);
+		//it.value()->reloadConfig();
+		//reload(graph);
+	}*/
 	
 	//viewerWidget->setSceneData(gResidence);
 }

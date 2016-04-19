@@ -120,6 +120,7 @@ public:
 	     */
 	void update();
 
+	void scaleNodes(bool scaleUp);
 
 	/**
 	    *  \fn inline public  getCustomNodeList

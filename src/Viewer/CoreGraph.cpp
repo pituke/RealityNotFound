@@ -984,6 +984,16 @@ osg::ref_ptr<osg::Node> CoreGraph::createSkyNoiseBox()
 	return clearNode;
 }
 
+void CoreGraph::scaleNodes(bool scaleUp)
+{
+	QMapIterator<qlonglong, osg::ref_ptr<Data::Node> > it(*in_nodes);
+
+	while (it.hasNext())
+	{
+		it.next();
+		it.value()->setScale(it.value()->getScale() * (scaleUp ? 1.2 : 0.8));
+	}
+}
 
 osg::ref_ptr<osg::Node> CoreGraph::createBackground()
 {
@@ -1016,6 +1026,7 @@ osg::ref_ptr<osg::Node> CoreGraph::createBackground()
 
 	return NULL;
 }
+
 
 
 osg::ref_ptr<osg::Group> CoreGraph::initEdgeLabels()

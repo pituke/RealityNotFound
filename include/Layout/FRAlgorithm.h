@@ -1,4 +1,4 @@
-/**
+﻿/**
 *  FRAlgorithm.h
 *  Projekt 3DVisual
 */
@@ -160,6 +160,16 @@ public:
 	    *  \brief Sets the repulsive force multiplier between two nodes in one vertigo plane
 	    */
 	void setRepulsiveForceVertigo( int value );
+
+	void setMaxDistance(float max_distance)
+	{
+		this->MAX_DISTANCE = max_distance;
+	}
+
+	float getMaxDistance()
+	{
+		return MAX_DISTANCE;
+	}
 
 private:
 	Layout::RadialLayout* rl;

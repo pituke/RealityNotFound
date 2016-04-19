@@ -29,7 +29,7 @@ Data::OsgNode::OsgNode( qlonglong id, QString name, Data::Type* type, Data::Grap
 	insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
 	insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ) , false );
 	insertChild( INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type)) , false);
-	insertChild( INDEX_RESIDENCE, createNodeResidence(), false);
+	insertChild( INDEX_RESIDENCE, createNodeResidence(this->scale), false );
 	setValue( graph->getNodeVisual(), true );
 
 	this->square = createNode( this->scale * 4, OsgNode::createStateSet( this->type ) );
@@ -203,6 +203,25 @@ void Data::OsgNode::setDrawableColor( osg::Vec4 color )
 	( dynamic_cast<osg::ShapeDrawable*>( getChild( INDEX_SPHERE )->asGroup()->getChild(0)->asGeode()->getDrawable( 0 ) ) )->setColor( color );
 }
 
+void Data::OsgNode::setScale(float val)
+{
+	VizNode::setScale(val);
+	const osg::Vec3 scale(val, val, val);
+	for (uint i = 0; i < getNumChildren(); ++i)
+	{
+		auto childTransform = getChild(i)->asTransform();
+		if (childTransform)
+		{
+			auto at = dynamic_cast<osg::AutoTransform*>(childTransform);
+			auto pat = dynamic_cast<osg::PositionAttitudeTransform*>(childTransform);
+			if (at)
+				at->setScale(scale);
+			if (pat)
+				pat->setScale(scale);
+		}
+	}
+}
+
 bool Data::OsgNode::setInvisible( bool invisible )
 {
 	setValue( static_cast<unsigned int>( graph->getNodeVisual() ), !invisible );
@@ -255,7 +274,7 @@ void Data::OsgNode::reloadConfig()
 	this->insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
 	this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ), false );
 	this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale, OsgNode::createStateSet( this->type ) ), false );
-	this->insertChild( INDEX_RESIDENCE, createNodeResidence(), false);
+	this->insertChild( INDEX_RESIDENCE, createNodeResidence(this->scale), false );
 	setSelected( selected );
 	setColor( color );
 	setValue( graph->getNodeVisual(), true );
@@ -341,6 +360,7 @@ osg::ref_ptr<osg::Node> Data::OsgNode::createNodeSquare(const float& scaling, os
 	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
 	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
 	at->addChild(geode);
+	at->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
 
 	return at;
 }
@@ -376,13 +396,16 @@ osg::ref_ptr<osg::Node> Data::OsgNode::createNodeSphere(const float& scaling, os
 	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
 	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
 	at->addChild(geode);
+	at->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
 
 	return at;
 }
 
-osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence()
+osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence(const float& scale)
 {
-	return new osg::PositionAttitudeTransform();
+	auto pat = new osg::PositionAttitudeTransform();
+	pat->setScale(osg::Vec3(scale, scale, scale));
+	return pat;
 }
 
 osg::ref_ptr<osg::Node> Data::OsgNode::createLabel(const float& scale, QString name)
@@ -425,6 +448,7 @@ osg::ref_ptr<osg::Node> Data::OsgNode::createLabel(const float& scale, QString n
 	osg::ref_ptr<osg::AutoTransform> at = new osg::AutoTransform();
 	at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
 	at->addChild(geode);
+	at->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
 
 	return at;
 }

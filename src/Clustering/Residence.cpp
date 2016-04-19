@@ -27,6 +27,7 @@ namespace Clustering
 		addChild(gettersSettersBuildingsNode);
 		addChild(internalMethodsBuildingsNode);
 		addChild(interfaceMethodsBuildingsNode);
+		getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
 	}
 
 	void Residence::addAttributeBuilding(Building* attrBuilding)

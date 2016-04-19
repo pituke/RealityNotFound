@@ -12,6 +12,7 @@
 
 #include "Core/Core.h"
 #include "Layout/LayoutThread.h"
+#include "Layout/FRAlgorithm.h"
 #include "Layout/Shape_Cube.h"
 
 #include "Util/ApplicationConfig.h"
@@ -275,6 +276,33 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, GUIActionAdap
 	}
 	else if ( ea.getKey() == osgGA::GUIEventAdapter::KEY_N ) {
 		this->selectAllNeighbors( this->pickedNodes );
+	}
+	else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_O)
+	{
+		if (isCtrlPressed)
+		{
+			//scale down
+			coreGraph->scaleNodes(false);
+		}
+		else
+		{
+			//scale up
+			coreGraph->scaleNodes(true);
+		}
+	}
+	else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_P)
+	{
+		Layout::LayoutThread* layout = AppCore::Core::getInstance()->getLayoutThread();
+		float distance = layout->getAlg()->getMaxDistance();
+
+		if (isCtrlPressed)
+		{
+			layout->getAlg()->setMaxDistance(distance * 0.8);
+		}
+		else
+		{
+			layout->getAlg()->setMaxDistance(distance * 1.2);
+		}
 	}
 
 	// FULLSCREEN

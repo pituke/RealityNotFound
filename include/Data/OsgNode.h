@@ -15,7 +15,6 @@ typedef osg::TemplateIndexArray<unsigned int, osg::Array::UIntArrayType,4,1> Col
 class OsgNode : public DbNode, public osg::Switch
 {
 public:
-
 	OsgNode( qlonglong id, QString name, Data::Type* type, Data::Graph* graph, float scaling, osg::Vec3f position );
 
 	~OsgNode( void );
@@ -207,6 +206,8 @@ public:
 	{
 		return color;
 	}
+	
+	void setScale(float val) override;
 
 	bool setInvisible( bool invisible );
 
@@ -351,7 +352,7 @@ public:
 	*  \param  bbState	node stateset
 	*  \return osg::ref_ptr node geode
 	*/
-	static osg::ref_ptr<osg::Node> createNodeResidence();
+	static osg::ref_ptr<osg::Node> createNodeResidence(const float& scale);
 
 	/**
 	    *  \fn private static  createStateSet(Data::Type * type = 0)
