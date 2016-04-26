@@ -334,13 +334,6 @@ public slots:
 	void edgeTypeComboBoxChanged( int index );
 
 	/**
-	*  \fn public  residenceScaleSpinBoxValueChanged(double value)
-	*  \brief Event for residence scale spin box value changed
-	*  \param  value
-	*/
-	void residenceScaleSpinBoxValueChanged(double value);
-
-	/**
 	            *  \fn public  applyColorClick
 	            *  \brief Apply selected color in colorpicker to selected node
 	            */
@@ -1302,12 +1295,6 @@ private:
 	    *  \brief Pointer to comobox of edge types
 	    */
 	QComboBox* edgeTypeComboBox;
-
-	/**
-	*  QComboBox * residenceScaleSpinBox
-	*  \brief Pointer to spinbox of residence scale
-	*/
-	QDoubleSpinBox* residenceScaleSpinBox;
 
 	/**
 		*  bool isEBPlaying

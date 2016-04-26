@@ -53,6 +53,7 @@
 #include <Importer/Parsing/InvocationGraph.h>
 #include <Clustering/Residence.h>
 #include <Layout/LayoutAlgorithms.h>
+#include <Viewer/DataHelper.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -480,13 +481,6 @@ void CoreWindow::createActions()
 	edgeTypeComboBox->setFocusPolicy( Qt::NoFocus );
 	connect( edgeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( edgeTypeComboBoxChanged( int ) ) );
 
-	residenceScaleSpinBox = new QDoubleSpinBox();
-	residenceScaleSpinBox->setRange(0.1, 100);
-	residenceScaleSpinBox->setDecimals(1);
-	residenceScaleSpinBox->setSingleStep(0.1);
-	residenceScaleSpinBox->setValue(10);
-	connect(residenceScaleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(residenceScaleSpinBoxValueChanged(double)));
-
 	b_start_server = new QPushButton();
 	b_start_server->setText( "Host session" );
 	connect( b_start_server, SIGNAL( clicked() ), this, SLOT( start_server() ) );
@@ -844,8 +838,6 @@ QWidget* CoreWindow::createGraphTab( QFrame* line )
 	lGraph->addRow( nodeTypeComboBox );
 	edgeTypeComboBox->setMaximumWidth( 136 );
 	lGraph->addRow( edgeTypeComboBox );
-	residenceScaleSpinBox->setMaximumWidth(136);
-	lGraph->addRow(residenceScaleSpinBox);
 
 	wGraph->setLayout( lGraph );
 
@@ -1829,11 +1821,6 @@ void CoreWindow::edgeTypeComboBoxChanged( int index )
 			break;
 
 	}
-}
-
-void CoreWindow::residenceScaleSpinBoxValueChanged(double value)
-{
-	
 }
 
 void CoreWindow::applyColorClick()
@@ -3612,18 +3599,20 @@ void CoreWindow::showEvent(QShowEvent* e)
 	osg::ref_ptr<osg::Material> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
 	osg::ref_ptr<osg::Material> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
 
+	auto rootNode = graph->addNode("", nodeType);
+	rootNode->setResidence(Data::Node::createNodeSquare(8, Data::Node::createStateSet(Vwr::DataHelper::readTextureFromFile(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaNode")))));
+
 	std::list<BuildingInfo> buildingsInfos;
-	Clustering::Residence* gResidence;
 	for (const auto& namespace_ : softTree.namespaces)
 	{
 		auto namespaceNode = graph->addNode(namespace_.name, nodeType);
+		auto rootNamespaceEdge = graph->addEdge(QString(), rootNode, namespaceNode, edgeType, true);
 
 		for (const auto& class_ : namespace_.classes)
 		{
 			auto classNode = graph->addNode(class_.name, nodeType);
-			auto edgeNamespaceClass = graph->addEdge(namespace_.name + " " + class_.name, namespaceNode, classNode, edgeType, true);
+			auto edgeNamespaceClass = graph->addEdge(QString(), namespaceNode, classNode, edgeType, true);
 			auto residence = new Clustering::Residence();
-			gResidence = residence;
 			classNode->setResidence(residence);
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)

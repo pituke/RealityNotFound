@@ -360,7 +360,7 @@ public:
 	    *  \param   type     node type
 	    *  \return osg::ref_ptr node stateset
 	    */
-	static osg::ref_ptr<osg::StateSet> createStateSet( Data::Type* type = 0 );
+	static osg::ref_ptr<osg::StateSet> createStateSet(const osg::ref_ptr<osg::Texture2D>& texture);
 
 	/**
 	    *  \fn private static  createLabel(const float & scale, QString name)

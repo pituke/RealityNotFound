@@ -450,7 +450,7 @@ bool FRAlgorithm::applyForces( Data::Node* node )
 
 	// [GrafIT][.] using restrictions (modified and optimized for speed by Peter Sivak)
 	auto newPos = node->targetPositionConstRef() + fv;
-	//newPos.z() = 0;
+	//newPos.z() = newPos.z() < 0 ? 0.0f : newPos.z();
 	node->setTargetPosition(newPos);   // Compute target position
 	graph->getRestrictionsManager().applyRestriction( *node );        // Compute restricted target position
 

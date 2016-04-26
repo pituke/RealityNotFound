@@ -38,6 +38,7 @@ Viewer.Textures.Author=../share/3dsoftviz/img/textures/author.png
 Viewer.Textures.Edge=../share/3dsoftviz/img/textures/Edge2.png
 Viewer.Textures.EdgeScale=2
 Viewer.Textures.Node=../share/3dsoftviz/img/textures/node2.png
+Viewer.Textures.JavaNode=../share/3dsoftviz/img/textures/java.png
 Viewer.Textures.RemoveNode=../share/3dsoftviz/img/textures/Redcross.png
 Viewer.Textures.OrientedEdge=../share/3dsoftviz/img/textures/OrientedEdge.png
 Viewer.Textures.OrientedEdgePrefix=../share/3dsoftviz/img/textures/arrows/arrow

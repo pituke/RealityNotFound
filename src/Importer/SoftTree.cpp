@@ -61,7 +61,7 @@ namespace Importer
 
 		bool Method::HasResult() const
 		{
-			return !returnType.isEmpty();
+			return !returnType.isEmpty() && returnType.toLower() != "void";
 		}
 
 		uint Method::GetLineOfCodes() const

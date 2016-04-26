@@ -7,6 +7,7 @@
 
 #include "Data/Graph.h"
 #include "Model/GraphLayoutDAO.h"
+#include "Data/Type.h"
 
 //nastavenie konstantnych typov jednotlivych prvkov grafu
 const QString Data::GraphLayout::META_NODE_TYPE = QString( "META_NODE_TYPE" );

@@ -27,13 +27,13 @@ Data::OsgNode::OsgNode( qlonglong id, QString name, Data::Type* type, Data::Grap
 
 
 	insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
-	insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ) , false );
-	insertChild( INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type)) , false);
-	insertChild( INDEX_RESIDENCE, createNodeResidence(this->scale), false );
+	insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type->getTypeTexture() ) ) , false );
+	insertChild(INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
+	insertChild( INDEX_RESIDENCE,  createNodeResidence(this->scale), false );
 	setValue( graph->getNodeVisual(), true );
 
-	this->square = createNode( this->scale * 4, OsgNode::createStateSet( this->type ) );
-	this->focusedSquare = createNode( this->scale * 16, OsgNode::createStateSet( this->type ) );
+	this->square = createNode(this->scale * 4, OsgNode::createStateSet(this->type->getTypeTexture()));
+	this->focusedSquare = createNode(this->scale * 16, OsgNode::createStateSet(this->type->getTypeTexture()));
 //    this->label = createLabel( this->type->getScale(), labelText );
 	this->force = osg::Vec3f();
 	this->velocity = osg::Vec3f( 0,0,0 );
@@ -170,8 +170,9 @@ osg::ref_ptr<osg::Drawable> Data::OsgNode::createSquare( const float& scale, osg
 
 void Data::OsgNode::setResidence(osg::Node* residence)
 {
-	if (residence && !setChild(INDEX_RESIDENCE, residence))
-		throw std::exception("Cannot set an osg subgraph for residence");
+	auto at = getChild(INDEX_RESIDENCE)->asTransform()->asPositionAttitudeTransform();
+	at->removeChildren(0, at->getNumChildren());
+	at->addChild(residence);
 }
 
 osg::Vec3f Data::OsgNode::getCurrentPosition( bool calculateNew, float interpolationSpeed )
@@ -272,8 +273,8 @@ void Data::OsgNode::reloadConfig()
 {
 	removeChildren( 0, 4 );
 	this->insertChild( INDEX_LABEL, createLabel( this->type->getScale(), labelText ) , false );
-	this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ), false );
-	this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale, OsgNode::createStateSet( this->type ) ), false );
+	this->insertChild(INDEX_SQUARE, createNodeSquare(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
+	this->insertChild(INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
 	this->insertChild( INDEX_RESIDENCE, createNodeResidence(this->scale), false );
 	setSelected( selected );
 	setColor( color );
@@ -285,16 +286,15 @@ void Data::OsgNode::showLabel( bool visible )
 	setValue( INDEX_LABEL, visible );
 }
 
-osg::ref_ptr<osg::StateSet> Data::OsgNode::createStateSet( Data::Type* type )
+osg::ref_ptr<osg::StateSet> Data::OsgNode::createStateSet(const osg::ref_ptr<osg::Texture2D>& texture)
 {
 	osg::ref_ptr<osg::StateSet> stateSet = new osg::StateSet;
 
 	stateSet->setDataVariance( osg::Object::DYNAMIC );
 	stateSet->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
 
-	if ( type != 0 ) {
-		stateSet->setTextureAttributeAndModes( 0, type->getTypeTexture(), osg::StateAttribute::ON );
-	}
+	if (texture.valid())
+		stateSet->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
 
 	stateSet->setMode( GL_BLEND, osg::StateAttribute::ON );
 	stateSet->setMode( GL_DEPTH_TEST, osg::StateAttribute::OFF );
@@ -403,9 +403,7 @@ osg::ref_ptr<osg::Node> Data::OsgNode::createNodeSphere(const float& scaling, os
 
 osg::ref_ptr<osg::Node> Data::OsgNode::createNodeResidence(const float& scale)
 {
-	auto pat = new osg::PositionAttitudeTransform();
-	pat->setScale(osg::Vec3(scale, scale, scale));
-	return pat;
+	return new osg::PositionAttitudeTransform();
 }
 
 osg::ref_ptr<osg::Node> Data::OsgNode::createLabel(const float& scale, QString name)
@@ -464,16 +462,16 @@ void Data::OsgNode::setIsFocused( bool value )
 
 	if ( mIsFocused ) {
 		removeChild( INDEX_SQUARE, 1 );
-		this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale, OsgNode::createStateSet( this->type ) ) , false );
+		this->insertChild(INDEX_SQUARE, createNodeSquare(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
 		removeChild( INDEX_SPHERE, 1 );
-		this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale , OsgNode::createStateSet( this->type ) ) , false );
+		this->insertChild(INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
 		setDrawableColor( osg::Vec4( 0.5f, 1.0f, 0.0f, 1.0 ) );
 	}
 	else {
 		removeChild( INDEX_SQUARE, 1 );
-		this->insertChild( INDEX_SQUARE, createNodeSquare( this->scale , OsgNode::createStateSet( this->type ) ), false );
+		this->insertChild(INDEX_SQUARE, createNodeSquare(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
 		removeChild( INDEX_SPHERE, 1 );
-		this->insertChild( INDEX_SPHERE, createNodeSphere( this->scale , OsgNode::createStateSet( this->type ) ) , false );
+		this->insertChild(INDEX_SPHERE, createNodeSphere(this->scale, OsgNode::createStateSet(this->type->getTypeTexture())), false);
 		setDrawableColor( osg::Vec4( 1.0f, 1.0f, 1.0f, 1.0 ) );
 	}
 	setValue( graph->getNodeVisual(), true );
