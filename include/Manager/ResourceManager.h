@@ -28,5 +28,6 @@ namespace Manager
 		static ResourceManager* getInstance();
 		osg::ref_ptr<osg::Node> getMesh(const QString& path);
 		osg::ref_ptr<osg::Geode> getShape(const QString& params, GeodeCreator creator);
+		osg::ref_ptr<osg::Texture> getTexture(const QString& path);
 	};
 }

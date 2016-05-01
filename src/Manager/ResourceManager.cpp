@@ -1,11 +1,13 @@
 #include "Manager/ResourceManager.h"
 #include <osgDB/ReadFile>
+#include <Viewer/DataHelper.h>
 
 namespace Manager
 {
 	static ResourceManager* instance = nullptr;
 	static QMap<QString, osg::ref_ptr<osg::Node>> meshes;
 	static QMap<QString, osg::ref_ptr<osg::Geode>> shapes;
+	static QMap<QString, osg::ref_ptr<osg::Texture>> textures;
 
 	ResourceManager::ResourceManager()
 	{
@@ -38,5 +40,16 @@ namespace Manager
 			shapes.insert(params, s);
 		}
 		return s;
+	}
+
+	osg::ref_ptr<osg::Texture> ResourceManager::getTexture(const QString& path)
+	{
+		osg::ref_ptr<osg::Texture> t = textures.value(path);
+		if (!t.valid())
+		{
+			t = Vwr::DataHelper::readTextureFromFile(path);
+			textures.insert(path, t);
+		}
+		return t;
 	}
 }

@@ -5,20 +5,11 @@
 
 namespace Clustering
 {
-	static bool INITED = false;
-	static float RESIDENCE_SECTOR_HEIGHT = 0.2f;
-	static float BUILDING_SPACING = 0.5f;
+	static const float DEFAULT_RESIDENCE_SECTOR_HEIGHT = 0.2f;
+	static const float DEFAULT_BUILDING_SPACING = 0.5f;
 
 	Residence::Residence()
 	{
-		if (!INITED)
-		{
-			auto config = Util::ApplicationConfig::get();
-			RESIDENCE_SECTOR_HEIGHT = config->getFloatValue("City.Residence.SectorPlaneHeight", RESIDENCE_SECTOR_HEIGHT);
-			BUILDING_SPACING = config->getFloatValue("City.Residence.BuildingSpacing", BUILDING_SPACING);
-			INITED = true;
-		}
-
 		attributesBuildingsNode = new osg::PositionAttitudeTransform();
 		gettersSettersBuildingsNode = new osg::PositionAttitudeTransform();
 		internalMethodsBuildingsNode = new osg::PositionAttitudeTransform();
@@ -53,6 +44,11 @@ namespace Clustering
 	void Residence::refresh()
 	{
 		static const osg::BoundingBox zeroBoudingBox(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+		
+		auto config = Util::ApplicationConfig::get();
+		const float RESIDENCE_SECTOR_HEIGHT = config->getFloatValue("City.Residence.SectorPlaneHeight", DEFAULT_RESIDENCE_SECTOR_HEIGHT);
+		const float BUILDING_SPACING = config->getFloatValue("City.Residence.BuildingSpacing", DEFAULT_BUILDING_SPACING);
 
 		attributesBuildingsNode->removeChildren(0, attributesBuildingsNode->getNumChildren());
 		gettersSettersBuildingsNode->removeChildren(0, gettersSettersBuildingsNode->getNumChildren());

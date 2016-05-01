@@ -9,18 +9,21 @@ namespace Clustering
 	class Building : public osg::PositionAttitudeTransform
 	{
 	private:
+		QString name;
 		QList<osg::ref_ptr<Floor>> floors;
 		float minBuildingHeight;
 		float buildingHeight;
 		bool triangleRoof;
+		bool lieOnGround;
 
 	public:
-		Building(const QList<Floor*>& inputFloors = QList<Floor*>());
+		Building(const QString& name = QString(), const QList<Floor*>& inputFloors = QList<Floor*>());
 		void setHeight(float height);
-		float getHeight() const;
+		float getHeight(bool includeRoof = false) const;
 		void setBaseSize(float size);
 		float getBaseSize() const;
 		void setTriangleRoof(bool state);
+		void setLieOnGround(bool state);
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
 		float getMinHeight() const;

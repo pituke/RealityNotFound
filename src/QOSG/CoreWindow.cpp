@@ -54,6 +54,8 @@
 #include <Clustering/Residence.h>
 #include <Layout/LayoutAlgorithms.h>
 #include <Viewer/DataHelper.h>
+#include <Clustering/Cuboid.h>
+#include <Manager/ResourceManager.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"
@@ -3589,23 +3591,47 @@ void CoreWindow::showEvent(QShowEvent* e)
 	}
 
 	auto manager = Manager::GraphManager::getInstance();
+	auto resMgr = Manager::ResourceManager::getInstance();
 	auto graph = manager->createNewGraph("SoftwareGraph"); // zaroven nastavi graf ako aktivny
 
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
+	osg::ref_ptr<osg::Material> white = createMat(osg::Vec3(1, 1, 1));
 	osg::ref_ptr<osg::Material> yellow = createMat(osg::Vec3(1, 1, 0));
 	osg::ref_ptr<osg::Material> red = createMat(osg::Vec3(0.941, 0.502, 0.502));
 	osg::ref_ptr<osg::Material> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
 	osg::ref_ptr<osg::Material> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
 
 	auto rootNode = graph->addNode("", nodeType);
-	rootNode->setResidence(Data::Node::createNodeSquare(8, Data::Node::createStateSet(Vwr::DataHelper::readTextureFromFile(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaNode")))));
+	auto javaRootNode = new Clustering::Building();
+	javaRootNode->setBaseSize(4);
+	javaRootNode->setHeight(5);
+	javaRootNode->setLieOnGround(false);
+	auto ss = new osg::StateSet();
+	ss->setAttribute(white);
+	ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+	ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaNode")), osg::StateAttribute::ON);
+	javaRootNode->setStateSet(ss);
+	javaRootNode->refresh();
+	rootNode->setResidence(javaRootNode);
 
 	std::list<BuildingInfo> buildingsInfos;
 	for (const auto& namespace_ : softTree.namespaces)
 	{
 		auto namespaceNode = graph->addNode(namespace_.name, nodeType);
+		auto javaNamespaceNode = new Clustering::Building();
+		javaNamespaceNode->setBaseSize(4);
+		javaNamespaceNode->setHeight(4);
+		javaNamespaceNode->setLieOnGround(false);
+		auto ss = new osg::StateSet();
+		ss->setAttribute(white);
+		ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+		ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaPackageNode")), osg::StateAttribute::ON);
+		javaNamespaceNode->setStateSet(ss);
+		javaNamespaceNode->refresh();
+		namespaceNode->setResidence(javaNamespaceNode);
+
 		auto rootNamespaceEdge = graph->addEdge(QString(), rootNode, namespaceNode, edgeType, true);
 
 		for (const auto& class_ : namespace_.classes)
@@ -3617,7 +3643,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)
 			{
-				auto b = new Clustering::Building();
+				auto b = new Clustering::Building(attribute.name);
 				b->setBaseSize(1.0);
 				b->setHeight(0.2);
 				b->setStateSet(new osg::StateSet());
@@ -3631,7 +3657,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : getterSetterMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(floors);
+				auto b = new Clustering::Building(getterSetterMethod.name, floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(getterSetterMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3646,7 +3672,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : internalMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(floors);
+				auto b = new Clustering::Building(internalMethod.name, floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(internalMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3661,7 +3687,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : interfaceMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(floors);
+				auto b = new Clustering::Building(interfaceMethod.name, floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(interfaceMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3676,7 +3702,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : constructorMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(floors);
+				auto b = new Clustering::Building(constructorMethod.name, floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(constructorMethod.HasResult());
 				b->setStateSet(new osg::StateSet());

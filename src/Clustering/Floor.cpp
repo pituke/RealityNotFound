@@ -5,21 +5,13 @@
 
 namespace Clustering
 {
-	static bool INITED = false;
-	static float FLOOR_MIN_HEIGHT = 0.15f;
-	static float FLOOR_DIVIDE_BORDER_STICK_UP = 0.1f;
-	static float FLOOR_DIVIDE_BORDER_HEIGHT = 0.05f;
+	static float DEFAULT_FLOOR_MIN_HEIGHT = 0.15f;
+	static float DEFAULT_FLOOR_DIVIDE_BORDER_STICK_UP = 0.1f;
+	static float DEFAULT_FLOOR_DIVIDE_BORDER_HEIGHT = 0.05f;
 
 	Floor::Floor()
 	{
-		if (!INITED)
-		{
-			auto config = Util::ApplicationConfig::get();
-			FLOOR_MIN_HEIGHT = config->getFloatValue("City.Floor.MinHeight", FLOOR_MIN_HEIGHT);
-			FLOOR_DIVIDE_BORDER_STICK_UP = config->getFloatValue("City.Floor.DivideBorderStickUp", FLOOR_DIVIDE_BORDER_STICK_UP);
-			FLOOR_DIVIDE_BORDER_HEIGHT = config->getFloatValue("City.Floor.DivideBorderHeight", FLOOR_DIVIDE_BORDER_HEIGHT);
-			INITED = true;
-		}
+		const float FLOOR_MIN_HEIGHT = Util::ApplicationConfig::get()->getFloatValue("City.Floor.MinHeight", DEFAULT_FLOOR_MIN_HEIGHT);
 
 		this->divideBorder = true;
 		baseSize = 0;
@@ -38,6 +30,7 @@ namespace Clustering
 
 	void Floor::setFloorHeight(float height)
 	{
+		const float FLOOR_MIN_HEIGHT = Util::ApplicationConfig::get()->getFloatValue("City.Floor.MinHeight", DEFAULT_FLOOR_MIN_HEIGHT);
 		floorHeight = std::max(height, FLOOR_MIN_HEIGHT);
 	}
 
@@ -53,6 +46,10 @@ namespace Clustering
 
 	void Floor::refresh()
 	{
+		auto config = Util::ApplicationConfig::get();
+		const float FLOOR_DIVIDE_BORDER_STICK_UP = config->getFloatValue("City.Floor.DivideBorderStickUp", DEFAULT_FLOOR_DIVIDE_BORDER_STICK_UP);
+		const float FLOOR_DIVIDE_BORDER_HEIGHT = config->getFloatValue("City.Floor.DivideBorderHeight", DEFAULT_FLOOR_DIVIDE_BORDER_HEIGHT);
+
 		const float realFloorDivideBorderHeight = divideBorder ? FLOOR_DIVIDE_BORDER_HEIGHT : 0.0f;
 		const float floorDivideBorderBaseSize = baseSize + FLOOR_DIVIDE_BORDER_STICK_UP;
 		const float floorDivideBorderGroundOffset = realFloorDivideBorderHeight / 2;
@@ -68,6 +65,7 @@ namespace Clustering
 
 	float Floor::getFloorMinHeight()
 	{
+		const float FLOOR_MIN_HEIGHT = Util::ApplicationConfig::get()->getFloatValue("City.Floor.MinHeight", DEFAULT_FLOOR_MIN_HEIGHT);
 		return FLOOR_MIN_HEIGHT;
 	}
 }
