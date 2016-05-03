@@ -41,6 +41,14 @@ namespace Clustering
 		interfaceMethodsBuildings << interfaceBuilding;
 	}
 
+	void Residence::showLabels(bool state)
+	{
+		for (auto& b : attributesBuildings) b->showLabel(state);
+		for (auto& b : gettersSettersBuildings) b->showLabel(state);
+		for (auto& b : internalMethodsBuildings) b->showLabel(state);
+		for (auto& b : interfaceMethodsBuildings) b->showLabel(state);
+	}
+
 	void Residence::refresh()
 	{
 		static const osg::BoundingBox zeroBoudingBox(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);

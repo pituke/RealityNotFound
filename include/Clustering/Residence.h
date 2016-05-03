@@ -24,6 +24,7 @@ namespace Clustering
 		void addGetterSeterBuilding(Building* getSetBuilding);
 		void addInternalBuilding(Building* internalBuilding);
 		void addInterfaceBuilding(Building* interfaceBuilding);
+		void showLabels(bool state);
 		void refresh();
 	};
 }

@@ -11,6 +11,7 @@
 #include <osg/CullFace>
 #include <osg/BlendFunc>
 #include <osgText/FadeText>
+#include "Clustering/Residence.h"
 
 #include <QTextStream>
 #include <Clustering/Cuboid.h>
@@ -168,6 +169,14 @@ osg::ref_ptr<osg::Drawable> Data::OsgNode::createSquare( const float& scale, osg
 	return nodeRect;
 }
 
+Clustering::Residence* Data::OsgNode::getResidence()
+{
+	auto at = getChild(INDEX_RESIDENCE)->asTransform()->asPositionAttitudeTransform();
+	if (at->getNumChildren() > 0)
+		return dynamic_cast<Clustering::Residence*>(at->getChild(0)->asTransform()->asPositionAttitudeTransform());
+	return nullptr;
+}
+
 void Data::OsgNode::setResidence(osg::Node* residence)
 {
 	auto at = getChild(INDEX_RESIDENCE)->asTransform()->asPositionAttitudeTransform();
@@ -284,6 +293,9 @@ void Data::OsgNode::reloadConfig()
 void Data::OsgNode::showLabel( bool visible )
 {
 	setValue( INDEX_LABEL, visible );
+	auto residence = getResidence();
+	if (residence)
+		residence->showLabels(visible);
 }
 
 osg::ref_ptr<osg::StateSet> Data::OsgNode::createStateSet(const osg::ref_ptr<osg::Texture2D>& texture)

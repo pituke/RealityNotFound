@@ -8,6 +8,10 @@
 
 #include "Data/DbNode.h"
 
+namespace Clustering{
+	class Residence;
+}
+
 namespace Data {
 
 typedef osg::TemplateIndexArray<unsigned int, osg::Array::UIntArrayType,4,1> ColorIndexArray;
@@ -43,6 +47,13 @@ public:
 	* \param residence osg subgraph
 	*/
 	void setResidence(osg::Node* residence);
+
+	/**
+	* \fn public getResidence
+	* \brief Gets subgraph for drawing residence of city.
+	* \return osg::ref_ptr of residence osg subgraph
+	*/
+	Clustering::Residence* getResidence();
 
 	/**
 	     * \fn public constant targetPosition

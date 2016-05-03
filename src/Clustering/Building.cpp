@@ -14,11 +14,12 @@ namespace Clustering
 	{
 		const float BUILDING_DEFAULT_BASE_SIZE = Util::ApplicationConfig::get()->getFloatValue("City.Building.DefaultBaseSize", DEFAULT_BUILDING_DEFAULT_BASE_SIZE);
 
-		this->name = name;
+		setLabel(name);
 		for (auto f : inputFloors)
 			floors << f;
 		this->triangleRoof = false;
 		this->lieOnGround = true;
+		this->labelVisible = false;
 		if (floors.empty())
 		{
 			auto f = new Floor();
@@ -70,6 +71,41 @@ namespace Clustering
 		lieOnGround = state;
 	}
 
+	void Building::setLabel(const QString& name)
+	{
+		if (label.valid() && labelVisible)
+			removeChild(label);
+
+		this->name = name;
+		label.release();
+		if (!name.isEmpty())
+		{
+			auto config = Util::ApplicationConfig::get();
+			const float BUILDING_CAPTION_CHARACTER_SIZE = config->getFloatValue("City.Building.CaptionCharacterSize", DEFAULT_BUILDING_CAPTION_CHARACTER_SIZE);
+
+			label = new osg::Geode();
+			auto text = new osgText::FadeText();
+			text->setText(name.toStdString());
+			text->setCharacterSize(BUILDING_CAPTION_CHARACTER_SIZE);
+			text->setAutoRotateToScreen(true);
+			label->addDrawable(text);
+			if (labelVisible)
+				addChild(label);
+		}
+	}
+
+	void Building::showLabel(bool state)
+	{
+		if (label.valid())
+		{
+			if (labelVisible && !state)
+				removeChild(label);
+			else if (!labelVisible && state)
+				addChild(label);
+		}
+		labelVisible = state;
+	}
+
 	osg::BoundingBox Building::getBoundingBox() const
 	{
 		const float BUILDING_BASE_SIZE_HALF = getBaseSize() / 2;
@@ -80,7 +116,6 @@ namespace Clustering
 	{
 		auto config = Util::ApplicationConfig::get();
 		const float BUILDING_DEFAULT_ROOF_HEIGHT = config->getFloatValue("City.Building.DefaultRoofHeight", DEFAULT_BUILDING_DEFAULT_ROOF_HEIGHT);
-		const float BUILDING_CAPTION_CHARACTER_SIZE = config->getFloatValue("City.Building.CaptionCharacterSize", DEFAULT_BUILDING_CAPTION_CHARACTER_SIZE);
 		const float BUILDING_CAPTION_OFFSET = config->getFloatValue("City.Building.CaptionOffset", DEFAULT_BUILDING_CAPTION_OFFSET);
 
 		removeChildren(0, getNumChildren());
@@ -101,16 +136,11 @@ namespace Clustering
 			addChild(roof);
 		}
 
-		if (!name.isEmpty())
+		if (label.valid())
 		{
-			auto geode = new osg::Geode();
-			auto text = new osgText::FadeText();
-			text->setText(name.toStdString());
-			text->setCharacterSize(BUILDING_CAPTION_CHARACTER_SIZE);
-			text->setAutoRotateToScreen(true);
-			geode->addDrawable(text);
-			addChild(geode);
-			text->setPosition(osg::Vec3(0.0f, 0.0f, getHeight(true) + BUILDING_CAPTION_OFFSET));
+			static_cast<osgText::TextBase*>(label->asGeode()->getDrawable(0))->setPosition(osg::Vec3(0.0f, 0.0f, getHeight(true) + BUILDING_CAPTION_OFFSET));
+			if (labelVisible)
+				addChild(label);
 		}
 	}
 

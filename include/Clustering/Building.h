@@ -15,6 +15,8 @@ namespace Clustering
 		float buildingHeight;
 		bool triangleRoof;
 		bool lieOnGround;
+		osg::ref_ptr<osg::Geode> label;
+		bool labelVisible;
 
 	public:
 		Building(const QString& name = QString(), const QList<Floor*>& inputFloors = QList<Floor*>());
@@ -24,6 +26,8 @@ namespace Clustering
 		float getBaseSize() const;
 		void setTriangleRoof(bool state);
 		void setLieOnGround(bool state);
+		void setLabel(const QString& name);
+		void showLabel(bool state);
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
 		float getMinHeight() const;
