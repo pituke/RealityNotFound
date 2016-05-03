@@ -17,7 +17,6 @@ void AdapterWidget::resizeGL( int width, int height )
 	//zmena velkosti widgetu
 	_gw->getEventQueue()->windowResize( 0, 0, width, height );
 	_gw->resized( 0,0,width,height );
-	emit onGlResized(width, height);
 }
 
 void AdapterWidget::keyPressEvent( QKeyEvent* event )

@@ -85,7 +85,6 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 	createMenus();
 	createLeftToolBar();
 	createMetricsToolBar();
-	createHUD();
 
 	viewerWidget = new ViewerQT( this, 0, 0, 0, coreGraph );
 	viewerWidget->setSceneData( coreGraph->getScene() );
@@ -140,14 +139,6 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 
 	QObject::connect( viewerWidget->getCameraManipulator(), SIGNAL( sendTranslatePosition( osg::Vec3d ) ),
 					  this->coreGraph, SLOT( translateGraph( osg::Vec3d ) ) );
-
-	QObject::connect(viewerWidget, SIGNAL(onGlResized(int, int)), this, SLOT(onResized(int, int)));
-}
-
-void CoreWindow::onResized(int width, int height)
-{
-	hudProjection->setMatrix(osg::Matrix::ortho2D(0, width, 0, height));
-	hudModelView->setMatrix(osg::Matrix::translate(width - hudSize.width(), height - hudSize.height(), 0));
 }
 
 void CoreWindow::createActions()
@@ -3579,6 +3570,57 @@ struct BuildingInfo
 	}
 };
 
+QString getAttributeInfo(const Importer::Parsing::Attribute& attribute)
+{
+	QString info;
+
+	info.append("ATTRIBUTE -->\n\n");
+	info.append(attribute.ToString(0));
+
+	return info;
+}
+
+QString getMethodInfo(const Importer::Parsing::Method& method)
+{
+	QString info;
+
+	info.append("METHOD -->\n\n");
+	info.append(QString("%1 %2 %3 ")
+				.arg(Importer::Parsing::Modifier::ToString(method.modifier))
+				.arg(method.returnType)
+				.arg(method.name));
+	if (!method.parameters.empty())
+		info.append("(\n");
+	else
+		info.append("()\n");
+	foreach(const auto& p, method.parameters)
+	{
+		info.append(QString("   %1 %2,\n")
+					.arg(p.type)
+					.arg(p.name));
+	}
+	if (!method.parameters.empty()) info.append(")\n");
+	info.append("\n");
+	QString methodType;
+	if (method.name.toLower().startsWith("get"))
+		methodType = "getter";
+	else if (method.name.toLower().startsWith("set"))
+		methodType = "setter";
+	else if (method.IsConstructor())
+		methodType = "constructor";
+	else if (method.modifier == Importer::Parsing::Modifier::PUBLIC)
+		methodType = "interface";
+	else
+		methodType = "internal";
+	info.append(QString("MethodType:  %1\n").arg(methodType));
+	info.append(QString("Visibility:  %1\n").arg(method.modifier == Importer::Parsing::Modifier::UNKNOWN ? Importer::Parsing::Modifier::ToString(Importer::Parsing::Modifier::PRIVATE) : Importer::Parsing::Modifier::ToString(method.modifier)));
+	info.append(QString("Parameters:  %1\n").arg(method.parameters.count()));
+	info.append(QString("Output:      %1\n").arg(method.HasResult() ? "yes" : "no"));
+	info.append(QString("LineOfCodes: %1\n").arg(method.GetLineOfCodes()));
+
+	return info;
+}
+
 void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
@@ -3645,7 +3687,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
 			for (const auto& attribute : class_.attributes)
 			{
-				auto b = new Clustering::Building(attribute.name);
+				auto b = new Clustering::Building(attribute.name, getAttributeInfo(attribute));
 				b->setBaseSize(1.0);
 				b->setHeight(0.2);
 				b->setStateSet(new osg::StateSet());
@@ -3659,7 +3701,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : getterSetterMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(getterSetterMethod.name, QString(), floors);
+				auto b = new Clustering::Building(getterSetterMethod.name, getMethodInfo(getterSetterMethod), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(getterSetterMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3674,7 +3716,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : internalMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(internalMethod.name, QString(), floors);
+				auto b = new Clustering::Building(internalMethod.name, getMethodInfo(internalMethod), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(internalMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3689,7 +3731,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : interfaceMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(interfaceMethod.name, QString(), floors);
+				auto b = new Clustering::Building(interfaceMethod.name, getMethodInfo(interfaceMethod), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(interfaceMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3704,7 +3746,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : constructorMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(constructorMethod.name, QString(), floors);
+				auto b = new Clustering::Building(constructorMethod.name, getMethodInfo(constructorMethod), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(constructorMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3730,9 +3772,6 @@ void CoreWindow::showEvent(QShowEvent* e)
 		bi.building->refresh();
 	}
 	
-	auto hudNode = graph->addNode("", nodeType);
-	hudNode->addChild(hudProjection);
-
 	// robime zakladnu proceduru pre restartovanie layoutu
 	AppCore::Core::getInstance()->restartLayout();
 	
@@ -3863,74 +3902,6 @@ void CoreWindow::createMetricsToolBar()
 	addToolBar( Qt::BottomToolBarArea, toolBar );
 
 	isRunning = false;
-}
-
-void CoreWindow::createHUD()
-{
-	if (!hudProjection.valid())
-	{
-		hudProjection = new osg::Projection;
-		hudModelView = new osg::MatrixTransform;
-		hudModelView->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-		hudProjection->addChild(hudModelView);
-	}
-
-	hudModelView->removeChildren(0, hudModelView->getNumChildren());
-
-	static const int DEFAULT_HUD_WIDTH = 200;
-	static const int DEFAULT_HUD_HEIGHT = 300;
-
-	const float HUD_WIDTH = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Width", DEFAULT_HUD_WIDTH);
-	const float HUD_HEIGHT = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Height", DEFAULT_HUD_HEIGHT);
-	hudSize = QSize(HUD_WIDTH, HUD_HEIGHT);
-
-	osg::Vec3Array* hudVertices = new osg::Vec3Array;
-	hudVertices->push_back(osg::Vec3(0, 0, .8));
-	hudVertices->push_back(osg::Vec3(hudSize.width(), 0, .8));
-	hudVertices->push_back(osg::Vec3(hudSize.width(), hudSize.height(), .8));
-	hudVertices->push_back(osg::Vec3(0, hudSize.height(), .8));
-
-	osg::Vec4Array* hudColors = new osg::Vec4Array;
-	hudColors->push_back(osg::Vec4(0.8f, 0.8f, 0.8f, 0.5f));
-
-	osg::DrawElementsUInt* hudIndices = new osg::DrawElementsUInt(osg::PrimitiveSet::POLYGON, 0);
-	hudIndices->push_back(0);
-	hudIndices->push_back(1);
-	hudIndices->push_back(2);
-	hudIndices->push_back(3);
-
-	osg::Geometry* hudBackgroundGeometry = new osg::Geometry();
-	hudBackgroundGeometry->addPrimitiveSet(hudIndices);
-	hudBackgroundGeometry->setVertexArray(hudVertices);
-	hudBackgroundGeometry->setColorArray(hudColors);
-	hudBackgroundGeometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-
-	osgText::Text* textOne = new osgText::Text();
-	textOne->setCharacterSize(16);
-	textOne->setAxisAlignment(osgText::Text::SCREEN);
-	textOne->setColor(osg::Vec4(1, 1, 1, 1.0f));
-
-	osg::StateSet* hudStateSet = new osg::StateSet();
-	hudStateSet->setRenderBinDetails(999999, "DepthSortedBin");
-	hudStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-	hudStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-	hudStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-	osgUtil::RenderBin* HUDBin = new osgUtil::RenderBin(osgUtil::RenderBin::SORT_BACK_TO_FRONT);
-
-	osg::Geode* hudGeode = new osg::Geode();
-	hudGeode->addDrawable(textOne);
-	hudGeode->addDrawable(hudBackgroundGeometry);
-	hudGeode->setStateSet(hudStateSet);
-
-	hudModelView->addChild(hudGeode);
-}
-
-void CoreWindow::setHudText(const QString& hudText)
-{
-	auto t = static_cast<osgText::Text*>(hudModelView->getChild(0)->asGeode()->getDrawable(0));
-	int lineCount = hudText.count('\n');
-	t->setPosition(osg::Vec3(10, hudSize.height() - 20 - (lineCount * 16), 1));
-	t->setText(hudText.toStdString());
 }
 
 void CoreWindow::loadFunctionCall()

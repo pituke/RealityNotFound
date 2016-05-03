@@ -624,6 +624,7 @@ Vwr::CoreGraph::CoreGraph( Data::Graph* graph, osg::ref_ptr<osg::Camera> camera 
 	appConf = Util::ApplicationConfig::get();
 
 	root = new osg::Group();
+	hud = new Hud();
 	graphRotTransf = new osg::MatrixTransform();
 	graphGroup = new osg::Group();
 
@@ -1209,6 +1210,24 @@ void CoreGraph::setNodeLabelsVisible( bool visible )
 	}
 }
 
+bool CoreGraph::isHudDisplayed() const
+{
+	return root->containsNode(hud);
+}
+
+void CoreGraph::showHud(bool state)
+{
+	if (state && !isHudDisplayed())
+		root->addChild(hud);
+	else if (!state && isHudDisplayed())
+		root->removeChild(hud);
+}
+
+Hud* CoreGraph::getHud()
+{
+	return hud;
+}
+
 void CoreGraph::reloadConfig()
 {
 	root->setChild( backgroundPosition, createBackground() );
@@ -1227,6 +1246,11 @@ void CoreGraph::reloadConfig()
 CoreGraph::~CoreGraph( void )
 {
 	cleanUp();
+}
+
+void CoreGraph::onResized(int width, int height)
+{
+	hud->setWindowSize(QSize(width, height));
 }
 
 void CoreGraph::setNodesFreezed( bool val )

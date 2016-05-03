@@ -91,11 +91,6 @@ private:
 #endif
 
 public slots:
-	/**
-	*  \fn private  onResized
-	*  \brief do necessary actions when window is resized
-	*/
-	void onResized(int width, int height);
 
 	void moveMouseAruco( double positionX,double positionY,bool isClick, Qt::MouseButton button );
 
@@ -1137,16 +1132,6 @@ private:
 		*/
 	bool isPlaying;
 
-	osg::ref_ptr<osg::MatrixTransform> hudModelView;
-
-	/**
-	*  osg::Projection hudProjection
-	*  \brief keep orthographic projection for current hud size
-	*/
-	osg:: ref_ptr<osg::Projection> hudProjection;
-
-	QSize hudSize;
-
 	/**
 	    *  \fn private  createActions
 	    *  \brief Initialize all actions of aplication
@@ -1170,12 +1155,6 @@ private:
 	    *  \brief Create metrics toolBar
 	    */
 	void createMetricsToolBar();
-
-	/**
-	*  \fn private  createHUD
-	*  \brief Create HUD
-	*/
-	void createHUD();
 
 	/**
 	    *  \fn private  createHorizontalFrame
@@ -1328,8 +1307,6 @@ private:
 	void showEvent(QShowEvent* e) override;
 
 public:
-
-	void setHudText(const QString& hudText);
 
 	void setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster );
 	void hideRepulsiveForceSpinBox();

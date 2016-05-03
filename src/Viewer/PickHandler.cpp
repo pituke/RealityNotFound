@@ -361,6 +361,10 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, GUIActionAdap
 		}
 
 	}
+	else if (ea.getKey() == 'h' || ea.getKey() == 'H')
+	{
+		coreGraph->showHud(!coreGraph->isHudDisplayed());
+	}
 
 
 	return false;
@@ -532,6 +536,7 @@ bool PickHandler::pick( const double xMin, const double yMin, const double xMax,
 
 	bool result = false;
 
+	coreGraph->getHud()->setText(QString());
 	if ( picker->containsIntersections() ) {
 		osgUtil::PolytopeIntersector::Intersections intersections = picker->getIntersections();
 
@@ -621,7 +626,10 @@ bool PickHandler::doNodePick( osg::NodePath nodePath )
 	}
 
 	if (b != NULL)
+	{
 		b->select(true);
+		coreGraph->getHud()->setText(b->getInfo());
+	}
 
 	if ( n != NULL ) {
 		if ( isAltPressed && pickMode == PickMode::NONE && !isShiftPressed ) {
