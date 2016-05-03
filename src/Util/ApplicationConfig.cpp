@@ -96,6 +96,20 @@ bool Util::ApplicationConfig::getBoolValue(
 	}
 }
 
+int Util::ApplicationConfig::getIntValue(QString key, const int defaultValue)
+{
+	if (!_map.contains(key))
+	{
+		return defaultValue;
+	}
+
+	QString value = getValue(key);
+	bool ok;
+	int resultValue = value.toInt(&ok);
+
+	return ok ? resultValue : defaultValue;
+}
+
 float Util::ApplicationConfig::getFloatValue(
 	QString key,
 	const float defaultValue

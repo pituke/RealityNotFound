@@ -111,6 +111,17 @@ public:
 	);
 
 	/**
+	* \brief Gets int value from settings or default.
+	* \param[in] key Key to the value.
+	* \param[in] defaultValue Default value (if the value does not exist or is not valid).
+	* \return int value for the specified key (defaultValue if the key does not exist or the value is not a valid float value).
+	*/
+	int getIntValue(
+		QString key,
+		const int defaultValue = int()
+		);
+
+	/**
 	* \brief Gets float value from settings or default.
 	* \param[in] key Key to the value.
 	* \param[in] defaultValue Default value (if the value does not exist or is not valid).

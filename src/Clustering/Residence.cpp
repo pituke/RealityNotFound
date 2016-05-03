@@ -8,6 +8,14 @@ namespace Clustering
 	static const float DEFAULT_RESIDENCE_SECTOR_HEIGHT = 0.2f;
 	static const float DEFAULT_BUILDING_SPACING = 0.5f;
 
+	void Residence::forEachBuilding(std::function<void(Building& b)> func)
+	{
+		for (auto& b : attributesBuildings) func(*b);
+		for (auto& b : gettersSettersBuildings) func(*b);
+		for (auto& b : internalMethodsBuildings) func(*b);
+		for (auto& b : interfaceMethodsBuildings) func(*b);
+	}
+
 	Residence::Residence()
 	{
 		attributesBuildingsNode = new osg::PositionAttitudeTransform();
@@ -43,10 +51,21 @@ namespace Clustering
 
 	void Residence::showLabels(bool state)
 	{
-		for (auto& b : attributesBuildings) b->showLabel(state);
-		for (auto& b : gettersSettersBuildings) b->showLabel(state);
-		for (auto& b : internalMethodsBuildings) b->showLabel(state);
-		for (auto& b : interfaceMethodsBuildings) b->showLabel(state);
+		forEachBuilding([state](Building& b)
+		{
+			b.showLabel(state);
+		});
+	}
+
+	void Residence::selectAll(bool state)
+	{
+		if (!state)
+		{
+			forEachBuilding([state](Building& b)
+			{
+				b.select(state);
+			});
+		}
 	}
 
 	void Residence::refresh()

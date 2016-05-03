@@ -14,6 +14,7 @@
 #include "Layout/LayoutThread.h"
 #include "Layout/FRAlgorithm.h"
 #include "Layout/Shape_Cube.h"
+#include "Clustering/Residence.h"
 
 #include "Util/ApplicationConfig.h"
 
@@ -609,6 +610,19 @@ bool PickHandler::doNodePick( osg::NodePath nodePath )
 		}
 	}
 
+	Clustering::Building* b;
+	for (unsigned int i = 0; i < nodePath.size(); i++)
+	{
+		b = dynamic_cast<Clustering::Building*>(nodePath[i]);
+		if (b != NULL)
+		{
+			break;
+		}
+	}
+
+	if (b != NULL)
+		b->select(true);
+
 	if ( n != NULL ) {
 		if ( isAltPressed && pickMode == PickMode::NONE && !isShiftPressed ) {
 			cameraManipulator->setCenter( n->targetPosition() );
@@ -975,6 +989,10 @@ void PickHandler::unselectPickedNodes( osg::ref_ptr<Data::Node> node )
 
 		while ( i != pickedNodes.constEnd() ) {
 			( *i )->setSelected( false );
+			auto r = (*i)->getResidence();
+			if (r) r->selectAll(false);
+			auto b = (*i)->getBuilding();
+			if (b) b->select(false);
 			++i;
 		}
 

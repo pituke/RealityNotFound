@@ -22,6 +22,7 @@ namespace QOSG {
 	*/
 class AdapterWidget : public QGLWidget
 {
+	Q_OBJECT
 
 public:
 
@@ -148,6 +149,9 @@ protected:
 		*  \brief
 		*/
 	osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> _gw;
+
+signals:
+	void onGlResized(int width, int height);
 
 };
 }

@@ -3,6 +3,7 @@
 #include <osg/PositionAttitudeTransform>
 #include "Floor.h"
 #include <QList>
+#include <osg/Material>
 
 namespace Clustering
 {
@@ -10,6 +11,7 @@ namespace Clustering
 	{
 	private:
 		QString name;
+		QString info;
 		QList<osg::ref_ptr<Floor>> floors;
 		float minBuildingHeight;
 		float buildingHeight;
@@ -17,9 +19,10 @@ namespace Clustering
 		bool lieOnGround;
 		osg::ref_ptr<osg::Geode> label;
 		bool labelVisible;
+		osg::ref_ptr<osg::Material> lastMaterial;
 
 	public:
-		Building(const QString& name = QString(), const QList<Floor*>& inputFloors = QList<Floor*>());
+		Building(const QString& name = QString(), const QString& info = QString(), const QList<Floor*>& inputFloors = QList<Floor*>());
 		void setHeight(float height);
 		float getHeight(bool includeRoof = false) const;
 		void setBaseSize(float size);
@@ -28,8 +31,10 @@ namespace Clustering
 		void setLieOnGround(bool state);
 		void setLabel(const QString& name);
 		void showLabel(bool state);
+		const QString& getInfo() const;
 		osg::BoundingBox getBoundingBox() const;
 		void refresh();
+		void select(bool selected);
 		float getMinHeight() const;
 	};
 }

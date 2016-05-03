@@ -4,6 +4,7 @@
 #include <QString>
 #include <QtCore/QMap>
 #include <functional>
+#include <osg/Material>
 
 namespace Manager
 {
@@ -29,5 +30,6 @@ namespace Manager
 		osg::ref_ptr<osg::Node> getMesh(const QString& path);
 		osg::ref_ptr<osg::Geode> getShape(const QString& params, GeodeCreator creator);
 		osg::ref_ptr<osg::Texture> getTexture(const QString& path);
+		osg::ref_ptr<osg::Material> getMaterial(const osg::Vec3& color);
 	};
 }

@@ -3,6 +3,7 @@
 #include <osg/PositionAttitudeTransform>
 #include "Building.h"
 #include <QtCore/QList>
+#include <functional>
 
 namespace Clustering
 {
@@ -18,6 +19,9 @@ namespace Clustering
 		QList<osg::ref_ptr<Building>> interfaceMethodsBuildings;
 		osg::ref_ptr<osg::PositionAttitudeTransform> interfaceMethodsBuildingsNode;
 
+	private:
+		void forEachBuilding(std::function<void(Building& b)> func);
+
 	public:
 		Residence();
 		void addAttributeBuilding(Building* attrBuilding);
@@ -25,6 +29,7 @@ namespace Clustering
 		void addInternalBuilding(Building* internalBuilding);
 		void addInterfaceBuilding(Building* interfaceBuilding);
 		void showLabels(bool state);
+		void selectAll(bool state);
 		void refresh();
 	};
 }

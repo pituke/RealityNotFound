@@ -177,6 +177,14 @@ Clustering::Residence* Data::OsgNode::getResidence()
 	return nullptr;
 }
 
+Clustering::Building* Data::OsgNode::getBuilding()
+{
+	auto at = getChild(INDEX_RESIDENCE)->asTransform()->asPositionAttitudeTransform();
+	if (at->getNumChildren() > 0)
+		return dynamic_cast<Clustering::Building*>(at->getChild(0)->asTransform()->asPositionAttitudeTransform());
+	return nullptr;
+}
+
 void Data::OsgNode::setResidence(osg::Node* residence)
 {
 	auto at = getChild(INDEX_RESIDENCE)->asTransform()->asPositionAttitudeTransform();

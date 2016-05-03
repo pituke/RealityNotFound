@@ -1,6 +1,7 @@
 #include "Manager/ResourceManager.h"
 #include <osgDB/ReadFile>
 #include <Viewer/DataHelper.h>
+#include <osg/Material>
 
 namespace Manager
 {
@@ -8,6 +9,7 @@ namespace Manager
 	static QMap<QString, osg::ref_ptr<osg::Node>> meshes;
 	static QMap<QString, osg::ref_ptr<osg::Geode>> shapes;
 	static QMap<QString, osg::ref_ptr<osg::Texture>> textures;
+	static QMap<osg::Vec3, osg::ref_ptr<osg::Material>> materials;
 
 	ResourceManager::ResourceManager()
 	{
@@ -51,5 +53,17 @@ namespace Manager
 			textures.insert(path, t);
 		}
 		return t;
+	}
+
+	osg::ref_ptr<osg::Material> ResourceManager::getMaterial(const osg::Vec3& color)
+	{
+		osg::ref_ptr<osg::Material> m = materials.value(color);
+		if (!m.valid())
+		{
+			m = new osg::Material();
+			m->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(color.x(), color.y(), color.z(), 1.0f));
+			materials.insert(color, m);
+		}
+		return m;
 	}
 }

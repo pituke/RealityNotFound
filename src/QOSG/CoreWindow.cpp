@@ -85,6 +85,7 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 	createMenus();
 	createLeftToolBar();
 	createMetricsToolBar();
+	createHUD();
 
 	viewerWidget = new ViewerQT( this, 0, 0, 0, coreGraph );
 	viewerWidget->setSceneData( coreGraph->getScene() );
@@ -139,594 +140,602 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 
 	QObject::connect( viewerWidget->getCameraManipulator(), SIGNAL( sendTranslatePosition( osg::Vec3d ) ),
 					  this->coreGraph, SLOT( translateGraph( osg::Vec3d ) ) );
+
+	QObject::connect(viewerWidget, SIGNAL(onGlResized(int, int)), this, SLOT(onResized(int, int)));
+}
+
+void CoreWindow::onResized(int width, int height)
+{
+	hudProjection->setMatrix(osg::Matrix::ortho2D(0, width, 0, height));
+	hudModelView->setMatrix(osg::Matrix::translate(width - hudSize.width(), height - hudSize.height(), 0));
 }
 
 void CoreWindow::createActions()
 {
 
-	quit = new QAction( "Quit", this );
-	connect( quit, SIGNAL( triggered() ), application, SLOT( quit() ) );
-
-	options = new QAction( "Options", this );
-	connect( options,SIGNAL( triggered() ),this,SLOT( showOptions() ) );
-
-	load = new QAction( QIcon( "../share/3dsoftviz/img/gui/open.png" ),"&Load graph from file", this );
-	connect( load, SIGNAL( triggered() ), this, SLOT( loadFile() ) );
-
-	loadGit = new QAction( QIcon( "../share/3dsoftviz/img/gui/git_open.png" ), "&Load graph from git", this );
-	connect( loadGit, SIGNAL( triggered() ), this, SLOT( loadFromGit() ) );
-
-	loadGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/loadFromDB.png" ),"&Load graph from database", this );
-    connect( loadGraph, SIGNAL( triggered() ), this, SLOT( showLoadGraph() ) );
-
-    loadJavaProjectAction = new QAction( QIcon( "../share/3dsoftviz/img/gui/open_java.png" ),"&Load java project", this );
-    connect( loadJavaProjectAction, SIGNAL( triggered() ), this, SLOT( showDialogLoadJavaProject() ) );
-
-	saveGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save graph", this );
-	connect( saveGraph, SIGNAL( triggered() ), this, SLOT( saveGraphToDB() ) );
-
-	saveLayout = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save layout", this );
-	connect( saveLayout, SIGNAL( triggered() ), this, SLOT( saveLayoutToDB() ) );
-
-	about = new QAction( "About", this );
-
-	play = new QPushButton();
-	play->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
-	play->setToolTip( "&Play" );
-	play->setFocusPolicy( Qt::NoFocus );
-	connect( play, SIGNAL( clicked() ), this, SLOT( playPause() ) );
-
-	showMetricsButton = new QPushButton();
-	showMetricsButton->setToolTip( "Show metrics toolbar" );
-	showMetricsButton->setMaximumSize( 20, 614 );
-	showMetricsButton->setText( "<" );
-	showMetricsButton->setFocusPolicy( Qt::NoFocus );
-	connect( showMetricsButton, SIGNAL( clicked() ), this, SLOT( showMetrics() ) );
-
-	addMeta = new QPushButton();
-	addMeta->setIcon( QIcon( "../share/3dsoftviz/img/gui/meta.png" ) );
-	addMeta->setToolTip( "&Add meta node" );
-	addMeta->setFocusPolicy( Qt::NoFocus );
-	connect( addMeta, SIGNAL( clicked() ), this, SLOT( addMetaNode() ) );
-
-	removeMeta = new QPushButton();
-	removeMeta->setIcon( QIcon( "../share/3dsoftviz/img/gui/removemeta.png" ) );
-	removeMeta->setToolTip( "&Remove meta nodes" );
-	removeMeta->setFocusPolicy( Qt::NoFocus );
-	connect( removeMeta, SIGNAL( clicked() ), this, SLOT( removeMetaNodes() ) );
-
-	fix = new QPushButton();
-	fix->setIcon( QIcon( "../share/3dsoftviz/img/gui/fix.png" ) );
-	fix->setToolTip( "&Fix nodes" );
-	fix->setFocusPolicy( Qt::NoFocus );
-	connect( fix, SIGNAL( clicked() ), this, SLOT( fixNodes() ) );
-
-	unFix = new QPushButton();
-	unFix->setIcon( QIcon( "../share/3dsoftviz/img/gui/unfix.png" ) );
-	unFix->setToolTip( "&Unfix nodes" );
-	unFix->setFocusPolicy( Qt::NoFocus );
-	connect( unFix, SIGNAL( clicked() ), this, SLOT( unFixNodes() ) );
-
-	merge = new QPushButton();
-	merge->setIcon( QIcon( "../share/3dsoftviz/img/gui/merge.png" ) );
-	merge->setToolTip( "&Merge nodes together" );
-	merge->setFocusPolicy( Qt::NoFocus );
-	connect( merge, SIGNAL( clicked() ), this, SLOT( mergeNodes() ) );
-
-	separate = new QPushButton();
-	separate->setIcon( QIcon( "../share/3dsoftviz/img/gui/separate.png" ) );
-	separate->setToolTip( "&Separate merged nodes" );
-	separate->setFocusPolicy( Qt::NoFocus );
-	connect( separate, SIGNAL( clicked() ), this, SLOT( separateNodes() ) );
-
-	label = new QPushButton();
-	label->setIcon( QIcon( "../share/3dsoftviz/img/gui/label.png" ) );
-	label->setToolTip( "&Turn on/off labels" );
-	label->setCheckable( true );
-	label->setFocusPolicy( Qt::NoFocus );
-	connect( label, SIGNAL( clicked( bool ) ), this, SLOT( labelOnOff( bool ) ) );
-
-	applyColor = new QPushButton();
-	applyColor->setText( "Apply color" );
-	applyColor->setToolTip( "Apply selected color" );
-	applyColor->setFocusPolicy( Qt::NoFocus );
-	connect( applyColor,SIGNAL( clicked() ),this,SLOT( applyColorClick() ) );
-
-	applyLabel = new QPushButton();
-	applyLabel->setText( "Apply label" );
-	applyLabel->setToolTip( "Apply selected label" );
-	applyLabel->setFocusPolicy( Qt::NoFocus );
-	connect( applyLabel,SIGNAL( clicked() ),this,SLOT( applyLabelClick() ) );
-
-	le_applyLabel = new QLineEdit;
-
-	//add edge
-	add_Edge = new QPushButton();
-	add_Edge->setText( "Add Edge" );
-	add_Edge->setToolTip( "Create new edge between two selected Nodes" );
-	add_Edge->setFocusPolicy( Qt::NoFocus );
-	connect( add_Edge,SIGNAL( clicked() ),this,SLOT( add_EdgeClick() ) );
-
-	//add Node
-	add_Node = new QPushButton();
-	add_Node->setText( "Add Node" );
-	add_Node->setToolTip( "Create node" );
-	add_Node->setFocusPolicy( Qt::NoFocus );
-	connect( add_Node, SIGNAL( clicked() ), this, SLOT( add_NodeClick() ) );
-
-	//remove
-	remove_all = new QPushButton();
-	remove_all->setText( "Remove" );
-	remove_all->setToolTip( "Remove nodes and edges" );
-	remove_all->setFocusPolicy( Qt::NoFocus );
-	connect( remove_all, SIGNAL( clicked() ), this, SLOT( removeClick() ) );
-
-	// <Change> Nagy+Gloger
-	loadFunctionCallButton = new QPushButton();
-	loadFunctionCallButton->setText( "Load function calls" );
-
-	loadFunctionCallButton->setToolTip( "Load function calls" );
-	loadFunctionCallButton->setFocusPolicy( Qt::NoFocus );
-	connect( loadFunctionCallButton, SIGNAL( clicked() ), this, SLOT( loadFunctionCall() ) );
-
-	browsersGroupingButton = new QPushButton();
-	browsersGroupingButton->setIcon( QIcon( "../share/3dsoftviz/img/gui/grouping.png" ) );
-
-	browsersGroupingButton->setToolTip( "Toggle webviews grouping" );
-
-	browsersGroupingButton->setCheckable( true );
-	browsersGroupingButton->setFocusPolicy( Qt::NoFocus );
-	connect( browsersGroupingButton, SIGNAL( clicked( bool ) ), this, SLOT( browsersGroupingClicked( bool ) ) );
-
-	filterNodesEdit = new QLineEdit();
-	filterEdgesEdit = new QLineEdit();
-	connect( filterNodesEdit, SIGNAL( returnPressed() ), this, SLOT( filterGraph() ) );
-	connect( filterEdgesEdit, SIGNAL( returnPressed() ), this, SLOT( filterGraph() ) );
-
-	luaGraphTreeView = new QTreeView();
-	// <end change> Nagy+Gloger
-
-	//mody - ziadny vyber, vyber jedneho, multi vyber centrovanie
-	noSelect = new QPushButton();
-	noSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/noselect.png" ) );
-	noSelect->setToolTip( "&No-select mode" );
-	noSelect->setCheckable( true );
-	noSelect->setFocusPolicy( Qt::NoFocus );
-	connect( noSelect, SIGNAL( clicked( bool ) ), this, SLOT( noSelectClicked( bool ) ) );
-
-	singleSelect = new QPushButton();
-	singleSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/singleselect.png" ) );
-	singleSelect->setToolTip( "&Single-select mode" );
-	singleSelect->setCheckable( true );
-	singleSelect->setFocusPolicy( Qt::NoFocus );
-	connect( singleSelect, SIGNAL( clicked( bool ) ), this, SLOT( singleSelectClicked( bool ) ) );
-
-	multiSelect = new QPushButton();
-	multiSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/multiselect.png" ) );
-	multiSelect->setToolTip( "&Multi-select mode" );
-	multiSelect->setCheckable( true );
-	multiSelect->setFocusPolicy( Qt::NoFocus );
-	connect( multiSelect, SIGNAL( clicked( bool ) ), this, SLOT( multiSelectClicked( bool ) ) );
-
-	center = new QPushButton();
-	center->setIcon( QIcon( "../share/3dsoftviz/img/gui/center.png" ) );
-	center->setToolTip( "&Center view" );
-	center->setFocusPolicy( Qt::NoFocus );
-	connect( center, SIGNAL( clicked( bool ) ), this, SLOT( centerView( bool ) ) );
-
-	// layout restrictions
-	b_SetRestriction_SphereSurface = new QPushButton();
-	b_SetRestriction_SphereSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphere_surface.png" ) );
-	b_SetRestriction_SphereSurface->setToolTip( "&Set restriction - sphere surface" );
-	b_SetRestriction_SphereSurface->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_SphereSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_SphereSurface() ) );
-
-	b_SetRestriction_Sphere = new QPushButton();
-	b_SetRestriction_Sphere->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphere.png" ) );
-	b_SetRestriction_Sphere->setToolTip( "&Set restriction - sphere" );
-	b_SetRestriction_Sphere->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_Sphere, SIGNAL( clicked() ), this, SLOT( setRestriction_Sphere() ) );
-
-	b_SetRestriction_Plane = new QPushButton();
-	b_SetRestriction_Plane->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_plane.png" ) );
-	b_SetRestriction_Plane->setToolTip( "&Set restriction - plane" );
-	b_SetRestriction_Plane->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_Plane, SIGNAL( clicked() ), this, SLOT( setRestriction_Plane() ) );
-
-	b_SetRestriction_SpherePlane = new QPushButton();
-	b_SetRestriction_SpherePlane->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphereplane.png" ) );
-	b_SetRestriction_SpherePlane->setToolTip( "&Set restriction - sphere and plane" );
-	b_SetRestriction_SpherePlane->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_SpherePlane, SIGNAL( clicked() ), this, SLOT( setRestriction_SpherePlane() ) );
-
-	b_SetRestriction_Circle = new QPushButton();
-	b_SetRestriction_Circle->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_circle.png" ) );
-	b_SetRestriction_Circle->setToolTip( "&Set restriction - circle" );
-	b_SetRestriction_Circle->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_Circle, SIGNAL( clicked() ), this, SLOT( setRestriction_Circle() ) );
-
-	b_SetRestriction_Cone = new QPushButton();
-	b_SetRestriction_Cone->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cone.png" ) );
-	b_SetRestriction_Cone->setToolTip( "&Set restriction - cone" );
-	b_SetRestriction_Cone->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_Cone, SIGNAL( clicked() ), this, SLOT( setRestriction_Cone() ) );
-
-	b_SetRestriction_ConeTree = new QPushButton();
-	b_SetRestriction_ConeTree->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_conetree.png" ) );
-	b_SetRestriction_ConeTree->setToolTip( "&Set restriction - cone tree" );
-	b_SetRestriction_ConeTree->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_ConeTree, SIGNAL( clicked() ), this, SLOT( setRestriction_ConeTree() ) );
-
-	b_UnsetRestriction = new QPushButton();
-	b_UnsetRestriction->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_unset.png" ) );
-	b_UnsetRestriction->setToolTip( "&Unset restriction" );
-	b_UnsetRestriction->setFocusPolicy( Qt::NoFocus );
-	connect( b_UnsetRestriction, SIGNAL( clicked() ), this, SLOT( unsetRestriction() ) );
-
-	b_SetRestriction_CylinderSurface = new QPushButton();
-	b_SetRestriction_CylinderSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cylinder_surface.png" ) );
-	b_SetRestriction_CylinderSurface->setToolTip( "&Set restriction - cylinder surface" );
-	b_SetRestriction_CylinderSurface->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_CylinderSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_CylinderSurface() ) );
-
-	b_SetRestriction_CylinderSurface_SpinBox = new QSpinBox();
-	b_SetRestriction_CylinderSurface_SpinBox->setToolTip( "&Modify base radius of the restriction" );
-	b_SetRestriction_CylinderSurface_SpinBox->setFocusPolicy( Qt::NoFocus );
-	b_SetRestriction_CylinderSurface_SpinBox->setValue( 25 );
-
-	//volovar_zac
-	b_SetRestriction_RadialLayout_Slider = new QSlider( Qt::Horizontal );
-	b_SetRestriction_RadialLayout_Slider->setToolTip( "&Change radius of Radial layout" );
-	b_SetRestriction_RadialLayout_Slider->setRange( 0, 300 );
-	b_SetRestriction_RadialLayout_Slider->setSingleStep( 10 );
-	b_SetRestriction_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
-	b_SetRestriction_RadialLayout_Slider->setValue( 100 );
-
-	b_SetAlpha_RadialLayout_Slider = new QSlider( Qt::Horizontal );
-	b_SetAlpha_RadialLayout_Slider->setToolTip( "&Change alpha of Radial layout" );
-	b_SetAlpha_RadialLayout_Slider->setRange( 0, 100 );
-	b_SetAlpha_RadialLayout_Slider->setSingleStep( 1 );
-	b_SetAlpha_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
-	b_SetAlpha_RadialLayout_Slider->setValue( 10 );
-
-	b_SetVisibleSpheres_RadialLayout_Slider = new QSlider( Qt::Horizontal );
-	b_SetVisibleSpheres_RadialLayout_Slider->setToolTip( "&Change number of visible spheres in Radial layout" );
-	b_SetVisibleSpheres_RadialLayout_Slider->setRange( 0, 100 );
-	b_SetVisibleSpheres_RadialLayout_Slider->setSingleStep( 1 );
-	b_SetVisibleSpheres_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
-	b_SetVisibleSpheres_RadialLayout_Slider->setValue( 100 );
-
-
-	b_SetForceScale_RadialLayout_Slider = new QSlider( Qt::Horizontal );
-	b_SetForceScale_RadialLayout_Slider->setToolTip( "&Change force between two nodes in Radial layout" );
-	b_SetForceScale_RadialLayout_Slider->setRange( 1, 5000 );
-	b_SetForceScale_RadialLayout_Slider->setSingleStep( 1 );
-	b_SetForceScale_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
-	b_SetForceScale_RadialLayout_Slider->setValue( 1000 );
-
-	b_SetForceSphereScale_RadialLayout_Slider = new QSlider( Qt::Horizontal );
-	b_SetForceSphereScale_RadialLayout_Slider->setToolTip( "&Change force between two nodes in same sphere in Radial layout" );
-	b_SetForceSphereScale_RadialLayout_Slider->setRange( 1, 5000 );
-	b_SetForceSphereScale_RadialLayout_Slider->setSingleStep( 1 );
-	b_SetForceSphereScale_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
-	b_SetForceSphereScale_RadialLayout_Slider->setValue( 1000 );
-	//volovar_kon
-
-	b_SetRestriction_ConeSurface = new QPushButton();
-	b_SetRestriction_ConeSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cone_surface.png" ) );
-	b_SetRestriction_ConeSurface->setToolTip( "&Set restriction - cone surface" );
-	b_SetRestriction_ConeSurface->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_ConeSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_ConeSurface() ) );
-
-	b_SetRestriction_ConeSurface_SpinBox = new QSpinBox();
-	b_SetRestriction_ConeSurface_SpinBox->setToolTip( "&Modify base radius of the restriction" );
-	b_SetRestriction_ConeSurface_SpinBox->setFocusPolicy( Qt::NoFocus );
-	b_SetRestriction_ConeSurface_SpinBox->setValue( 25 );
-
-	//volovar_zac
-	b_SetRestriction_RadialLayout = new QPushButton();
-	b_SetRestriction_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_radial_layout.png" ) );
-	b_SetRestriction_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
-	b_SetRestriction_RadialLayout->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_RadialLayout, SIGNAL( clicked() ), this, SLOT( setRestriction_RadialLayout() ) );
-
-	b_drawMethod_RadialLayout = new QPushButton();
-	b_drawMethod_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/drawMethod_radial_layout.png" ) );
-	b_drawMethod_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
-	b_drawMethod_RadialLayout->setFocusPolicy( Qt::NoFocus );
-	connect( b_drawMethod_RadialLayout, SIGNAL( clicked() ), this, SLOT( changeDrawMethod_RadialLayout() ) );
-
-	b_mode_RadialLayout = new QPushButton();
-	b_mode_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/mode_radial_layout.png" ) );
-	b_mode_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
-	b_mode_RadialLayout->setFocusPolicy( Qt::NoFocus );
-	connect( b_mode_RadialLayout, SIGNAL( clicked() ), this, SLOT( changeMode_RadialLayout() ) );
-
-	//volovar_kon
-
-	b_UnsetRestrictionFromAll = new QPushButton();
-	b_UnsetRestrictionFromAll->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_unset.png" ) );
-	b_UnsetRestrictionFromAll->setToolTip( "&Unset restriction from all nodes" );
-	b_UnsetRestrictionFromAll->setFocusPolicy( Qt::NoFocus );
-	connect( b_UnsetRestrictionFromAll, SIGNAL( clicked() ), this, SLOT( unsetRestrictionFromAll() ) );
-
-	b_StartEdgeBundling = new QPushButton();
-	b_StartEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
-	b_StartEdgeBundling->setToolTip( "&Start edge bundling" );
-	b_StartEdgeBundling->setFocusPolicy( Qt::NoFocus );
-	connect( b_StartEdgeBundling, SIGNAL( clicked() ), this, SLOT( startEdgeBundling() ) );
-
-	b_PauseEdgeBundling = new QPushButton();
-	b_PauseEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
-	b_PauseEdgeBundling->setToolTip( "&Pause edge bundling" );
-	b_PauseEdgeBundling->setFocusPolicy( Qt::NoFocus );
-	b_PauseEdgeBundling->setEnabled( false );
-	connect( b_PauseEdgeBundling, SIGNAL( clicked() ), this, SLOT( pauseEdgeBundling() ) );
-
-	b_StopEdgeBundling = new QPushButton();
-	b_StopEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/stop.png" ) );
-	b_StopEdgeBundling->setToolTip( "&Stop edge bundling" );
-	b_StopEdgeBundling->setFocusPolicy( Qt::NoFocus );
-	b_StopEdgeBundling->setEnabled( false );
-	connect( b_StopEdgeBundling, SIGNAL( clicked() ), this, SLOT( stopEdgeBundling() ) );
-
-	le_edgeBundlingalpha = new QLineEdit( "alpha: " );
-	le_edgeBundlingalpha->setText( "100" );
-
-	nodeTypeComboBox = new QComboBox();
-	nodeTypeComboBox->insertItems( 0,( QStringList() << "Square" << "Sphere" << "Residence" ) );
-	nodeTypeComboBox->setFocusPolicy( Qt::NoFocus );
-	connect( nodeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( nodeTypeComboBoxChanged( int ) ) );
-
-	edgeTypeComboBox = new QComboBox();
-	edgeTypeComboBox->insertItems( 0,( QStringList() << "Quad" << "Cylinder" << "Line" ) );
-	edgeTypeComboBox->setFocusPolicy( Qt::NoFocus );
-	connect( edgeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( edgeTypeComboBoxChanged( int ) ) );
-
-	b_start_server = new QPushButton();
-	b_start_server->setText( "Host session" );
-	connect( b_start_server, SIGNAL( clicked() ), this, SLOT( start_server() ) );
-
-	b_start_client = new QPushButton();
-	b_start_client->setText( "Connect to session" );
-	connect( b_start_client, SIGNAL( clicked() ), this, SLOT( start_client() ) );
-
-	b_send_message = new QPushButton();
-	b_send_message->setText( "Send" );
-	connect( b_send_message, SIGNAL( clicked() ), this, SLOT( send_message() ) );
-
-	chb_center = new QCheckBox( "&Center" );
-	connect( chb_center, SIGNAL( clicked() ), this, SLOT( toggleSpyWatch() ) );
-
-	chb_spy = new QCheckBox( "&Spy" );
-	connect( chb_spy, SIGNAL( clicked() ), this, SLOT( toggleSpyWatch() ) );
-
-	chb_attention = new QCheckBox( "S&hout" );
-	connect( chb_attention, SIGNAL( clicked() ), this, SLOT( toggleAttention() ) );
-
-	le_client_name = new QLineEdit( "Nick" );
-	le_server_addr = new QLineEdit( "localhost" );
-	le_message= new QLineEdit( "Message" );
-
-	lw_users = new QListWidget();
-	lw_users->setSelectionMode( QListWidget::SingleSelection );
-	lw_users->setSortingEnabled( true );
-	lw_users->setMaximumHeight( 100 );
-
-	sl_avatarScale = new QSlider( Qt::Horizontal,this );
-	sl_avatarScale->setTickPosition( QSlider::TicksAbove );
-	sl_avatarScale->setRange( 1,20 );
-	sl_avatarScale->setPageStep( 1 );
-	sl_avatarScale->setValue( 1 );
-	sl_avatarScale->setFocusPolicy( Qt::NoFocus );
-	connect( sl_avatarScale,SIGNAL( valueChanged( int ) ),this,SLOT( setAvatarScale( int ) ) );
-
-	// Duransky start - Nastavenie widgetov
-
-	chb_vertigo = new QCheckBox( "Vertigo zoom" );
-	connect( chb_vertigo, SIGNAL( clicked() ), this, SLOT( toggleVertigo() ) );
-
-	//Add distance
-	add_Distance = new QPushButton();
-	add_Distance->setText( "Add distance" );
-	add_Distance->setToolTip( "Adds distance between planes" );
-	add_Distance->setFocusPolicy( Qt::NoFocus );
-	connect( add_Distance,SIGNAL( clicked() ),this,SLOT( add_DistanceClick() ) );
-
-	//Subtract distance
-	subtract_Distance = new QPushButton();
-	subtract_Distance->setText( "Substract distance" );
-	subtract_Distance->setToolTip( "Subtracts distance between planes" );
-	subtract_Distance->setFocusPolicy( Qt::NoFocus );
-	connect( subtract_Distance,SIGNAL( clicked() ),this,SLOT( subtract_DistanceClick() ) );
-
-	//Add planes
-	add_Planes = new QPushButton();
-	add_Planes->setText( "Add Planes" );
-	add_Planes->setToolTip( "Adds two planes for the vertigo zoom" );
-	add_Planes->setFocusPolicy( Qt::NoFocus );
-	connect( add_Planes,SIGNAL( clicked() ),this,SLOT( add_PlanesClick() ) );
-
-	//Remove planes
-	remove_Planes = new QPushButton();
-	remove_Planes->setText( "Remove Planes" );
-	remove_Planes->setToolTip( "Removes two planes for the vertigo zoom" );
-	remove_Planes->setFocusPolicy( Qt::NoFocus );
-	connect( remove_Planes,SIGNAL( clicked() ),this,SLOT( remove_PlanesClick() ) );
-
-	//Change repulsive forces between the node on the same plane
-	change_Forces = new QSpinBox;
-	change_Forces->setRange( 1,1000 );
-	change_Forces->setValue( 1 );
-	change_Forces->setToolTip( "Changes the repulsive forces between nodes restricted in one plane" );
-	change_Forces->setFocusPolicy( Qt::NoFocus );
-	connect( change_Forces,SIGNAL( valueChanged( int ) ),this,SLOT( repulsive_Forces_ValueChanged() ) );
-
-	// Duransky end - Nastavenie widgetov
-
-	// Britvik start
-	chb_clustersOpacity = new QCheckBox( "auto" );
-	connect( chb_clustersOpacity, SIGNAL( clicked( bool ) ), this, SLOT( clustersOpacityCheckboxValueChanged( bool ) ) );
-
-	chb_clusterSelectedOpacity = new QCheckBox( "selected" );
-	connect( chb_clusterSelectedOpacity, SIGNAL( clicked( bool ) ), this, SLOT( clusterSelectedOpacityCheckboxValueChanged( bool ) ) );
-
-	l_clustersOpacity = new QLabel( "Opacity:" );
-	l_clustersShapes = new QLabel( "Cluster shapes:" );
-
-	b_clustersOpacity_Slider = new QSlider( Qt::Horizontal );
-	b_clustersOpacity_Slider->setToolTip( "Set opacity for clusters" );
-	b_clustersOpacity_Slider->setFocusPolicy( Qt::NoFocus );
-	b_clustersOpacity_Slider->setTickPosition( QSlider::TicksAbove );
-	b_clustersOpacity_Slider->setRange( 0,10 );
-	b_clustersOpacity_Slider->setPageStep( 1 );
-	connect( b_clustersOpacity_Slider, SIGNAL( valueChanged( int ) ), this, SLOT( clustersOpacitySliderValueChanged( int ) ) );
-
-	l_clusters1Min = new QLabel( "0" );
-	l_clusters1Max = new QLabel( "0" );
-
-	l_clusters1Min->setFixedWidth( 30 );
-	l_clusters1Min->setAlignment( Qt::AlignCenter );
-	l_clusters1Max->setFixedWidth( 30 );
-	l_clusters1Max->setAlignment( Qt::AlignCenter );
-
-	b_clustersShapeBoundary_Slider = new QSlider( Qt::Horizontal );
-	b_clustersShapeBoundary_Slider->setToolTip( "Change cluster shapes based on number of clustered nodes inside them" );
-	b_clustersShapeBoundary_Slider->setFocusPolicy( Qt::NoFocus );
-	connect( b_clustersShapeBoundary_Slider, SIGNAL( valueChanged( int ) ), this, SLOT( clustersShapeBoundarySliderValueChanged( int ) ) );
-
-	cb_clusteringAlgorithm = new QComboBox();
-	cb_clusteringAlgorithm->insertItems( 0,( QStringList() << "Adjacency" << "Leafs" << "Neighbours" ) );
-	cb_clusteringAlgorithm->setFocusPolicy( Qt::NoFocus );
-	connect( cb_clusteringAlgorithm,SIGNAL( currentIndexChanged( int ) ),this,SLOT( clusteringAlgorithmChanged( int ) ) );
-
-	le_clusteringDepth = new QLineEdit();
-	le_clusteringDepth->setText( "0" );
-	le_clusteringDepth->setAlignment( Qt::AlignCenter );
-	le_clusteringDepth->setFixedWidth( 30 );
-	le_clusteringDepth->setValidator( new QIntValidator( 0, 10, this ) );
-	connect( le_clusteringDepth, SIGNAL( textChanged( const QString& ) ), this, SLOT( clusteringDepthChanged( const QString& ) ) );
-
-	b_cluster_nodes = new QPushButton();
-	b_cluster_nodes->setText( "Cluster nodes" );
-	connect( b_cluster_nodes, SIGNAL( clicked() ), this, SLOT( cluster_nodes() ) );
-
-	b_restartLayouting = new QPushButton();
-	b_restartLayouting->setText( "Restart Layout" );
-	connect( b_restartLayouting, SIGNAL( clicked() ), this, SLOT( restartLayouting() ) );
-
-	clusteringProgressBar = new QProgressDialog( "", "", 0, 10, this, Qt::Dialog );
-	clusteringProgressBar->setWindowTitle( "Clustering" );
-	clusteringProgressBar->setCancelButtonText( "Abort" );
-	Qt::WindowFlags flags = clusteringProgressBar->windowFlags();
-	flags = flags & ( ~Qt::WindowContextHelpButtonHint );
-	clusteringProgressBar->setWindowFlags( flags );
-	clusteringProgressBar->setModal( true );
-	clusteringProgressBar->setMinimumDuration( 1000 );
-
-	b_SetRestriction_Cube_Selected = new QPushButton();
-	b_SetRestriction_Cube_Selected->setText( "Restrict" );
-	b_SetRestriction_Cube_Selected->setFocusPolicy( Qt::NoFocus );
-	connect( b_SetRestriction_Cube_Selected, SIGNAL( clicked() ), this, SLOT( setRestriction_Cube_Selected() ) );
-
-	l_repulsiveForceInsideCluster = new QLabel( "Repulsive force" );
-	l_repulsiveForceInsideCluster->hide();
-
-	sb_repulsiveForceInsideCluster = new QDoubleSpinBox();
-	sb_repulsiveForceInsideCluster->setToolTip( "Modify repulsive force inside cluster" );
-	sb_repulsiveForceInsideCluster->setMinimum( 0 );
-	sb_repulsiveForceInsideCluster->setMaximum( 500 );
-	connect( sb_repulsiveForceInsideCluster, SIGNAL( valueChanged( double ) ), this, SLOT( repulsiveForceInsideClusterValueChanged( double ) ) );
-
-	sb_repulsiveForceInsideCluster->hide();
-	b_SetRestriction_Cube_Selected->hide();
-	b_restartLayouting->hide();
-
-	line1 = createLine();
-	line2 = createLine();
-	line3 = createLine();
-	// hide
-	setVisibleClusterSection( false );
-
-	// garaj start
-	b_previous_version = new QPushButton();
-	b_previous_version->setText( "<<" );
-	b_previous_version->setToolTip( "Previous version" );
-	b_previous_version->setFocusPolicy( Qt::NoFocus );
-	b_previous_version->setMaximumWidth( 30 );
-	b_previous_version->setDisabled( true );
-	connect( b_previous_version, SIGNAL( clicked() ), this, SLOT( previousVersion() ) );
-
-	b_next_version = new QPushButton();
-	b_next_version->setText( ">>" );
-	b_next_version->setToolTip( "Next version" );
-	b_next_version->setFocusPolicy( Qt::NoFocus );
-	b_next_version->setMaximumWidth( 30 );
-	b_next_version->setDisabled( true );
-	connect( b_next_version, SIGNAL( clicked() ), this, SLOT( nextVersion() ) );
-
-	b_run_evolution = new QPushButton();
-	b_run_evolution->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
-	b_run_evolution->setToolTip( "&Run" );
-	b_run_evolution->setFocusPolicy( Qt::NoFocus );
-	b_run_evolution->setMaximumWidth( 30 );
-	b_run_evolution->setDisabled( true );
-	connect( b_run_evolution, SIGNAL( clicked() ), this, SLOT( runEvolution() ) );
-
-	b_faster_evolution = new QPushButton();
-	b_faster_evolution->setText( "+" );
-	b_faster_evolution->setToolTip( "Faster evolution" );
-	b_faster_evolution->setFocusPolicy( Qt::NoFocus );
-	b_faster_evolution->setMaximumWidth( 20 );
-	b_faster_evolution->setMaximumHeight( 20 );
-	connect( b_faster_evolution, SIGNAL( clicked() ), this, SLOT( fasterEvolution() ) );
-
-	b_slower_evolution = new QPushButton();
-	b_slower_evolution->setText( "-" );
-	b_slower_evolution->setToolTip( "Slower evolution" );
-	b_slower_evolution->setFocusPolicy( Qt::NoFocus );
-	b_slower_evolution->setMaximumWidth( 20 );
-	b_slower_evolution->setMaximumHeight( 20 );
-	connect( b_slower_evolution, SIGNAL( clicked() ), this, SLOT( slowerEvolution() ) );
-
-	b_git_diff = new QPushButton();
-	b_git_diff->setText( "Diff info" );
-	b_git_diff->setToolTip( "Get node Diff info" );
-	b_git_diff->setFocusPolicy( Qt::NoFocus );
-	connect( b_git_diff, SIGNAL( clicked() ), this, SLOT( getDiffInfo() ) );
-
-	b_git_lua_graph = new QPushButton();
-	b_git_lua_graph->setText( "Create lua evoGraph" );
-	b_git_lua_graph->setToolTip( "Creates evolution graph from lua" );
-	b_git_lua_graph->setFocusPolicy( Qt::NoFocus );
-	connect( b_git_lua_graph, SIGNAL( clicked() ), this, SLOT( createEvolutionLuaGraph() ) );
-
-	b_info_version = new QPushButton();
-	b_info_version->setText( "i" );
-	b_info_version->setToolTip( "Show info" );
-	b_info_version->setFocusPolicy( Qt::NoFocus );
-	b_info_version->setMaximumWidth( 30 );
-	b_info_version->setDisabled( false );
-	connect( b_info_version, SIGNAL( clicked() ), this, SLOT( showInfo() ) );
-
-	evolutionSlider = new QSlider( Qt::Horizontal, this );
-	evolutionSlider->setRange( 0, 400 );
-	evolutionSlider->setTickPosition( QSlider::NoTicks );
-	evolutionSlider->setValue( 0 );
-	evolutionSlider->setFocusPolicy( Qt::NoFocus );
-	evolutionSlider->setDisabled( false );
-	connect( evolutionSlider, SIGNAL( valueChanged( int ) ), this, SLOT( sliderVersionValueChanged( int ) ) );
-
-	labelEvolutionSlider =  new QLabel( this );
-	labelEvolutionSlider->setAlignment( Qt::AlignHCenter );
-
-	evolutionLifespanSpinBox = new QSpinBox();
-	evolutionLifespanSpinBox->setMinimum( 0 );
-	connect( evolutionLifespanSpinBox, SIGNAL( valueChanged( int ) ), this, SLOT( changeLifespan( int ) ) );
-
-	evolutionTimer = new QTimer( this );
-	connect( evolutionTimer, SIGNAL( timeout() ), this, SLOT( move() ) );
-	// garaj end
+quit = new QAction( "Quit", this );
+connect( quit, SIGNAL( triggered() ), application, SLOT( quit() ) );
+
+options = new QAction( "Options", this );
+connect( options,SIGNAL( triggered() ),this,SLOT( showOptions() ) );
+
+load = new QAction( QIcon( "../share/3dsoftviz/img/gui/open.png" ),"&Load graph from file", this );
+connect( load, SIGNAL( triggered() ), this, SLOT( loadFile() ) );
+
+loadGit = new QAction( QIcon( "../share/3dsoftviz/img/gui/git_open.png" ), "&Load graph from git", this );
+connect( loadGit, SIGNAL( triggered() ), this, SLOT( loadFromGit() ) );
+
+loadGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/loadFromDB.png" ),"&Load graph from database", this );
+connect( loadGraph, SIGNAL( triggered() ), this, SLOT( showLoadGraph() ) );
+
+loadJavaProjectAction = new QAction( QIcon( "../share/3dsoftviz/img/gui/open_java.png" ),"&Load java project", this );
+connect( loadJavaProjectAction, SIGNAL( triggered() ), this, SLOT( showDialogLoadJavaProject() ) );
+
+saveGraph = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save graph", this );
+connect( saveGraph, SIGNAL( triggered() ), this, SLOT( saveGraphToDB() ) );
+
+saveLayout = new QAction( QIcon( "../share/3dsoftviz/img/gui/saveToDB.png" ),"&Save layout", this );
+connect( saveLayout, SIGNAL( triggered() ), this, SLOT( saveLayoutToDB() ) );
+
+about = new QAction( "About", this );
+
+play = new QPushButton();
+play->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
+play->setToolTip( "&Play" );
+play->setFocusPolicy( Qt::NoFocus );
+connect( play, SIGNAL( clicked() ), this, SLOT( playPause() ) );
+
+showMetricsButton = new QPushButton();
+showMetricsButton->setToolTip( "Show metrics toolbar" );
+showMetricsButton->setMaximumSize( 20, 614 );
+showMetricsButton->setText( "<" );
+showMetricsButton->setFocusPolicy( Qt::NoFocus );
+connect( showMetricsButton, SIGNAL( clicked() ), this, SLOT( showMetrics() ) );
+
+addMeta = new QPushButton();
+addMeta->setIcon( QIcon( "../share/3dsoftviz/img/gui/meta.png" ) );
+addMeta->setToolTip( "&Add meta node" );
+addMeta->setFocusPolicy( Qt::NoFocus );
+connect( addMeta, SIGNAL( clicked() ), this, SLOT( addMetaNode() ) );
+
+removeMeta = new QPushButton();
+removeMeta->setIcon( QIcon( "../share/3dsoftviz/img/gui/removemeta.png" ) );
+removeMeta->setToolTip( "&Remove meta nodes" );
+removeMeta->setFocusPolicy( Qt::NoFocus );
+connect( removeMeta, SIGNAL( clicked() ), this, SLOT( removeMetaNodes() ) );
+
+fix = new QPushButton();
+fix->setIcon( QIcon( "../share/3dsoftviz/img/gui/fix.png" ) );
+fix->setToolTip( "&Fix nodes" );
+fix->setFocusPolicy( Qt::NoFocus );
+connect( fix, SIGNAL( clicked() ), this, SLOT( fixNodes() ) );
+
+unFix = new QPushButton();
+unFix->setIcon( QIcon( "../share/3dsoftviz/img/gui/unfix.png" ) );
+unFix->setToolTip( "&Unfix nodes" );
+unFix->setFocusPolicy( Qt::NoFocus );
+connect( unFix, SIGNAL( clicked() ), this, SLOT( unFixNodes() ) );
+
+merge = new QPushButton();
+merge->setIcon( QIcon( "../share/3dsoftviz/img/gui/merge.png" ) );
+merge->setToolTip( "&Merge nodes together" );
+merge->setFocusPolicy( Qt::NoFocus );
+connect( merge, SIGNAL( clicked() ), this, SLOT( mergeNodes() ) );
+
+separate = new QPushButton();
+separate->setIcon( QIcon( "../share/3dsoftviz/img/gui/separate.png" ) );
+separate->setToolTip( "&Separate merged nodes" );
+separate->setFocusPolicy( Qt::NoFocus );
+connect( separate, SIGNAL( clicked() ), this, SLOT( separateNodes() ) );
+
+label = new QPushButton();
+label->setIcon( QIcon( "../share/3dsoftviz/img/gui/label.png" ) );
+label->setToolTip( "&Turn on/off labels" );
+label->setCheckable( true );
+label->setFocusPolicy( Qt::NoFocus );
+connect( label, SIGNAL( clicked( bool ) ), this, SLOT( labelOnOff( bool ) ) );
+
+applyColor = new QPushButton();
+applyColor->setText( "Apply color" );
+applyColor->setToolTip( "Apply selected color" );
+applyColor->setFocusPolicy( Qt::NoFocus );
+connect( applyColor,SIGNAL( clicked() ),this,SLOT( applyColorClick() ) );
+
+applyLabel = new QPushButton();
+applyLabel->setText( "Apply label" );
+applyLabel->setToolTip( "Apply selected label" );
+applyLabel->setFocusPolicy( Qt::NoFocus );
+connect( applyLabel,SIGNAL( clicked() ),this,SLOT( applyLabelClick() ) );
+
+le_applyLabel = new QLineEdit;
+
+//add edge
+add_Edge = new QPushButton();
+add_Edge->setText( "Add Edge" );
+add_Edge->setToolTip( "Create new edge between two selected Nodes" );
+add_Edge->setFocusPolicy( Qt::NoFocus );
+connect( add_Edge,SIGNAL( clicked() ),this,SLOT( add_EdgeClick() ) );
+
+//add Node
+add_Node = new QPushButton();
+add_Node->setText( "Add Node" );
+add_Node->setToolTip( "Create node" );
+add_Node->setFocusPolicy( Qt::NoFocus );
+connect( add_Node, SIGNAL( clicked() ), this, SLOT( add_NodeClick() ) );
+
+//remove
+remove_all = new QPushButton();
+remove_all->setText( "Remove" );
+remove_all->setToolTip( "Remove nodes and edges" );
+remove_all->setFocusPolicy( Qt::NoFocus );
+connect( remove_all, SIGNAL( clicked() ), this, SLOT( removeClick() ) );
+
+// <Change> Nagy+Gloger
+loadFunctionCallButton = new QPushButton();
+loadFunctionCallButton->setText( "Load function calls" );
+
+loadFunctionCallButton->setToolTip( "Load function calls" );
+loadFunctionCallButton->setFocusPolicy( Qt::NoFocus );
+connect( loadFunctionCallButton, SIGNAL( clicked() ), this, SLOT( loadFunctionCall() ) );
+
+browsersGroupingButton = new QPushButton();
+browsersGroupingButton->setIcon( QIcon( "../share/3dsoftviz/img/gui/grouping.png" ) );
+
+browsersGroupingButton->setToolTip( "Toggle webviews grouping" );
+
+browsersGroupingButton->setCheckable( true );
+browsersGroupingButton->setFocusPolicy( Qt::NoFocus );
+connect( browsersGroupingButton, SIGNAL( clicked( bool ) ), this, SLOT( browsersGroupingClicked( bool ) ) );
+
+filterNodesEdit = new QLineEdit();
+filterEdgesEdit = new QLineEdit();
+connect( filterNodesEdit, SIGNAL( returnPressed() ), this, SLOT( filterGraph() ) );
+connect( filterEdgesEdit, SIGNAL( returnPressed() ), this, SLOT( filterGraph() ) );
+
+luaGraphTreeView = new QTreeView();
+// <end change> Nagy+Gloger
+
+//mody - ziadny vyber, vyber jedneho, multi vyber centrovanie
+noSelect = new QPushButton();
+noSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/noselect.png" ) );
+noSelect->setToolTip( "&No-select mode" );
+noSelect->setCheckable( true );
+noSelect->setFocusPolicy( Qt::NoFocus );
+connect( noSelect, SIGNAL( clicked( bool ) ), this, SLOT( noSelectClicked( bool ) ) );
+
+singleSelect = new QPushButton();
+singleSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/singleselect.png" ) );
+singleSelect->setToolTip( "&Single-select mode" );
+singleSelect->setCheckable( true );
+singleSelect->setFocusPolicy( Qt::NoFocus );
+connect( singleSelect, SIGNAL( clicked( bool ) ), this, SLOT( singleSelectClicked( bool ) ) );
+
+multiSelect = new QPushButton();
+multiSelect->setIcon( QIcon( "../share/3dsoftviz/img/gui/multiselect.png" ) );
+multiSelect->setToolTip( "&Multi-select mode" );
+multiSelect->setCheckable( true );
+multiSelect->setFocusPolicy( Qt::NoFocus );
+connect( multiSelect, SIGNAL( clicked( bool ) ), this, SLOT( multiSelectClicked( bool ) ) );
+
+center = new QPushButton();
+center->setIcon( QIcon( "../share/3dsoftviz/img/gui/center.png" ) );
+center->setToolTip( "&Center view" );
+center->setFocusPolicy( Qt::NoFocus );
+connect( center, SIGNAL( clicked( bool ) ), this, SLOT( centerView( bool ) ) );
+
+// layout restrictions
+b_SetRestriction_SphereSurface = new QPushButton();
+b_SetRestriction_SphereSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphere_surface.png" ) );
+b_SetRestriction_SphereSurface->setToolTip( "&Set restriction - sphere surface" );
+b_SetRestriction_SphereSurface->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_SphereSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_SphereSurface() ) );
+
+b_SetRestriction_Sphere = new QPushButton();
+b_SetRestriction_Sphere->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphere.png" ) );
+b_SetRestriction_Sphere->setToolTip( "&Set restriction - sphere" );
+b_SetRestriction_Sphere->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_Sphere, SIGNAL( clicked() ), this, SLOT( setRestriction_Sphere() ) );
+
+b_SetRestriction_Plane = new QPushButton();
+b_SetRestriction_Plane->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_plane.png" ) );
+b_SetRestriction_Plane->setToolTip( "&Set restriction - plane" );
+b_SetRestriction_Plane->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_Plane, SIGNAL( clicked() ), this, SLOT( setRestriction_Plane() ) );
+
+b_SetRestriction_SpherePlane = new QPushButton();
+b_SetRestriction_SpherePlane->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_sphereplane.png" ) );
+b_SetRestriction_SpherePlane->setToolTip( "&Set restriction - sphere and plane" );
+b_SetRestriction_SpherePlane->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_SpherePlane, SIGNAL( clicked() ), this, SLOT( setRestriction_SpherePlane() ) );
+
+b_SetRestriction_Circle = new QPushButton();
+b_SetRestriction_Circle->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_circle.png" ) );
+b_SetRestriction_Circle->setToolTip( "&Set restriction - circle" );
+b_SetRestriction_Circle->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_Circle, SIGNAL( clicked() ), this, SLOT( setRestriction_Circle() ) );
+
+b_SetRestriction_Cone = new QPushButton();
+b_SetRestriction_Cone->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cone.png" ) );
+b_SetRestriction_Cone->setToolTip( "&Set restriction - cone" );
+b_SetRestriction_Cone->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_Cone, SIGNAL( clicked() ), this, SLOT( setRestriction_Cone() ) );
+
+b_SetRestriction_ConeTree = new QPushButton();
+b_SetRestriction_ConeTree->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_conetree.png" ) );
+b_SetRestriction_ConeTree->setToolTip( "&Set restriction - cone tree" );
+b_SetRestriction_ConeTree->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_ConeTree, SIGNAL( clicked() ), this, SLOT( setRestriction_ConeTree() ) );
+
+b_UnsetRestriction = new QPushButton();
+b_UnsetRestriction->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_unset.png" ) );
+b_UnsetRestriction->setToolTip( "&Unset restriction" );
+b_UnsetRestriction->setFocusPolicy( Qt::NoFocus );
+connect( b_UnsetRestriction, SIGNAL( clicked() ), this, SLOT( unsetRestriction() ) );
+
+b_SetRestriction_CylinderSurface = new QPushButton();
+b_SetRestriction_CylinderSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cylinder_surface.png" ) );
+b_SetRestriction_CylinderSurface->setToolTip( "&Set restriction - cylinder surface" );
+b_SetRestriction_CylinderSurface->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_CylinderSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_CylinderSurface() ) );
+
+b_SetRestriction_CylinderSurface_SpinBox = new QSpinBox();
+b_SetRestriction_CylinderSurface_SpinBox->setToolTip( "&Modify base radius of the restriction" );
+b_SetRestriction_CylinderSurface_SpinBox->setFocusPolicy( Qt::NoFocus );
+b_SetRestriction_CylinderSurface_SpinBox->setValue( 25 );
+
+//volovar_zac
+b_SetRestriction_RadialLayout_Slider = new QSlider( Qt::Horizontal );
+b_SetRestriction_RadialLayout_Slider->setToolTip( "&Change radius of Radial layout" );
+b_SetRestriction_RadialLayout_Slider->setRange( 0, 300 );
+b_SetRestriction_RadialLayout_Slider->setSingleStep( 10 );
+b_SetRestriction_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
+b_SetRestriction_RadialLayout_Slider->setValue( 100 );
+
+b_SetAlpha_RadialLayout_Slider = new QSlider( Qt::Horizontal );
+b_SetAlpha_RadialLayout_Slider->setToolTip( "&Change alpha of Radial layout" );
+b_SetAlpha_RadialLayout_Slider->setRange( 0, 100 );
+b_SetAlpha_RadialLayout_Slider->setSingleStep( 1 );
+b_SetAlpha_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
+b_SetAlpha_RadialLayout_Slider->setValue( 10 );
+
+b_SetVisibleSpheres_RadialLayout_Slider = new QSlider( Qt::Horizontal );
+b_SetVisibleSpheres_RadialLayout_Slider->setToolTip( "&Change number of visible spheres in Radial layout" );
+b_SetVisibleSpheres_RadialLayout_Slider->setRange( 0, 100 );
+b_SetVisibleSpheres_RadialLayout_Slider->setSingleStep( 1 );
+b_SetVisibleSpheres_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
+b_SetVisibleSpheres_RadialLayout_Slider->setValue( 100 );
+
+
+b_SetForceScale_RadialLayout_Slider = new QSlider( Qt::Horizontal );
+b_SetForceScale_RadialLayout_Slider->setToolTip( "&Change force between two nodes in Radial layout" );
+b_SetForceScale_RadialLayout_Slider->setRange( 1, 5000 );
+b_SetForceScale_RadialLayout_Slider->setSingleStep( 1 );
+b_SetForceScale_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
+b_SetForceScale_RadialLayout_Slider->setValue( 1000 );
+
+b_SetForceSphereScale_RadialLayout_Slider = new QSlider( Qt::Horizontal );
+b_SetForceSphereScale_RadialLayout_Slider->setToolTip( "&Change force between two nodes in same sphere in Radial layout" );
+b_SetForceSphereScale_RadialLayout_Slider->setRange( 1, 5000 );
+b_SetForceSphereScale_RadialLayout_Slider->setSingleStep( 1 );
+b_SetForceSphereScale_RadialLayout_Slider->setFocusPolicy( Qt::ClickFocus );
+b_SetForceSphereScale_RadialLayout_Slider->setValue( 1000 );
+//volovar_kon
+
+b_SetRestriction_ConeSurface = new QPushButton();
+b_SetRestriction_ConeSurface->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_cone_surface.png" ) );
+b_SetRestriction_ConeSurface->setToolTip( "&Set restriction - cone surface" );
+b_SetRestriction_ConeSurface->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_ConeSurface, SIGNAL( clicked() ), this, SLOT( setRestriction_ConeSurface() ) );
+
+b_SetRestriction_ConeSurface_SpinBox = new QSpinBox();
+b_SetRestriction_ConeSurface_SpinBox->setToolTip( "&Modify base radius of the restriction" );
+b_SetRestriction_ConeSurface_SpinBox->setFocusPolicy( Qt::NoFocus );
+b_SetRestriction_ConeSurface_SpinBox->setValue( 25 );
+
+//volovar_zac
+b_SetRestriction_RadialLayout = new QPushButton();
+b_SetRestriction_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_radial_layout.png" ) );
+b_SetRestriction_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
+b_SetRestriction_RadialLayout->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_RadialLayout, SIGNAL( clicked() ), this, SLOT( setRestriction_RadialLayout() ) );
+
+b_drawMethod_RadialLayout = new QPushButton();
+b_drawMethod_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/drawMethod_radial_layout.png" ) );
+b_drawMethod_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
+b_drawMethod_RadialLayout->setFocusPolicy( Qt::NoFocus );
+connect( b_drawMethod_RadialLayout, SIGNAL( clicked() ), this, SLOT( changeDrawMethod_RadialLayout() ) );
+
+b_mode_RadialLayout = new QPushButton();
+b_mode_RadialLayout->setIcon( QIcon( "../share/3dsoftviz/img/gui/mode_radial_layout.png" ) );
+b_mode_RadialLayout->setToolTip( "&Set restriction - radial Layout" );
+b_mode_RadialLayout->setFocusPolicy( Qt::NoFocus );
+connect( b_mode_RadialLayout, SIGNAL( clicked() ), this, SLOT( changeMode_RadialLayout() ) );
+
+//volovar_kon
+
+b_UnsetRestrictionFromAll = new QPushButton();
+b_UnsetRestrictionFromAll->setIcon( QIcon( "../share/3dsoftviz/img/gui/restriction_unset.png" ) );
+b_UnsetRestrictionFromAll->setToolTip( "&Unset restriction from all nodes" );
+b_UnsetRestrictionFromAll->setFocusPolicy( Qt::NoFocus );
+connect( b_UnsetRestrictionFromAll, SIGNAL( clicked() ), this, SLOT( unsetRestrictionFromAll() ) );
+
+b_StartEdgeBundling = new QPushButton();
+b_StartEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
+b_StartEdgeBundling->setToolTip( "&Start edge bundling" );
+b_StartEdgeBundling->setFocusPolicy( Qt::NoFocus );
+connect( b_StartEdgeBundling, SIGNAL( clicked() ), this, SLOT( startEdgeBundling() ) );
+
+b_PauseEdgeBundling = new QPushButton();
+b_PauseEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/pause.png" ) );
+b_PauseEdgeBundling->setToolTip( "&Pause edge bundling" );
+b_PauseEdgeBundling->setFocusPolicy( Qt::NoFocus );
+b_PauseEdgeBundling->setEnabled( false );
+connect( b_PauseEdgeBundling, SIGNAL( clicked() ), this, SLOT( pauseEdgeBundling() ) );
+
+b_StopEdgeBundling = new QPushButton();
+b_StopEdgeBundling->setIcon( QIcon( "../share/3dsoftviz/img/gui/stop.png" ) );
+b_StopEdgeBundling->setToolTip( "&Stop edge bundling" );
+b_StopEdgeBundling->setFocusPolicy( Qt::NoFocus );
+b_StopEdgeBundling->setEnabled( false );
+connect( b_StopEdgeBundling, SIGNAL( clicked() ), this, SLOT( stopEdgeBundling() ) );
+
+le_edgeBundlingalpha = new QLineEdit( "alpha: " );
+le_edgeBundlingalpha->setText( "100" );
+
+nodeTypeComboBox = new QComboBox();
+nodeTypeComboBox->insertItems( 0,( QStringList() << "Square" << "Sphere" << "Residence" ) );
+nodeTypeComboBox->setFocusPolicy( Qt::NoFocus );
+connect( nodeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( nodeTypeComboBoxChanged( int ) ) );
+
+edgeTypeComboBox = new QComboBox();
+edgeTypeComboBox->insertItems( 0,( QStringList() << "Quad" << "Cylinder" << "Line" ) );
+edgeTypeComboBox->setFocusPolicy( Qt::NoFocus );
+connect( edgeTypeComboBox,SIGNAL( currentIndexChanged( int ) ),this,SLOT( edgeTypeComboBoxChanged( int ) ) );
+
+b_start_server = new QPushButton();
+b_start_server->setText( "Host session" );
+connect( b_start_server, SIGNAL( clicked() ), this, SLOT( start_server() ) );
+
+b_start_client = new QPushButton();
+b_start_client->setText( "Connect to session" );
+connect( b_start_client, SIGNAL( clicked() ), this, SLOT( start_client() ) );
+
+b_send_message = new QPushButton();
+b_send_message->setText( "Send" );
+connect( b_send_message, SIGNAL( clicked() ), this, SLOT( send_message() ) );
+
+chb_center = new QCheckBox( "&Center" );
+connect( chb_center, SIGNAL( clicked() ), this, SLOT( toggleSpyWatch() ) );
+
+chb_spy = new QCheckBox( "&Spy" );
+connect( chb_spy, SIGNAL( clicked() ), this, SLOT( toggleSpyWatch() ) );
+
+chb_attention = new QCheckBox( "S&hout" );
+connect( chb_attention, SIGNAL( clicked() ), this, SLOT( toggleAttention() ) );
+
+le_client_name = new QLineEdit( "Nick" );
+le_server_addr = new QLineEdit( "localhost" );
+le_message= new QLineEdit( "Message" );
+
+lw_users = new QListWidget();
+lw_users->setSelectionMode( QListWidget::SingleSelection );
+lw_users->setSortingEnabled( true );
+lw_users->setMaximumHeight( 100 );
+
+sl_avatarScale = new QSlider( Qt::Horizontal,this );
+sl_avatarScale->setTickPosition( QSlider::TicksAbove );
+sl_avatarScale->setRange( 1,20 );
+sl_avatarScale->setPageStep( 1 );
+sl_avatarScale->setValue( 1 );
+sl_avatarScale->setFocusPolicy( Qt::NoFocus );
+connect( sl_avatarScale,SIGNAL( valueChanged( int ) ),this,SLOT( setAvatarScale( int ) ) );
+
+// Duransky start - Nastavenie widgetov
+
+chb_vertigo = new QCheckBox( "Vertigo zoom" );
+connect( chb_vertigo, SIGNAL( clicked() ), this, SLOT( toggleVertigo() ) );
+
+//Add distance
+add_Distance = new QPushButton();
+add_Distance->setText( "Add distance" );
+add_Distance->setToolTip( "Adds distance between planes" );
+add_Distance->setFocusPolicy( Qt::NoFocus );
+connect( add_Distance,SIGNAL( clicked() ),this,SLOT( add_DistanceClick() ) );
+
+//Subtract distance
+subtract_Distance = new QPushButton();
+subtract_Distance->setText( "Substract distance" );
+subtract_Distance->setToolTip( "Subtracts distance between planes" );
+subtract_Distance->setFocusPolicy( Qt::NoFocus );
+connect( subtract_Distance,SIGNAL( clicked() ),this,SLOT( subtract_DistanceClick() ) );
+
+//Add planes
+add_Planes = new QPushButton();
+add_Planes->setText( "Add Planes" );
+add_Planes->setToolTip( "Adds two planes for the vertigo zoom" );
+add_Planes->setFocusPolicy( Qt::NoFocus );
+connect( add_Planes,SIGNAL( clicked() ),this,SLOT( add_PlanesClick() ) );
+
+//Remove planes
+remove_Planes = new QPushButton();
+remove_Planes->setText( "Remove Planes" );
+remove_Planes->setToolTip( "Removes two planes for the vertigo zoom" );
+remove_Planes->setFocusPolicy( Qt::NoFocus );
+connect( remove_Planes,SIGNAL( clicked() ),this,SLOT( remove_PlanesClick() ) );
+
+//Change repulsive forces between the node on the same plane
+change_Forces = new QSpinBox;
+change_Forces->setRange( 1,1000 );
+change_Forces->setValue( 1 );
+change_Forces->setToolTip( "Changes the repulsive forces between nodes restricted in one plane" );
+change_Forces->setFocusPolicy( Qt::NoFocus );
+connect( change_Forces,SIGNAL( valueChanged( int ) ),this,SLOT( repulsive_Forces_ValueChanged() ) );
+
+// Duransky end - Nastavenie widgetov
+
+// Britvik start
+chb_clustersOpacity = new QCheckBox( "auto" );
+connect( chb_clustersOpacity, SIGNAL( clicked( bool ) ), this, SLOT( clustersOpacityCheckboxValueChanged( bool ) ) );
+
+chb_clusterSelectedOpacity = new QCheckBox( "selected" );
+connect( chb_clusterSelectedOpacity, SIGNAL( clicked( bool ) ), this, SLOT( clusterSelectedOpacityCheckboxValueChanged( bool ) ) );
+
+l_clustersOpacity = new QLabel( "Opacity:" );
+l_clustersShapes = new QLabel( "Cluster shapes:" );
+
+b_clustersOpacity_Slider = new QSlider( Qt::Horizontal );
+b_clustersOpacity_Slider->setToolTip( "Set opacity for clusters" );
+b_clustersOpacity_Slider->setFocusPolicy( Qt::NoFocus );
+b_clustersOpacity_Slider->setTickPosition( QSlider::TicksAbove );
+b_clustersOpacity_Slider->setRange( 0,10 );
+b_clustersOpacity_Slider->setPageStep( 1 );
+connect( b_clustersOpacity_Slider, SIGNAL( valueChanged( int ) ), this, SLOT( clustersOpacitySliderValueChanged( int ) ) );
+
+l_clusters1Min = new QLabel( "0" );
+l_clusters1Max = new QLabel( "0" );
+
+l_clusters1Min->setFixedWidth( 30 );
+l_clusters1Min->setAlignment( Qt::AlignCenter );
+l_clusters1Max->setFixedWidth( 30 );
+l_clusters1Max->setAlignment( Qt::AlignCenter );
+
+b_clustersShapeBoundary_Slider = new QSlider( Qt::Horizontal );
+b_clustersShapeBoundary_Slider->setToolTip( "Change cluster shapes based on number of clustered nodes inside them" );
+b_clustersShapeBoundary_Slider->setFocusPolicy( Qt::NoFocus );
+connect( b_clustersShapeBoundary_Slider, SIGNAL( valueChanged( int ) ), this, SLOT( clustersShapeBoundarySliderValueChanged( int ) ) );
+
+cb_clusteringAlgorithm = new QComboBox();
+cb_clusteringAlgorithm->insertItems( 0,( QStringList() << "Adjacency" << "Leafs" << "Neighbours" ) );
+cb_clusteringAlgorithm->setFocusPolicy( Qt::NoFocus );
+connect( cb_clusteringAlgorithm,SIGNAL( currentIndexChanged( int ) ),this,SLOT( clusteringAlgorithmChanged( int ) ) );
+
+le_clusteringDepth = new QLineEdit();
+le_clusteringDepth->setText( "0" );
+le_clusteringDepth->setAlignment( Qt::AlignCenter );
+le_clusteringDepth->setFixedWidth( 30 );
+le_clusteringDepth->setValidator( new QIntValidator( 0, 10, this ) );
+connect( le_clusteringDepth, SIGNAL( textChanged( const QString& ) ), this, SLOT( clusteringDepthChanged( const QString& ) ) );
+
+b_cluster_nodes = new QPushButton();
+b_cluster_nodes->setText( "Cluster nodes" );
+connect( b_cluster_nodes, SIGNAL( clicked() ), this, SLOT( cluster_nodes() ) );
+
+b_restartLayouting = new QPushButton();
+b_restartLayouting->setText( "Restart Layout" );
+connect( b_restartLayouting, SIGNAL( clicked() ), this, SLOT( restartLayouting() ) );
+
+clusteringProgressBar = new QProgressDialog( "", "", 0, 10, this, Qt::Dialog );
+clusteringProgressBar->setWindowTitle( "Clustering" );
+clusteringProgressBar->setCancelButtonText( "Abort" );
+Qt::WindowFlags flags = clusteringProgressBar->windowFlags();
+flags = flags & ( ~Qt::WindowContextHelpButtonHint );
+clusteringProgressBar->setWindowFlags( flags );
+clusteringProgressBar->setModal( true );
+clusteringProgressBar->setMinimumDuration( 1000 );
+
+b_SetRestriction_Cube_Selected = new QPushButton();
+b_SetRestriction_Cube_Selected->setText( "Restrict" );
+b_SetRestriction_Cube_Selected->setFocusPolicy( Qt::NoFocus );
+connect( b_SetRestriction_Cube_Selected, SIGNAL( clicked() ), this, SLOT( setRestriction_Cube_Selected() ) );
+
+l_repulsiveForceInsideCluster = new QLabel( "Repulsive force" );
+l_repulsiveForceInsideCluster->hide();
+
+sb_repulsiveForceInsideCluster = new QDoubleSpinBox();
+sb_repulsiveForceInsideCluster->setToolTip( "Modify repulsive force inside cluster" );
+sb_repulsiveForceInsideCluster->setMinimum( 0 );
+sb_repulsiveForceInsideCluster->setMaximum( 500 );
+connect( sb_repulsiveForceInsideCluster, SIGNAL( valueChanged( double ) ), this, SLOT( repulsiveForceInsideClusterValueChanged( double ) ) );
+
+sb_repulsiveForceInsideCluster->hide();
+b_SetRestriction_Cube_Selected->hide();
+b_restartLayouting->hide();
+
+line1 = createLine();
+line2 = createLine();
+line3 = createLine();
+// hide
+setVisibleClusterSection( false );
+
+// garaj start
+b_previous_version = new QPushButton();
+b_previous_version->setText( "<<" );
+b_previous_version->setToolTip( "Previous version" );
+b_previous_version->setFocusPolicy( Qt::NoFocus );
+b_previous_version->setMaximumWidth( 30 );
+b_previous_version->setDisabled( true );
+connect( b_previous_version, SIGNAL( clicked() ), this, SLOT( previousVersion() ) );
+
+b_next_version = new QPushButton();
+b_next_version->setText( ">>" );
+b_next_version->setToolTip( "Next version" );
+b_next_version->setFocusPolicy( Qt::NoFocus );
+b_next_version->setMaximumWidth( 30 );
+b_next_version->setDisabled( true );
+connect( b_next_version, SIGNAL( clicked() ), this, SLOT( nextVersion() ) );
+
+b_run_evolution = new QPushButton();
+b_run_evolution->setIcon( QIcon( "../share/3dsoftviz/img/gui/play.png" ) );
+b_run_evolution->setToolTip( "&Run" );
+b_run_evolution->setFocusPolicy( Qt::NoFocus );
+b_run_evolution->setMaximumWidth( 30 );
+b_run_evolution->setDisabled( true );
+connect( b_run_evolution, SIGNAL( clicked() ), this, SLOT( runEvolution() ) );
+
+b_faster_evolution = new QPushButton();
+b_faster_evolution->setText( "+" );
+b_faster_evolution->setToolTip( "Faster evolution" );
+b_faster_evolution->setFocusPolicy( Qt::NoFocus );
+b_faster_evolution->setMaximumWidth( 20 );
+b_faster_evolution->setMaximumHeight( 20 );
+connect( b_faster_evolution, SIGNAL( clicked() ), this, SLOT( fasterEvolution() ) );
+
+b_slower_evolution = new QPushButton();
+b_slower_evolution->setText( "-" );
+b_slower_evolution->setToolTip( "Slower evolution" );
+b_slower_evolution->setFocusPolicy( Qt::NoFocus );
+b_slower_evolution->setMaximumWidth( 20 );
+b_slower_evolution->setMaximumHeight( 20 );
+connect( b_slower_evolution, SIGNAL( clicked() ), this, SLOT( slowerEvolution() ) );
+
+b_git_diff = new QPushButton();
+b_git_diff->setText( "Diff info" );
+b_git_diff->setToolTip( "Get node Diff info" );
+b_git_diff->setFocusPolicy( Qt::NoFocus );
+connect( b_git_diff, SIGNAL( clicked() ), this, SLOT( getDiffInfo() ) );
+
+b_git_lua_graph = new QPushButton();
+b_git_lua_graph->setText( "Create lua evoGraph" );
+b_git_lua_graph->setToolTip( "Creates evolution graph from lua" );
+b_git_lua_graph->setFocusPolicy( Qt::NoFocus );
+connect( b_git_lua_graph, SIGNAL( clicked() ), this, SLOT( createEvolutionLuaGraph() ) );
+
+b_info_version = new QPushButton();
+b_info_version->setText( "i" );
+b_info_version->setToolTip( "Show info" );
+b_info_version->setFocusPolicy( Qt::NoFocus );
+b_info_version->setMaximumWidth( 30 );
+b_info_version->setDisabled( false );
+connect( b_info_version, SIGNAL( clicked() ), this, SLOT( showInfo() ) );
+
+evolutionSlider = new QSlider( Qt::Horizontal, this );
+evolutionSlider->setRange( 0, 400 );
+evolutionSlider->setTickPosition( QSlider::NoTicks );
+evolutionSlider->setValue( 0 );
+evolutionSlider->setFocusPolicy( Qt::NoFocus );
+evolutionSlider->setDisabled( false );
+connect( evolutionSlider, SIGNAL( valueChanged( int ) ), this, SLOT( sliderVersionValueChanged( int ) ) );
+
+labelEvolutionSlider =  new QLabel( this );
+labelEvolutionSlider->setAlignment( Qt::AlignHCenter );
+
+evolutionLifespanSpinBox = new QSpinBox();
+evolutionLifespanSpinBox->setMinimum( 0 );
+connect( evolutionLifespanSpinBox, SIGNAL( valueChanged( int ) ), this, SLOT( changeLifespan( int ) ) );
+
+evolutionTimer = new QTimer( this );
+connect( evolutionTimer, SIGNAL( timeout() ), this, SLOT( move() ) );
+// garaj end
 }
 
 void CoreWindow::setVisibleClusterSection( bool visible )
@@ -3570,13 +3579,6 @@ struct BuildingInfo
 	}
 };
 
-osg::Material* createMat(const osg::Vec3 color)
-{
-	auto mat = new osg::Material();
-	mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(color.x(), color.y(), color.z(), 1.0f));
-	return mat;
-}
-
 void CoreWindow::showEvent(QShowEvent* e)
 {
 	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
@@ -3597,11 +3599,11 @@ void CoreWindow::showEvent(QShowEvent* e)
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
-	osg::ref_ptr<osg::Material> white = createMat(osg::Vec3(1, 1, 1));
-	osg::ref_ptr<osg::Material> yellow = createMat(osg::Vec3(1, 1, 0));
-	osg::ref_ptr<osg::Material> red = createMat(osg::Vec3(0.941, 0.502, 0.502));
-	osg::ref_ptr<osg::Material> green = createMat(osg::Vec3(0.565, 0.933, 0.565));
-	osg::ref_ptr<osg::Material> orange = createMat(osg::Vec3(1.000, 0.647, 0.000));
+	auto white = resMgr->getMaterial(osg::Vec3(1, 1, 1));
+	auto yellow = resMgr->getMaterial(osg::Vec3(1, 1, 0));
+	auto red = resMgr->getMaterial(osg::Vec3(0.941, 0.502, 0.502));
+	auto green = resMgr->getMaterial(osg::Vec3(0.565, 0.933, 0.565));
+	auto orange = resMgr->getMaterial(osg::Vec3(1.000, 0.647, 0.000));
 
 	auto rootNode = graph->addNode("", nodeType);
 	auto javaRootNode = new Clustering::Building();
@@ -3657,7 +3659,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : getterSetterMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(getterSetterMethod.name, floors);
+				auto b = new Clustering::Building(getterSetterMethod.name, QString(), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(getterSetterMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3672,7 +3674,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : internalMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(internalMethod.name, floors);
+				auto b = new Clustering::Building(internalMethod.name, QString(), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(internalMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3687,7 +3689,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : interfaceMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(interfaceMethod.name, floors);
+				auto b = new Clustering::Building(interfaceMethod.name, QString(), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(interfaceMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3702,7 +3704,7 @@ void CoreWindow::showEvent(QShowEvent* e)
 				QList<Clustering::Floor*> floors;
 				for (const auto& param : constructorMethod.parameters)
 					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(constructorMethod.name, floors);
+				auto b = new Clustering::Building(constructorMethod.name, QString(), floors);
 				b->setBaseSize(1.0);
 				b->setTriangleRoof(constructorMethod.HasResult());
 				b->setStateSet(new osg::StateSet());
@@ -3727,6 +3729,9 @@ void CoreWindow::showEvent(QShowEvent* e)
 		bi.building->setHeight(buildingHeight);
 		bi.building->refresh();
 	}
+	
+	auto hudNode = graph->addNode("", nodeType);
+	hudNode->addChild(hudProjection);
 
 	// robime zakladnu proceduru pre restartovanie layoutu
 	AppCore::Core::getInstance()->restartLayout();
@@ -3858,6 +3863,74 @@ void CoreWindow::createMetricsToolBar()
 	addToolBar( Qt::BottomToolBarArea, toolBar );
 
 	isRunning = false;
+}
+
+void CoreWindow::createHUD()
+{
+	if (!hudProjection.valid())
+	{
+		hudProjection = new osg::Projection;
+		hudModelView = new osg::MatrixTransform;
+		hudModelView->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+		hudProjection->addChild(hudModelView);
+	}
+
+	hudModelView->removeChildren(0, hudModelView->getNumChildren());
+
+	static const int DEFAULT_HUD_WIDTH = 200;
+	static const int DEFAULT_HUD_HEIGHT = 300;
+
+	const float HUD_WIDTH = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Width", DEFAULT_HUD_WIDTH);
+	const float HUD_HEIGHT = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Height", DEFAULT_HUD_HEIGHT);
+	hudSize = QSize(HUD_WIDTH, HUD_HEIGHT);
+
+	osg::Vec3Array* hudVertices = new osg::Vec3Array;
+	hudVertices->push_back(osg::Vec3(0, 0, .8));
+	hudVertices->push_back(osg::Vec3(hudSize.width(), 0, .8));
+	hudVertices->push_back(osg::Vec3(hudSize.width(), hudSize.height(), .8));
+	hudVertices->push_back(osg::Vec3(0, hudSize.height(), .8));
+
+	osg::Vec4Array* hudColors = new osg::Vec4Array;
+	hudColors->push_back(osg::Vec4(0.8f, 0.8f, 0.8f, 0.5f));
+
+	osg::DrawElementsUInt* hudIndices = new osg::DrawElementsUInt(osg::PrimitiveSet::POLYGON, 0);
+	hudIndices->push_back(0);
+	hudIndices->push_back(1);
+	hudIndices->push_back(2);
+	hudIndices->push_back(3);
+
+	osg::Geometry* hudBackgroundGeometry = new osg::Geometry();
+	hudBackgroundGeometry->addPrimitiveSet(hudIndices);
+	hudBackgroundGeometry->setVertexArray(hudVertices);
+	hudBackgroundGeometry->setColorArray(hudColors);
+	hudBackgroundGeometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+
+	osgText::Text* textOne = new osgText::Text();
+	textOne->setCharacterSize(16);
+	textOne->setAxisAlignment(osgText::Text::SCREEN);
+	textOne->setColor(osg::Vec4(1, 1, 1, 1.0f));
+
+	osg::StateSet* hudStateSet = new osg::StateSet();
+	hudStateSet->setRenderBinDetails(999999, "DepthSortedBin");
+	hudStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+	hudStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+	hudStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	osgUtil::RenderBin* HUDBin = new osgUtil::RenderBin(osgUtil::RenderBin::SORT_BACK_TO_FRONT);
+
+	osg::Geode* hudGeode = new osg::Geode();
+	hudGeode->addDrawable(textOne);
+	hudGeode->addDrawable(hudBackgroundGeometry);
+	hudGeode->setStateSet(hudStateSet);
+
+	hudModelView->addChild(hudGeode);
+}
+
+void CoreWindow::setHudText(const QString& hudText)
+{
+	auto t = static_cast<osgText::Text*>(hudModelView->getChild(0)->asGeode()->getDrawable(0));
+	int lineCount = hudText.count('\n');
+	t->setPosition(osg::Vec3(10, hudSize.height() - 20 - (lineCount * 16), 1));
+	t->setText(hudText.toStdString());
 }
 
 void CoreWindow::loadFunctionCall()
