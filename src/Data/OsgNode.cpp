@@ -298,12 +298,12 @@ void Data::OsgNode::reloadConfig()
 	setValue( graph->getNodeVisual(), true );
 }
 
-void Data::OsgNode::showLabel( bool visible )
+void Data::OsgNode::showLabel(bool visible, bool labelsForResidence)
 {
 	setValue( INDEX_LABEL, visible );
 	auto residence = getResidence();
 	if (residence)
-		residence->showLabels(visible);
+		residence->showLabels(visible && labelsForResidence);
 }
 
 osg::ref_ptr<osg::StateSet> Data::OsgNode::createStateSet(const osg::ref_ptr<osg::Texture2D>& texture)

@@ -313,7 +313,7 @@ namespace Importer
 			method.name = methodDeclaration->identifier->GetValue();
 			if (methodDeclaration->formalParameters->formalParameterList != nullptr)
 				method.parameters = GetParametersFromFormalParameterList(methodDeclaration->formalParameters->formalParameterList);
-			method.content = GetBlockContent(methodDeclaration->methodBody->block);
+			method.content = methodDeclaration->methodBody->block != nullptr ? GetBlockContent(methodDeclaration->methodBody->block) : QString();
 			return method;
 		}
 
@@ -450,40 +450,43 @@ namespace Importer
 								enum1.enums.push_back(enumConstant);
 							}
 						}
-						for (const NodeClassBodyDeclaration* cbd : typeDecl->enumDeclaration->enumBodyDeclarations->classBodyDeclarations)
+						if (typeDecl->enumDeclaration->enumBodyDeclarations != nullptr)
 						{
-							if (cbd->memberDeclaration == nullptr)
-								continue;
+							for (const NodeClassBodyDeclaration* cbd : typeDecl->enumDeclaration->enumBodyDeclarations->classBodyDeclarations)
+							{
+								if (cbd->memberDeclaration == nullptr)
+									continue;
 
-							Modifier::ModifierEnum modifierForEnumMember = Modifier::UNKNOWN;
-							for (const NodeModifier* m : cbd->memberDeclaration->modifier)
-							{
-								modifierForEnumMember = GetModifier(m);
-								if (modifierForEnumMember != Modifier::UNKNOWN)
-									break;
-							}
+								Modifier::ModifierEnum modifierForEnumMember = Modifier::UNKNOWN;
+								for (const NodeModifier* m : cbd->memberDeclaration->modifier)
+								{
+									modifierForEnumMember = GetModifier(m);
+									if (modifierForEnumMember != Modifier::UNKNOWN)
+										break;
+								}
 
-							if (cbd->memberDeclaration->methodDeclaration != nullptr)
-							{
-								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->methodDeclaration, modifierForEnumMember));
-							}
-							else if (cbd->memberDeclaration->genericMethodDeclaration != nullptr)
-							{
-								enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->genericMethodDeclaration->methodDeclaration, modifierForEnumMember));
-							}
-							else if (cbd->memberDeclaration->fieldDeclaration != nullptr)
-							{
-								auto fields = GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration, modifierForEnumMember);
-								for (const auto& f : fields)
-									enum1.attributes.push_back(f);
-							}
-							else if (cbd->memberDeclaration->constructorDeclaration != nullptr)
-							{
-								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->constructorDeclaration, modifierForEnumMember));
-							}
-							else if (cbd->memberDeclaration->genericConstructorDeclaration != nullptr)
-							{
-								enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->genericConstructorDeclaration->constructorDeclaration, modifierForEnumMember));
+								if (cbd->memberDeclaration->methodDeclaration != nullptr)
+								{
+									enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->methodDeclaration, modifierForEnumMember));
+								}
+								else if (cbd->memberDeclaration->genericMethodDeclaration != nullptr)
+								{
+									enum1.methods.push_back(GetMethodFromMethodDeclaration(cbd->memberDeclaration->genericMethodDeclaration->methodDeclaration, modifierForEnumMember));
+								}
+								else if (cbd->memberDeclaration->fieldDeclaration != nullptr)
+								{
+									auto fields = GetAttributeFromFieldDeclaration(cbd->memberDeclaration->fieldDeclaration, modifierForEnumMember);
+									for (const auto& f : fields)
+										enum1.attributes.push_back(f);
+								}
+								else if (cbd->memberDeclaration->constructorDeclaration != nullptr)
+								{
+									enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->constructorDeclaration, modifierForEnumMember));
+								}
+								else if (cbd->memberDeclaration->genericConstructorDeclaration != nullptr)
+								{
+									enum1.methods.push_back(GetConstructorFromConstructorDeclaration(cbd->memberDeclaration->genericConstructorDeclaration->constructorDeclaration, modifierForEnumMember));
+								}
 							}
 						}
 						javaPackages[packageName].enums.push_back(enum1);

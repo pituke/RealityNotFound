@@ -48,7 +48,7 @@ void Repository::Git::GitGraphUpdater::nextVersion()
 		if ( !lAuthorNode ) {
 			lAuthorNode = this->getActiveGraph()->addNode( lAuthorName, this->getActiveGraph()->getTypesByName( "author" ).at( 0 ) );
 			lAuthorNode->setLabelText( lAuthorNode->Data::AbsNode::getName() );
-			lAuthorNode->showLabel( true );
+			lAuthorNode->showLabel( true, false );
 		}
 	}
 
@@ -126,7 +126,7 @@ void Repository::Git::GitGraphUpdater::previousVersion()
 		if ( !lAuthorNode ) {
 			lAuthorNode = this->getActiveGraph()->addNode( lAuthorName, this->getActiveGraph()->getTypesByName( "author" ).at( 0 ) );
 			lAuthorNode->setLabelText( lAuthorNode->Data::AbsNode::getName() );
-			lAuthorNode->showLabel( true );
+			lAuthorNode->showLabel( true, false );
 		}
 	}
 
@@ -219,7 +219,7 @@ void Repository::Git::GitGraphUpdater::changeToVersion( int toVersion )
 	if ( !lAuthorNode ) {
 		lAuthorNode = this->getActiveGraph()->addNode( lAuthorName, this->getActiveGraph()->getTypesByName( "author" ).at( 0 ) );
 		lAuthorNode->setLabelText( lAuthorNode->Data::AbsNode::getName() );
-		lAuthorNode->showLabel( true );
+		lAuthorNode->showLabel( true, false );
 	}
 
 	// Pridam hrany od autora k zmenenych uzlom vo vyslednej verzii
@@ -278,13 +278,13 @@ void Repository::Git::GitGraphUpdater::addNodesToGraph( QStringList list )
 
 			// Nastavim label a pridam do mnoziny uzlov v grafe
 			lNode->setLabelText( lNodeName );
-			lNode->showLabel( true );
+			lNode->showLabel( true, false );
 		}
 		else {
 			Data::Node* node = this->getActiveGraph()->findNodeByName( lNodeName );
 			node->setType( lType );
 			node->reloadConfig();
-			node->showLabel( true );
+			node->showLabel (true, false );
 		}
 	}
 }
@@ -404,7 +404,7 @@ void Repository::Git::GitGraphUpdater::removeNodesFromGraph( QStringList list )
 					if ( node ) {
 						node->setType( this->getActiveGraph()->getTypesByName( "removedFile" ).at( 0 ) );
 						node->reloadConfig();
-						node->showLabel( true );
+						node->showLabel(true, false);
 					}
 				}
 			}

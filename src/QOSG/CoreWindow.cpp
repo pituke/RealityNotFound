@@ -108,6 +108,7 @@ CoreWindow::CoreWindow( QWidget* parent, Vwr::CoreGraph* coreGraph, QApplication
 	dock->hide();
 
 	this->coreGraph = coreGraph;
+	coreGraph->showLabelsForResidence(labelResidence->isChecked());
 	nodeLabelsVisible = edgeLabelsVisible = false;
 
 	// Duransky start - Inicializacia premennych
@@ -225,6 +226,13 @@ label->setToolTip( "&Turn on/off labels" );
 label->setCheckable( true );
 label->setFocusPolicy( Qt::NoFocus );
 connect( label, SIGNAL( clicked( bool ) ), this, SLOT( labelOnOff( bool ) ) );
+
+labelResidence = new QCheckBox();
+labelResidence->setText("labels for residence");
+labelResidence->setToolTip("&Turn on/off labels for residence");
+labelResidence->setCheckState(Qt::CheckState::Checked);
+labelResidence->setFocusPolicy(Qt::NoFocus);
+connect(labelResidence, SIGNAL(stateChanged(int)), this, SLOT(labelForResidenceCheckStateChanged(int)));
 
 applyColor = new QPushButton();
 applyColor->setText( "Apply color" );
@@ -827,6 +835,7 @@ QWidget* CoreWindow::createGraphTab( QFrame* line )
 	lGraph->addRow( applyLabel );
 	label->setMaximumWidth( 136 );
 	lGraph->addRow( label );
+	lGraph->addRow(labelResidence);
 	line = createLine();
 	lGraph->addRow( line );
 	play->setMaximumWidth( 136 );
@@ -1287,39 +1296,237 @@ void CoreWindow::showDialogLoadJavaProject()
     if (dialog.exec())
     {
         QString directory = dialog.selectedFiles()[0];
-        loadJavaProject(directory);
+		loadJavaProjectAndShow(directory);
     }
 }
 
-void CoreWindow::loadJavaProject(const QString& projectDir)
+
+static const float MIN_MAX_BUILDING_HEIGHT_RATIO = 10;
+
+struct BuildingInfo
 {
-    Importer::Parsing::JavaParser javaParser;
-    Importer::Parsing::SoftTree softTree;
-    QString errorMessage;
-    if (!javaParser.Parse(projectDir, softTree, errorMessage))
-        QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
+	Clustering::Building* building;
+	uint loc;
+	BuildingInfo(Clustering::Building* building, uint loc)
+	{
+		this->building = building;
+		this->loc = loc;
+	}
+};
 
-    auto manager = Manager::GraphManager::getInstance();
-    auto graph = manager->createGraph("SoftwareGraph");
+QString getAttributeInfo(const Importer::Parsing::Attribute& attribute)
+{
+	QString info;
 
-    SoftTreeToGraph(softTree, graph);
+	info.append("ATTRIBUTE -->\n\n");
+	info.append(attribute.ToString(0));
 
-    // nastavenie aktivneho grafu
-    if (manager->getActiveGraph() != NULL)
-    {
-        // ak uz nejaky graf mame, tak ho najprv sejvneme a zavrieme
-        manager->closeGraph(manager->getActiveGraph());
-    }
-	manager->setActiveGraph(graph);
+	return info;
+}
 
-    // robime zakladnu proceduru pre restartovanie layoutu
-    AppCore::Core::getInstance()->restartLayout();
+QString getMethodInfo(const Importer::Parsing::Method& method)
+{
+	QString info;
 
-   //treba overit ci funguje
-    if ( isPlaying ) {
-        layout->play();
-        coreGraph->setNodesFreezed( false );
-    }
+	info.append("METHOD -->\n\n");
+	info.append(QString("%1 %2 %3 ")
+				.arg(Importer::Parsing::Modifier::ToString(method.modifier))
+				.arg(method.returnType)
+				.arg(method.name));
+	if (!method.parameters.empty())
+		info.append("(\n");
+	else
+		info.append("()\n");
+	foreach(const auto& p, method.parameters)
+	{
+		info.append(QString("   %1 %2,\n")
+					.arg(p.type)
+					.arg(p.name));
+	}
+	if (!method.parameters.empty()) info.append(")\n");
+	info.append("\n");
+	QString methodType;
+	if (method.name.toLower().startsWith("get"))
+		methodType = "getter";
+	else if (method.name.toLower().startsWith("set"))
+		methodType = "setter";
+	else if (method.IsConstructor())
+		methodType = "constructor";
+	else if (method.modifier == Importer::Parsing::Modifier::PUBLIC)
+		methodType = "interface";
+	else
+		methodType = "internal";
+	info.append(QString("MethodType:  %1\n").arg(methodType));
+	info.append(QString("Visibility:  %1\n").arg(method.modifier == Importer::Parsing::Modifier::UNKNOWN ? Importer::Parsing::Modifier::ToString(Importer::Parsing::Modifier::PRIVATE) : Importer::Parsing::Modifier::ToString(method.modifier)));
+	info.append(QString("Parameters:  %1\n").arg(method.parameters.count()));
+	info.append(QString("Output:      %1\n").arg(method.HasResult() ? "yes" : "no"));
+	info.append(QString("LineOfCodes: %1\n").arg(method.GetLineOfCodes()));
+
+	return info;
+}
+
+void CoreWindow::loadJavaProjectAndShow(const QString& projectDir)
+{
+	Importer::Parsing::JavaParser javaParser;
+	Importer::Parsing::SoftTree softTree;
+	QString errorMessage;
+	
+	if (!javaParser.Parse(projectDir, softTree, errorMessage))
+	{
+		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
+		return;
+	}
+
+	auto manager = Manager::GraphManager::getInstance();
+	auto resMgr = Manager::ResourceManager::getInstance();
+	auto graph = manager->createNewGraph("SoftwareGraph"); // zaroven nastavi graf ako aktivny
+
+	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
+	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
+
+	auto white = resMgr->getMaterial(osg::Vec3(1, 1, 1));
+	auto yellow = resMgr->getMaterial(osg::Vec3(1, 1, 0));
+	auto red = resMgr->getMaterial(osg::Vec3(0.941, 0.502, 0.502));
+	auto green = resMgr->getMaterial(osg::Vec3(0.565, 0.933, 0.565));
+	auto orange = resMgr->getMaterial(osg::Vec3(1.000, 0.647, 0.000));
+
+	auto rootNode = graph->addNode("", nodeType);
+	auto javaRootNode = new Clustering::Building();
+	javaRootNode->setBaseSize(4);
+	javaRootNode->setHeight(5);
+	javaRootNode->setLieOnGround(false);
+	auto ss = new osg::StateSet();
+	ss->setAttribute(white);
+	ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+	ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaNode")), osg::StateAttribute::ON);
+	javaRootNode->setStateSet(ss);
+	javaRootNode->refresh();
+	rootNode->setResidence(javaRootNode);
+
+	std::list<BuildingInfo> buildingsInfos;
+	for (const auto& namespace_ : softTree.namespaces)
+	{
+		auto namespaceNode = graph->addNode(namespace_.name, nodeType);
+		auto javaNamespaceNode = new Clustering::Building();
+		javaNamespaceNode->setBaseSize(4);
+		javaNamespaceNode->setHeight(4);
+		javaNamespaceNode->setLieOnGround(false);
+		auto ss = new osg::StateSet();
+		ss->setAttribute(white);
+		ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+		ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaPackageNode")), osg::StateAttribute::ON);
+		javaNamespaceNode->setStateSet(ss);
+		javaNamespaceNode->refresh();
+		namespaceNode->setResidence(javaNamespaceNode);
+
+		auto rootNamespaceEdge = graph->addEdge(QString(), rootNode, namespaceNode, edgeType, true);
+
+		for (const auto& class_ : namespace_.classes)
+		{
+			auto classNode = graph->addNode(class_.name, nodeType);
+			auto edgeNamespaceClass = graph->addEdge(QString(), namespaceNode, classNode, edgeType, true);
+			auto residence = new Clustering::Residence();
+			classNode->setResidence(residence);
+			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
+			for (const auto& attribute : class_.attributes)
+			{
+				auto b = new Clustering::Building(attribute.name, getAttributeInfo(attribute));
+				b->setBaseSize(1.0);
+				b->setHeight(0.2);
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(yellow);
+				residence->addAttributeBuilding(b);
+			}
+
+			for (const auto& iggs : ig.gettersSetters)
+			{
+				auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : getterSetterMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(getterSetterMethod.name, getMethodInfo(getterSetterMethod), floors);
+				b->setBaseSize(1.0);
+				b->setTriangleRoof(getterSetterMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(yellow);
+				residence->addGetterSeterBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, getterSetterMethod.GetLineOfCodes()));
+			}
+
+			for (const auto& igin : ig.internalMethods)
+			{
+				auto& internalMethod = class_.methods[igin.callingMethodIndex];
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : internalMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(internalMethod.name, getMethodInfo(internalMethod), floors);
+				b->setBaseSize(1.0);
+				b->setTriangleRoof(internalMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(internalMethod.modifier == Importer::Parsing::Modifier::PUBLIC ? green : (internalMethod.modifier == Importer::Parsing::Modifier::PROTECTED ? orange : red)); // private, unknown = red
+				residence->addInternalBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, internalMethod.GetLineOfCodes()));
+			}
+
+			for (const auto& igif : ig.interfaceMethods)
+			{
+				auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : interfaceMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(interfaceMethod.name, getMethodInfo(interfaceMethod), floors);
+				b->setBaseSize(1.0);
+				b->setTriangleRoof(interfaceMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(green);
+				residence->addInterfaceBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, interfaceMethod.GetLineOfCodes()));
+			}
+
+			for (const auto& igc : ig.constructors)
+			{
+				auto& constructorMethod = class_.methods[igc.callingMethodIndex];
+				QList<Clustering::Floor*> floors;
+				for (const auto& param : constructorMethod.parameters)
+					floors << new Clustering::Floor();
+				auto b = new Clustering::Building(constructorMethod.name, getMethodInfo(constructorMethod), floors);
+				b->setBaseSize(1.0);
+				b->setTriangleRoof(constructorMethod.HasResult());
+				b->setStateSet(new osg::StateSet());
+				b->getStateSet()->setAttribute(green);
+				residence->addInterfaceBuilding(b);
+				buildingsInfos.push_back(BuildingInfo(b, constructorMethod.GetLineOfCodes()));
+			}
+
+			residence->refresh();
+		}
+	}
+
+	auto minMaxLocIt = std::minmax_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.loc < b.loc; });
+	auto minHeightIt = std::max_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.building->getMinHeight() < b.building->getMinHeight(); });
+	const float minHeight = minHeightIt->building->getMinHeight();
+	const float maxHeight = minHeight * MIN_MAX_BUILDING_HEIGHT_RATIO;
+	const uint minLoc = minMaxLocIt.first->loc;
+	const uint maxLoc = minMaxLocIt.second->loc;
+	for (auto& bi : buildingsInfos)
+	{
+		const float buildingHeight = minHeight + ((float)(bi.loc - minLoc) / (float)(maxLoc - minLoc)) * (maxHeight - minHeight);
+		bi.building->setHeight(buildingHeight);
+		bi.building->refresh();
+	}
+
+	// robime zakladnu proceduru pre restartovanie layoutu
+	AppCore::Core::getInstance()->restartLayout();
+
+	//treba overit ci funguje
+	if (isPlaying)
+	{
+		layout->play();
+		coreGraph->setNodesFreezed(false);
+	}
+
+	nodeTypeComboBox->setCurrentIndex(2); // residence
+	edgeTypeComboBox->setCurrentIndex(2); // line
 }
 
 void CoreWindow::saveGraphToDB()
@@ -1677,6 +1884,11 @@ void CoreWindow::labelOnOff( bool )
 		coreGraph->setEdgeLabelsVisible( !state );
 		coreGraph->setNodeLabelsVisible( !state );
 	}
+}
+
+void CoreWindow::labelForResidenceCheckStateChanged(int state)
+{
+	coreGraph->showLabelsForResidence(state == Qt::CheckState::Checked);
 }
 
 void CoreWindow::sliderValueChanged( int value )
@@ -3557,244 +3769,9 @@ uint random(uint min, uint max)
 	return (qrand() % (max + 1 - min)) + min;
 }
 
-static const float MIN_MAX_BUILDING_HEIGHT_RATIO = 10;
-
-struct BuildingInfo
-{
-	Clustering::Building* building;
-	uint loc;
-	BuildingInfo(Clustering::Building* building, uint loc)
-	{
-		this->building = building;
-		this->loc = loc;
-	}
-};
-
-QString getAttributeInfo(const Importer::Parsing::Attribute& attribute)
-{
-	QString info;
-
-	info.append("ATTRIBUTE -->\n\n");
-	info.append(attribute.ToString(0));
-
-	return info;
-}
-
-QString getMethodInfo(const Importer::Parsing::Method& method)
-{
-	QString info;
-
-	info.append("METHOD -->\n\n");
-	info.append(QString("%1 %2 %3 ")
-				.arg(Importer::Parsing::Modifier::ToString(method.modifier))
-				.arg(method.returnType)
-				.arg(method.name));
-	if (!method.parameters.empty())
-		info.append("(\n");
-	else
-		info.append("()\n");
-	foreach(const auto& p, method.parameters)
-	{
-		info.append(QString("   %1 %2,\n")
-					.arg(p.type)
-					.arg(p.name));
-	}
-	if (!method.parameters.empty()) info.append(")\n");
-	info.append("\n");
-	QString methodType;
-	if (method.name.toLower().startsWith("get"))
-		methodType = "getter";
-	else if (method.name.toLower().startsWith("set"))
-		methodType = "setter";
-	else if (method.IsConstructor())
-		methodType = "constructor";
-	else if (method.modifier == Importer::Parsing::Modifier::PUBLIC)
-		methodType = "interface";
-	else
-		methodType = "internal";
-	info.append(QString("MethodType:  %1\n").arg(methodType));
-	info.append(QString("Visibility:  %1\n").arg(method.modifier == Importer::Parsing::Modifier::UNKNOWN ? Importer::Parsing::Modifier::ToString(Importer::Parsing::Modifier::PRIVATE) : Importer::Parsing::Modifier::ToString(method.modifier)));
-	info.append(QString("Parameters:  %1\n").arg(method.parameters.count()));
-	info.append(QString("Output:      %1\n").arg(method.HasResult() ? "yes" : "no"));
-	info.append(QString("LineOfCodes: %1\n").arg(method.GetLineOfCodes()));
-
-	return info;
-}
-
 void CoreWindow::showEvent(QShowEvent* e)
 {
-	//loadJavaProject("C:/Users/pituke/Desktop/Traffic");
-
-	Importer::Parsing::JavaParser javaParser;
-	Importer::Parsing::SoftTree softTree;
-	QString errorMessage;
-	if (!javaParser.Parse("C:/Users/pituke/Desktop/traffic", softTree, errorMessage))
-	{
-		QMessageBox::critical(this, "Java parse error", errorMessage, QMessageBox::Close);
-		return;
-	}
-
-	auto manager = Manager::GraphManager::getInstance();
-	auto resMgr = Manager::ResourceManager::getInstance();
-	auto graph = manager->createNewGraph("SoftwareGraph"); // zaroven nastavi graf ako aktivny
-
-	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
-	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
-
-	auto white = resMgr->getMaterial(osg::Vec3(1, 1, 1));
-	auto yellow = resMgr->getMaterial(osg::Vec3(1, 1, 0));
-	auto red = resMgr->getMaterial(osg::Vec3(0.941, 0.502, 0.502));
-	auto green = resMgr->getMaterial(osg::Vec3(0.565, 0.933, 0.565));
-	auto orange = resMgr->getMaterial(osg::Vec3(1.000, 0.647, 0.000));
-
-	auto rootNode = graph->addNode("", nodeType);
-	auto javaRootNode = new Clustering::Building();
-	javaRootNode->setBaseSize(4);
-	javaRootNode->setHeight(5);
-	javaRootNode->setLieOnGround(false);
-	auto ss = new osg::StateSet();
-	ss->setAttribute(white);
-	ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-	ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaNode")), osg::StateAttribute::ON);
-	javaRootNode->setStateSet(ss);
-	javaRootNode->refresh();
-	rootNode->setResidence(javaRootNode);
-
-	std::list<BuildingInfo> buildingsInfos;
-	for (const auto& namespace_ : softTree.namespaces)
-	{
-		auto namespaceNode = graph->addNode(namespace_.name, nodeType);
-		auto javaNamespaceNode = new Clustering::Building();
-		javaNamespaceNode->setBaseSize(4);
-		javaNamespaceNode->setHeight(4);
-		javaNamespaceNode->setLieOnGround(false);
-		auto ss = new osg::StateSet();
-		ss->setAttribute(white);
-		ss->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-		ss->setTextureAttributeAndModes(0, resMgr->getTexture(Util::ApplicationConfig::get()->getValue("Viewer.Textures.JavaPackageNode")), osg::StateAttribute::ON);
-		javaNamespaceNode->setStateSet(ss);
-		javaNamespaceNode->refresh();
-		namespaceNode->setResidence(javaNamespaceNode);
-
-		auto rootNamespaceEdge = graph->addEdge(QString(), rootNode, namespaceNode, edgeType, true);
-
-		for (const auto& class_ : namespace_.classes)
-		{
-			auto classNode = graph->addNode(class_.name, nodeType);
-			auto edgeNamespaceClass = graph->addEdge(QString(), namespaceNode, classNode, edgeType, true);
-			auto residence = new Clustering::Residence();
-			classNode->setResidence(residence);
-			auto ig = Importer::Parsing::InvocationGraph::AnalyzeClass(class_);
-			for (const auto& attribute : class_.attributes)
-			{
-				auto b = new Clustering::Building(attribute.name, getAttributeInfo(attribute));
-				b->setBaseSize(1.0);
-				b->setHeight(0.2);
-				b->setStateSet(new osg::StateSet());
-				b->getStateSet()->setAttribute(yellow);
-				residence->addAttributeBuilding(b);
-			}
-
-			for (const auto& iggs : ig.gettersSetters)
-			{
-				auto& getterSetterMethod = class_.methods[iggs.callingMethodIndex];
-				QList<Clustering::Floor*> floors;
-				for (const auto& param : getterSetterMethod.parameters)
-					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(getterSetterMethod.name, getMethodInfo(getterSetterMethod), floors);
-				b->setBaseSize(1.0);
-				b->setTriangleRoof(getterSetterMethod.HasResult());
-				b->setStateSet(new osg::StateSet());
-				b->getStateSet()->setAttribute(yellow);
-				residence->addGetterSeterBuilding(b);
-				buildingsInfos.push_back(BuildingInfo(b, getterSetterMethod.GetLineOfCodes()));
-			}
-
-			for (const auto& igin : ig.internalMethods)
-			{
-				auto& internalMethod = class_.methods[igin.callingMethodIndex];
-				QList<Clustering::Floor*> floors;
-				for (const auto& param : internalMethod.parameters)
-					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(internalMethod.name, getMethodInfo(internalMethod), floors);
-				b->setBaseSize(1.0);
-				b->setTriangleRoof(internalMethod.HasResult());
-				b->setStateSet(new osg::StateSet());
-				b->getStateSet()->setAttribute(internalMethod.modifier == Importer::Parsing::Modifier::PUBLIC ? green : (internalMethod.modifier == Importer::Parsing::Modifier::PROTECTED ? orange : red)); // private, unknown = red
-				residence->addInternalBuilding(b);
-				buildingsInfos.push_back(BuildingInfo(b, internalMethod.GetLineOfCodes()));
-			}
-
-			for (const auto& igif : ig.interfaceMethods)
-			{
-				auto& interfaceMethod = class_.methods[igif.callingMethodIndex];
-				QList<Clustering::Floor*> floors;
-				for (const auto& param : interfaceMethod.parameters)
-					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(interfaceMethod.name, getMethodInfo(interfaceMethod), floors);
-				b->setBaseSize(1.0);
-				b->setTriangleRoof(interfaceMethod.HasResult());
-				b->setStateSet(new osg::StateSet());
-				b->getStateSet()->setAttribute(green);
-				residence->addInterfaceBuilding(b);
-				buildingsInfos.push_back(BuildingInfo(b, interfaceMethod.GetLineOfCodes()));
-			}
-
-			for (const auto& igc : ig.constructors)
-			{
-				auto& constructorMethod = class_.methods[igc.callingMethodIndex];
-				QList<Clustering::Floor*> floors;
-				for (const auto& param : constructorMethod.parameters)
-					floors << new Clustering::Floor();
-				auto b = new Clustering::Building(constructorMethod.name, getMethodInfo(constructorMethod), floors);
-				b->setBaseSize(1.0);
-				b->setTriangleRoof(constructorMethod.HasResult());
-				b->setStateSet(new osg::StateSet());
-				b->getStateSet()->setAttribute(green);
-				residence->addInterfaceBuilding(b);
-				buildingsInfos.push_back(BuildingInfo(b, constructorMethod.GetLineOfCodes()));
-			}
-
-			residence->refresh();
-		}
-	}
-
-	auto minMaxLocIt = std::minmax_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.loc < b.loc; });
-	auto minHeightIt = std::max_element(buildingsInfos.begin(), buildingsInfos.end(), [](const BuildingInfo& a, const BuildingInfo& b) { return a.building->getMinHeight() < b.building->getMinHeight(); });
-	const float minHeight = minHeightIt->building->getMinHeight();
-	const float maxHeight = minHeight * MIN_MAX_BUILDING_HEIGHT_RATIO;
-	const uint minLoc = minMaxLocIt.first->loc;
-	const uint maxLoc = minMaxLocIt.second->loc;
-	for (auto& bi : buildingsInfos)
-	{
-		const float buildingHeight = minHeight + ((float)(bi.loc - minLoc) / (float)(maxLoc - minLoc)) * (maxHeight - minHeight);
-		bi.building->setHeight(buildingHeight);
-		bi.building->refresh();
-	}
-	
-	// robime zakladnu proceduru pre restartovanie layoutu
-	AppCore::Core::getInstance()->restartLayout();
-	
-	//treba overit ci funguje
-	if (isPlaying)
-	{
-		layout->play();
-		coreGraph->setNodesFreezed(false);
-	}
-	
-	nodeTypeComboBox->setCurrentIndex(2); // residence
-	edgeTypeComboBox->setCurrentIndex(2); // line
-
-	/*QMapIterator<qlonglong, osg::ref_ptr<Data::Node> > it(*graph->getNodes());
-	while (it.hasNext())
-	{
-		it.next();
-		it.value()->setScale(100);
-		//it.value()->reloadConfig();
-		//reload(graph);
-	}*/
-	
-	//viewerWidget->setSceneData(gResidence);
+	//loadJavaProjectAndShow("C:/Users/pituke/Desktop/argouml");
 }
 
 void CoreWindow::setRepulsiveForceInsideCluster( double repulsiveForceInsideCluster )

@@ -287,7 +287,7 @@ namespace Importer
 
 		struct NodeMethodBody : NodeContainer
 		{
-			AstValue<NodeBlock> block;
+			AstValue<NodeBlock, true> block;
 		};
 
 		struct NodeMethodDeclaration : NodeContainer
@@ -296,7 +296,7 @@ namespace Importer
 			AstValue<NodeIdentifier> identifier;
 			AstValue<NodeFormalParameters> formalParameters;
 			AstValue<NodeQualifiedNameList, true> qualifiedNameList;
-			AstValue<NodeMethodBody, true> methodBody;
+			AstValue<NodeMethodBody> methodBody;
 		};
 
 		struct NodeGenericMethodDeclaration : NodeContainer

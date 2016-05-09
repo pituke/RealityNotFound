@@ -188,6 +188,8 @@ public:
 	    */
 	void setNodeLabelsVisible( bool visible );
 
+	void showLabelsForResidence(bool state);
+
 	void showHud(bool state);
 
 	bool isHudDisplayed() const;
@@ -485,6 +487,8 @@ private:
 	    *  \brief true, if interpolation is denied
 	    */
 	bool interpolationDenied;
+
+	bool labelsForResidenceShowed;
 
 	/**
 	    *  QLinkedList<osg::ref_ptr<osg::Node> > customNodeList

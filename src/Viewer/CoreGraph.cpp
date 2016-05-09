@@ -1205,9 +1205,14 @@ void CoreGraph::setNodeLabelsVisible( bool visible )
 	QMap<qlonglong, osg::ref_ptr<Data::Node> >::const_iterator i = in_nodes->constBegin();
 
 	while ( i != in_nodes->constEnd() ) {
-		( *i )->showLabel( visible );
+		(*i)->showLabel(visible, labelsForResidenceShowed);
 		++i;
 	}
+}
+
+void CoreGraph::showLabelsForResidence(bool state)
+{
+	this->labelsForResidenceShowed = state;
 }
 
 bool CoreGraph::isHudDisplayed() const

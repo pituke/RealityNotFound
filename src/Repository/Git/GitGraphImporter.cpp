@@ -127,7 +127,7 @@ bool Importer::GitGraphImporter::import( ImporterContext& context )
 	// Vytvorime a nastavime node pre autora v grafe. Pridame ho taktiet do mnozinu uzlov v grafe
 	Data::Node* lAuthorNode = this->context->getGraph().addNode( lAuthor, lType );
 	lAuthorNode->setLabelText( lAuthor );
-	lAuthorNode->showLabel( true );
+	lAuthorNode->showLabel( true, false );
 	readNodes->addNode( lAuthor, lAuthorNode );
 
 	// Ziskame typ s nazov 'authorEdge' na zobrazenie hrany od autora k zmenenemu uzlu
@@ -230,7 +230,7 @@ bool Importer::GitGraphImporter::addNode( QStringList& list )
 
 			// Nastavim label a pridam do mnoziny uzlov v grafe
 			lNode->setLabelText( lNodeName );
-			lNode->showLabel( true );
+			lNode->showLabel( true, false );
 			this->readNodes->addNode( lNodeName, lNode );
 		}
 	}

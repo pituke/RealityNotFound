@@ -329,7 +329,7 @@ public:
 	    *  \brief If true, node name will be shown.
 	    *  \param     visible     node name shown
 	    */
-	void showLabel( bool visible );
+	void showLabel( bool visible, bool labelsForResidence );
 
 	/**
 	     * \fn public constant isFocused

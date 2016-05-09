@@ -108,8 +108,8 @@ namespace Importer
 		rule formalParameterList = (formalParameter >> *(',' >> formalParameter) >> -(',' >> lastFormalParameter)) | lastFormalParameter;
 		rule formalParameters = expr('(') >> -formalParameterList >> ')';
 		rule qualifiedNameList = qualifiedName >> *(',' >> qualifiedName);
-		rule methodBody = block;
-		rule methodDeclaration = (type | "void") >> identifier >> formalParameters >> *(expr('[') >> ']') >> -("throws" >> qualifiedNameList) >> (methodBody | ';');
+		rule methodBody = ';' | block;
+		rule methodDeclaration = (type | "void") >> identifier >> formalParameters >> *(expr('[') >> ']') >> -("throws" >> qualifiedNameList) >> methodBody;
 		rule genericMethodDeclaration = typeParameters >> methodDeclaration;
 		rule arrayInitializer = expr('{') >> -(variableInitializer >> *(',' >> variableInitializer) >> -(',')) >> '}';
 		rule variableInitializer = arrayInitializer | expression;

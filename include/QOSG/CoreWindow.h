@@ -116,7 +116,7 @@ public slots:
     *  \fn public  loadJavaProject
     *  \brief Load, parse java project, create visualization and make it current
     */
-	void loadJavaProject(const QString& projectDir);
+	void loadJavaProjectAndShow(const QString& projectDir);
 
 	/**
 	            *  \fn public  saveGraphToDB
@@ -247,6 +247,8 @@ public slots:
 	            *  \param  checked flag if button is checked
 	            */
 	void labelOnOff( bool checked );
+
+	void labelForResidenceCheckStateChanged(int state);
 
 	/**
 	            *  \fn public  sliderValueChanged(int value)
@@ -1058,6 +1060,12 @@ private:
 	    *  \brief Pointer to labelOn/labelOff button
 	    */
 	QPushButton* label;
+
+	/**
+	*  QCheckBox * labelResidence
+	*  \brief Pointer to labelResidence on/off checkbox
+	*/
+	QCheckBox* labelResidence;
 
 	/**
 	    *  QSlider * slider

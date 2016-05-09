@@ -1382,7 +1382,7 @@ void Data::Graph::removeNode( osg::ref_ptr<Data::Node> node )
 			}
 
 			node->setInvisible( true );
-			node->showLabel( false );
+			node->showLabel( false, false );
 			//-spravit odstranovanie poriadne
 		}
 	}
