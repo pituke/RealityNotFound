@@ -46,19 +46,22 @@ namespace Clustering
 
 	void Floor::refresh()
 	{
+		// nacitanie konfiguracii z aplikacie
 		auto config = Util::ApplicationConfig::get();
 		const float FLOOR_DIVIDE_BORDER_STICK_UP = config->getFloatValue("City.Floor.DivideBorderStickUp", DEFAULT_FLOOR_DIVIDE_BORDER_STICK_UP);
 		const float FLOOR_DIVIDE_BORDER_HEIGHT = config->getFloatValue("City.Floor.DivideBorderHeight", DEFAULT_FLOOR_DIVIDE_BORDER_HEIGHT);
 
+		// vypocet velkosti
 		const float realFloorDivideBorderHeight = divideBorder ? FLOOR_DIVIDE_BORDER_HEIGHT : 0.0f;
 		const float floorDivideBorderBaseSize = baseSize + FLOOR_DIVIDE_BORDER_STICK_UP;
 		const float floorDivideBorderGroundOffset = realFloorDivideBorderHeight / 2;
 		const float floorWallHeight = floorHeight - realFloorDivideBorderHeight;
 		const float floorGroundOffset = realFloorDivideBorderHeight + floorWallHeight / 2;
 
+		// vymazanie starej geometrie
 		removeChildren(0, getNumChildren());
 
-		if (divideBorder)
+		if (divideBorder) // ak ma mat rozdelovaci okraj poschodia
 			addChild(new Cuboid(floorDivideBorderBaseSize, FLOOR_DIVIDE_BORDER_HEIGHT, floorDivideBorderBaseSize, osg::Vec3(0.0f, 0.0f, floorDivideBorderGroundOffset)));
 		addChild(new Cuboid(baseSize, floorWallHeight, baseSize, osg::Vec3(0.0f, 0.0f, floorGroundOffset)));
 	}

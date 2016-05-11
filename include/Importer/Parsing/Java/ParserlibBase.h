@@ -151,55 +151,5 @@ namespace Importer
 			{
 			}
 		};
-
-        struct ParseError
-		{
-			int line;
-			int column;
-		};
-
-		class ParserAlgorithms abstract
-		{
-			template<typename _ROOT_AST_NODE_TYPE> friend class FFParser;
-
-		private:
-			static ast_node* ParseInternal(const QString& sourceCode, rule& rootRule, rule& whitespaceRule, QVector<ParseError>& errorList);
-		};
-
-		template <typename _ROOT_AST_NODE_TYPE>
-        class Parser
-		{
-		private:
-			rule& rootRule;
-			rule& whitespaceRule;
-            QVector<ParseError> errorList;
-
-		public:
-            Parser(rule& rootRule, rule& whitespaceRule)
-				: rootRule(rootRule), whitespaceRule(whitespaceRule)
-			{
-			}
-
-            ~Parser()
-			{
-			}
-
-			_ROOT_AST_NODE_TYPE* Parse(const QString& sourceCode)
-			{
-				return static_cast<_ROOT_AST_NODE_TYPE*>(FFParserAlgorithms::ParseInternal(sourceCode, rootRule, whitespaceRule, errorList));
-			}
-
-			QString GetErrorMessage() const
-			{
-				ostringstream oss;
-				oss << "found " << errorList.size() << " " << (errorList.size() > 1 ? "errors" : "error") << ":\n";
-				for (const auto& error : errorList)
-				{
-					oss << "    line " << error.line << ", col " << error.column << ": " << endl;
-				}
-				return QString::fromStdString(oss.str());
-			}
-		};
-
 	}
 }
