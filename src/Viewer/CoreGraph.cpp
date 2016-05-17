@@ -992,7 +992,7 @@ void CoreGraph::scaleNodes(bool scaleUp)
 	while (it.hasNext())
 	{
 		it.next();
-		it.value()->setScale(it.value()->getScale() * (scaleUp ? 1.2 : 0.8));
+		it.value()->setScale(it.value()->getScale() * (scaleUp ? 1.2f : 0.8f));
 	}
 }
 

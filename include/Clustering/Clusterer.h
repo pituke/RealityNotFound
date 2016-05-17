@@ -8,6 +8,7 @@
 #include <osg/ref_ptr>
 
 #include <QProgressDialog>
+#include <QString>
 
 namespace Data {
 class Graph;

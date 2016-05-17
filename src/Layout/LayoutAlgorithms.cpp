@@ -1,4 +1,5 @@
 #include "Layout/LayoutAlgorithms.h"
+#include <exception>
 #include <QVector>
 
 namespace Layout
@@ -86,7 +87,7 @@ namespace Layout
 		float maxEdgeSize;
 		bool full;
 		float beginAlongPos;
-		float alongOffsetCoef;
+		int alongOffsetCoef;
 		QList<Element> elements;
 
 		Edge()
@@ -143,8 +144,8 @@ namespace Layout
 		{
 			indents << IndentEdges(EDGES_COUNT); // nove odsadenie od regionu (jedno obkolesenie kvadrov - 4 strany)
 			curIndent = &indents.last();
-			const uint maxCountOnWidth = floorf((curWidth + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na sirku a hlbku
-			const uint maxCountOnDepth = floorf((curDepth + spacing) / (elementWidth + spacing));
+			const uint maxCountOnWidth = (uint) floorf((curWidth + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na sirku a hlbku
+			const uint maxCountOnDepth = (uint)floorf((curDepth + spacing) / (elementWidth + spacing));
 			const uint maxCountOnIndent = (maxCountOnWidth + maxCountOnDepth) * 2; // maximalny pocet elementov celkovo okolo regionu pre dane odsadenie
 			const float fillCoef = 0.5; // threshold podla ktoreho sa rozhoduje ktory algoritmus sa pouzije
 			const uint elementsCountToAddForIndent = std::min(remainedElementsCount, maxCountOnIndent); // nesmie sa umiestnit viac ako sa zmesti a zaroven viac kolko ostava
@@ -157,7 +158,7 @@ namespace Layout
 				while (remainedElementsCountToAddForIndent > 0) // ak este ostavaju nejake elementy na rozmiestnenie pre odsadenie
 				{
 					auto& edge = (*curIndent)[edgeIndex]; // vypocet informacii pre rozmiestnovanie na danej hrane
-					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1; // znamienko pre posun popri hrane (ci sa ma hodnota pridavat alebo odoberat)
+					const int coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1; // znamienko pre posun popri hrane (ci sa ma hodnota pridavat alebo odoberat)
 					const float defaultMaxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth; // max dlzka popri hrane
 					const float defaultBeginAlongPos = (defaultMaxEdgeSize / 2 - elementHalfWidth) * coefForAlong; // zaciatok umiestovania na hrane
 					const float maxEdgeResizer = (edgeIndex - firstEdgeOffset) == 1 ? -elementAlongOffset : ((edgeIndex - firstEdgeOffset) == 2 ? elementAlongOffset : 0);
@@ -165,7 +166,7 @@ namespace Layout
 					edge.alongOffsetCoef = coefForAlong;
 					edge.maxEdgeSize = defaultMaxEdgeSize + maxEdgeResizer;
 					edge.beginAlongPos = defaultBeginAlongPos + beginAlongPosOffset;
-					const uint maxCountOnCurrentEdge = floorf((edge.maxEdgeSize + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na hrane
+					const uint maxCountOnCurrentEdge = (uint) floorf((edge.maxEdgeSize + spacing) / (elementWidth + spacing)); // maximalny pocet elementov na hrane
 					const uint elemenstCountOnEdge = std::min(maxCountOnCurrentEdge, remainedElementsCountToAddForIndent); // vezme sa bud max pocet alebo zostavajuci - ten mensi
 					edge.full = elemenstCountOnEdge == maxCountOnCurrentEdge; // ak sa vzalo tolko elementov kolko sa zmesti na hranu - oznaci sa ako full zaplnena
 					for (uint i = 0; i < elemenstCountOnEdge; ++i)
@@ -181,9 +182,9 @@ namespace Layout
 				const float tmpBase = curWidth + curDepth;
 				const float widthRatio = curWidth / tmpBase;
 				const float depthRatio = curDepth / tmpBase;
-				uint countOnWidth = roundf(elementsCountToAddForIndent / 2 * widthRatio);
-				uint countOnDepth = roundf(elementsCountToAddForIndent / 2 * depthRatio);
-				float countOnEdges[] = { countOnWidth, countOnDepth, countOnWidth, countOnDepth };
+				uint countOnWidth = (uint) roundf(elementsCountToAddForIndent / 2 * widthRatio);
+				uint countOnDepth = (uint) roundf(elementsCountToAddForIndent / 2 * depthRatio);
+				uint countOnEdges[] = { countOnWidth, countOnDepth, countOnWidth, countOnDepth };
 				const int diffCount = (countOnWidth + countOnDepth) * 2 - elementsCountToAddForIndent;
 				if (diffCount != 0)
 				{
@@ -201,7 +202,7 @@ namespace Layout
 				for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 				{
 					auto& edge = (*curIndent)[edgeIndex];
-					const float coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
+					const int coefForAlong = (edgeIndex / 2) % 2 == 0 ? -1 : 1;
 					edge.maxEdgeSize = edgeIndex % 2 == 0 ? curWidth : curDepth;
 					edge.full = edgeIndex % 2 == 0 ? countOnEdges[edgeIndex] == maxCountOnWidth : countOnEdges[edgeIndex] == maxCountOnDepth;
 					edge.alongOffsetCoef = coefForAlong;
@@ -215,14 +216,14 @@ namespace Layout
 		}
 
 		// evaluacia pozicii
-		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
+		for (uint indentIndex = 0; indentIndex < (uint)indents.count(); ++indentIndex)
 		{
 			auto& indent = indents[indentIndex];
 			for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 			{
 				auto& edge = indent[edgeIndex];
-				const float rot = edgeIndex * osg::PI_2;
-				const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
+				const float rot = (float)edgeIndex * (float)osg::PI_2;
+				const int coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
 				float alongEdgeValue = edge.beginAlongPos;
 				const float baseIndentPos = edgeIndex % 2 == 0 ? regionHalfDepth : regionHalfWidth;
 				const float indentEdgeValue = (baseIndentPos + elementHalfDepth + spacing + indentIndex * elementIndentOffset) * coefForIndent;
@@ -245,7 +246,7 @@ namespace Layout
 
 		// naplnenie pozicii do output-u
 		QVector<ElementLayout> tmpLayouts(elementCount);
-		for (uint indentIndex = 0; indentIndex < indents.count(); ++indentIndex)
+		for (uint indentIndex = 0; indentIndex < (uint)indents.count(); ++indentIndex)
 		{
 			auto& indent = indents[indentIndex];
 			for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
@@ -268,7 +269,7 @@ namespace Layout
 				for (uint edgeIndex = 0; edgeIndex < EDGES_COUNT; ++edgeIndex)
 				{
 					const uint indentCountForEdge = indents.last()[edgeIndex].elements.count() > 0 ? indents.count() : indents.count() - 1;
-					const float coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
+					const int coefForIndent = edgeIndex == 0 || edgeIndex == 3 ? -1 : 1;
 					newAroundRegionValuesForEdges[edgeIndex] = origRegionValuesForEdges[edgeIndex] + (indentCountForEdge * elementIndentOffset + spacing) * coefForIndent;
 				}
 

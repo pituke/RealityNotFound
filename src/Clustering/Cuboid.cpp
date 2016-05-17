@@ -76,7 +76,7 @@ namespace Clustering
 		geom->setNormalArray(new osg::Vec3Array(normals.count(), normals.data()));
 		geom->setTexCoordArray(0, new osg::Vec2Array(coords.count(), coords.data()));
 		geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
-		for (GLuint i = 0; i < quads.count(); i += 4)
+		for (uint i = 0; i < (uint)quads.count(); i += 4)
 			geom->addPrimitiveSet(new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4, quads.data() + i));
 		Geode::addDrawable(geom);
 	}

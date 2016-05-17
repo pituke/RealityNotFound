@@ -1358,11 +1358,11 @@ void CoreWindow::loadJavaProjectAndShow(const QString& projectDir)
 	auto nodeType = graph->addType(Data::GraphLayout::NESTED_NODE_TYPE);
 	auto edgeType = graph->addType(Data::GraphLayout::NESTED_EDGE_TYPE);
 
-	auto white = resMgr->getMaterial(osg::Vec3(1, 1, 1));
-	auto yellow = resMgr->getMaterial(osg::Vec3(1, 1, 0));
-	auto red = resMgr->getMaterial(osg::Vec3(0.941, 0.502, 0.502));
-	auto green = resMgr->getMaterial(osg::Vec3(0.565, 0.933, 0.565));
-	auto orange = resMgr->getMaterial(osg::Vec3(1.000, 0.647, 0.000));
+	auto white = resMgr->getMaterial(osg::Vec3(1.0f, 1.0f, 1.0f));
+	auto yellow = resMgr->getMaterial(osg::Vec3(1.0f, 1.0f, 0.0f));
+	auto red = resMgr->getMaterial(osg::Vec3(0.941f, 0.502f, 0.502f));
+	auto green = resMgr->getMaterial(osg::Vec3(0.565f, 0.933f, 0.565f));
+	auto orange = resMgr->getMaterial(osg::Vec3(1.000f, 0.647f, 0.000f));
 
 	auto rootNode = graph->addNode("", nodeType);
 	auto javaRootNode = new Clustering::Building();
@@ -1405,8 +1405,8 @@ void CoreWindow::loadJavaProjectAndShow(const QString& projectDir)
 			for (const auto& attribute : class_.attributes)
 			{
 				auto b = new Clustering::Building(attribute.name, getAttributeInfo(attribute));
-				b->setBaseSize(1.0);
-				b->setHeight(0.2);
+				b->setBaseSize(1.0f);
+				b->setHeight(0.2f);
 				b->setStateSet(new osg::StateSet());
 				b->getStateSet()->setAttribute(yellow);
 				residence->addAttributeBuilding(b);

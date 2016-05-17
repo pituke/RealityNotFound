@@ -34,8 +34,8 @@ namespace Vwr
 
 		modelview->addChild(geode);
 		
-		const float HUD_WIDTH = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Width", DEFAULT_HUD_WIDTH);
-		const float HUD_HEIGHT = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Height", DEFAULT_HUD_HEIGHT);
+		const int HUD_WIDTH = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Width", DEFAULT_HUD_WIDTH);
+		const int HUD_HEIGHT = Util::ApplicationConfig::get()->getIntValue("Viewer.HUD.Height", DEFAULT_HUD_HEIGHT);
 		setSize(QSize(HUD_WIDTH, HUD_HEIGHT));
 
 		refresh();
@@ -44,14 +44,14 @@ namespace Vwr
 	void Hud::setText(const QString& text)
 	{
 		if (!text.isEmpty())
-			this->text->setPosition(osg::Vec3(10, size.height() - 20, 1));
+			this->text->setPosition(osg::Vec3(10.0f, (float)size.height() - 20.0f, 1.0f));
 		this->text->setText(text.toStdString());
 	}
 
 	void Hud::setSize(const QSize& size)
 	{
 		this->size = size;
-		text->setPosition(osg::Vec3(10, size.height() - 20, 1));
+		text->setPosition(osg::Vec3(10.0f, (float)size.height() - 20.0f, 1.0f));
 	}
 
 	void Hud::setWindowSize(const QSize& size)
@@ -67,10 +67,10 @@ namespace Vwr
 		background = new osg::Geometry();
 
 		osg::Vec3Array* hudVertices = new osg::Vec3Array;
-		hudVertices->push_back(osg::Vec3(0, 0, .8));
-		hudVertices->push_back(osg::Vec3(size.width(), 0, .8));
-		hudVertices->push_back(osg::Vec3(size.width(), size.height(), .8));
-		hudVertices->push_back(osg::Vec3(0, size.height(), .8));
+		hudVertices->push_back(osg::Vec3(0.0f, 0.0f, 0.8f));
+		hudVertices->push_back(osg::Vec3((float)size.width(), 0.0f, 0.8f));
+		hudVertices->push_back(osg::Vec3((float)size.width(), (float)size.height(), 0.8f));
+		hudVertices->push_back(osg::Vec3(0.0f, (float)size.height(), 0.8f));
 
 		osg::Vec4Array* hudColors = new osg::Vec4Array;
 		hudColors->push_back(osg::Vec4(0.8f, 0.8f, 0.8f, 0.5f));

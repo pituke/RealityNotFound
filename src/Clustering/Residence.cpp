@@ -72,11 +72,12 @@ namespace Clustering
 	{
 		static const osg::BoundingBox zeroBoudingBox(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-		
+		// nacitanie konfiguracii z aplikacie
 		auto config = Util::ApplicationConfig::get();
 		const float RESIDENCE_SECTOR_HEIGHT = config->getFloatValue("City.Residence.SectorPlaneHeight", DEFAULT_RESIDENCE_SECTOR_HEIGHT);
 		const float BUILDING_SPACING = config->getFloatValue("City.Residence.BuildingSpacing", DEFAULT_BUILDING_SPACING);
 
+		// vymazanie starej geometrie vsetkych regionov
 		attributesBuildingsNode->removeChildren(0, attributesBuildingsNode->getNumChildren());
 		gettersSettersBuildingsNode->removeChildren(0, gettersSettersBuildingsNode->getNumChildren());
 		internalMethodsBuildingsNode->removeChildren(0, internalMethodsBuildingsNode->getNumChildren());
@@ -85,7 +86,7 @@ namespace Clustering
 		osg::BoundingBox attrRegion;
 		QList<osg::Vec3> attrLayouts;
 		Layout::LayoutAlgorithms::layoutInsideRegion(attributesBuildings.empty() ? zeroBoudingBox : attributesBuildings.first()->getBoundingBox(), attributesBuildings.count(), RESIDENCE_SECTOR_HEIGHT, BUILDING_SPACING, &attrLayouts, &attrRegion);
-		for (uint i = 0; i < attributesBuildings.count(); ++i)
+		for (uint i = 0; i < (uint)attributesBuildings.count(); ++i)
 		{
 			auto& b = attributesBuildings[i];
 			b->setPosition(attrLayouts[i]);
@@ -97,7 +98,7 @@ namespace Clustering
 		osg::BoundingBox getSetRegion = attrRegion;
 		QList<Layout::ElementLayout> getSetLayouts;
 		Layout::LayoutAlgorithms::layoutAroundRegion(gettersSettersBuildings.empty() ? zeroBoudingBox : gettersSettersBuildings.first()->getBoundingBox(), gettersSettersBuildings.count(), attrRegion, BUILDING_SPACING, &getSetLayouts, &getSetRegion);
-		for (uint i = 0; i < gettersSettersBuildings.count(); ++i)
+		for (uint i = 0; i < (uint)gettersSettersBuildings.count(); ++i)
 		{
 			auto& b = gettersSettersBuildings[i];
 			getSetLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;
@@ -112,7 +113,7 @@ namespace Clustering
 		osg::BoundingBox internalRegion = getSetRegion;
 		QList<Layout::ElementLayout> internalLayouts;
 		Layout::LayoutAlgorithms::layoutAroundRegion(internalMethodsBuildings.empty() ? zeroBoudingBox : internalMethodsBuildings.first()->getBoundingBox(), internalMethodsBuildings.count(), getSetRegion, BUILDING_SPACING, &internalLayouts, &internalRegion);
-		for (uint i = 0; i < internalMethodsBuildings.count(); ++i)
+		for (uint i = 0; i < (uint)internalMethodsBuildings.count(); ++i)
 		{
 			auto& b = internalMethodsBuildings[i];
 			internalLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;
@@ -127,7 +128,7 @@ namespace Clustering
 		osg::BoundingBox interfaceRegion = internalRegion;
 		QList<Layout::ElementLayout> interfaceLayouts;
 		Layout::LayoutAlgorithms::layoutAroundRegion(interfaceMethodsBuildings.empty() ? zeroBoudingBox : interfaceMethodsBuildings.first()->getBoundingBox(), interfaceMethodsBuildings.count(), internalRegion, BUILDING_SPACING, &interfaceLayouts, &interfaceRegion);
-		for (uint i = 0; i < interfaceMethodsBuildings.count(); ++i)
+		for (uint i = 0; i < (uint)interfaceMethodsBuildings.count(); ++i)
 		{
 			auto& b = interfaceMethodsBuildings[i];
 			interfaceLayouts[i].position.z() += RESIDENCE_SECTOR_HEIGHT;

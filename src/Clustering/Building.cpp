@@ -3,6 +3,7 @@
 #include <Util/ApplicationConfig.h>
 #include <Data/OsgNode.h>
 #include <Manager/ResourceManager.h>
+#include <osgText/FadeText>
 
 namespace Clustering
 {
@@ -121,21 +122,23 @@ namespace Clustering
 
 	void Building::refresh()
 	{
+		// nacitanie konfiguracii z aplikacie
 		auto config = Util::ApplicationConfig::get();
 		const float BUILDING_DEFAULT_ROOF_HEIGHT = config->getFloatValue("City.Building.DefaultRoofHeight", DEFAULT_BUILDING_DEFAULT_ROOF_HEIGHT);
 		const float BUILDING_CAPTION_OFFSET = config->getFloatValue("City.Building.CaptionOffset", DEFAULT_BUILDING_CAPTION_OFFSET);
 
+		// vymazanie starej geometrie
 		removeChildren(0, getNumChildren());
 
 		osg::Vec3 pos(0.0f, 0.0f, lieOnGround ? 0.0f : -getHeight() / 2.0f);
-		for (auto& f : floors)
+		for (auto& f : floors) // generovanie geometrie poschodi
 		{
 			f->setPosition(pos);
 			pos.z() += f->getFloorHeight();
 			f->refresh();
 			addChild(f);
 		}
-		if (triangleRoof)
+		if (triangleRoof) // ma mat strechu
 		{
 			auto roof = new osg::PositionAttitudeTransform();
 			roof->setPosition(pos);
@@ -143,7 +146,7 @@ namespace Clustering
 			addChild(roof);
 		}
 
-		if (label.valid())
+		if (label.valid()) // ma nastaveny label
 		{
 			static_cast<osgText::TextBase*>(label->asGeode()->getDrawable(0))->setPosition(osg::Vec3(0.0f, 0.0f, getHeight(true) + BUILDING_CAPTION_OFFSET));
 			if (labelVisible)
@@ -157,7 +160,7 @@ namespace Clustering
 		{
 			lastMaterial = static_cast<osg::Material*>(getOrCreateStateSet()->getAttribute(osg::StateAttribute::Type::MATERIAL));
 			auto color = lastMaterial->getDiffuse(osg::Material::Face::FRONT_AND_BACK);
-			getOrCreateStateSet()->setAttribute(Manager::ResourceManager::getInstance()->getMaterial(osg::Vec3(color.r() + 0.4, color.g() + 0.4, color.b() + 0.4)), osg::StateAttribute::ON);
+			getOrCreateStateSet()->setAttribute(Manager::ResourceManager::getInstance()->getMaterial(osg::Vec3(color.r() + 0.4f, color.g() + 0.4f, color.b() + 0.4f)), osg::StateAttribute::ON);
 		}
 		else
 		{

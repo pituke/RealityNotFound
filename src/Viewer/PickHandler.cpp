@@ -298,11 +298,11 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, GUIActionAdap
 
 		if (isCtrlPressed)
 		{
-			layout->getAlg()->setMaxDistance(distance * 0.8);
+			layout->getAlg()->setMaxDistance(distance * 0.8f);
 		}
 		else
 		{
-			layout->getAlg()->setMaxDistance(distance * 1.2);
+			layout->getAlg()->setMaxDistance(distance * 1.2f);
 		}
 	}
 

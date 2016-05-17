@@ -51,10 +51,10 @@ namespace Importer
 			{
 				}
 
-			const container& GetItems() const
+			/*const container& GetItems() const
 			{
 				return objects();
-			}
+			}*/
 
 			vector<T*> ToStdVector() const
 			{
