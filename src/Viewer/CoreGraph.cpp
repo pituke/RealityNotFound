@@ -985,14 +985,13 @@ osg::ref_ptr<osg::Node> CoreGraph::createSkyNoiseBox()
 	return clearNode;
 }
 
-void CoreGraph::scaleNodes(bool scaleUp)
+void CoreGraph::scaleNodes( bool scaleUp )
 {
-	QMapIterator<qlonglong, osg::ref_ptr<Data::Node> > it(*in_nodes);
+	QMapIterator<qlonglong, osg::ref_ptr<Data::Node> > it( *in_nodes );
 
-	while (it.hasNext())
-	{
+	while ( it.hasNext() ) {
 		it.next();
-		it.value()->setScale(it.value()->getScale() * (scaleUp ? 1.2f : 0.8f));
+		it.value()->setScale( it.value()->getScale() * ( scaleUp ? 1.2f : 0.8f ) );
 	}
 }
 
@@ -1205,27 +1204,29 @@ void CoreGraph::setNodeLabelsVisible( bool visible )
 	QMap<qlonglong, osg::ref_ptr<Data::Node> >::const_iterator i = in_nodes->constBegin();
 
 	while ( i != in_nodes->constEnd() ) {
-		(*i)->showLabel(visible, labelsForResidenceShowed);
+		( *i )->showLabel( visible, labelsForResidenceShowed );
 		++i;
 	}
 }
 
-void CoreGraph::showLabelsForResidence(bool state)
+void CoreGraph::showLabelsForResidence( bool state )
 {
 	this->labelsForResidenceShowed = state;
 }
 
 bool CoreGraph::isHudDisplayed() const
 {
-	return root->containsNode(hud);
+	return root->containsNode( hud );
 }
 
-void CoreGraph::showHud(bool state)
+void CoreGraph::showHud( bool state )
 {
-	if (state && !isHudDisplayed())
-		root->addChild(hud);
-	else if (!state && isHudDisplayed())
-		root->removeChild(hud);
+	if ( state && !isHudDisplayed() ) {
+		root->addChild( hud );
+	}
+	else if ( !state && isHudDisplayed() ) {
+		root->removeChild( hud );
+	}
 }
 
 Hud* CoreGraph::getHud()
@@ -1253,9 +1254,9 @@ CoreGraph::~CoreGraph( void )
 	cleanUp();
 }
 
-void CoreGraph::onResized(int width, int height)
+void CoreGraph::onResized( int width, int height )
 {
-	hud->setWindowSize(QSize(width, height));
+	hud->setWindowSize( QSize( width, height ) );
 }
 
 void CoreGraph::setNodesFreezed( bool val )

@@ -59,12 +59,12 @@ void AdapterWidget::keyPressEvent( QKeyEvent* event )
 			_gw->getEventQueue()->keyPress( osgGA::GUIEventAdapter::KEY_Shift_L );
 			break;
 		}
-		case (Qt::Key_O) : {
-			_gw->getEventQueue()->keyPress(osgGA::GUIEventAdapter::KEY_O);
+		case ( Qt::Key_O ) : {
+			_gw->getEventQueue()->keyPress( osgGA::GUIEventAdapter::KEY_O );
 			break;
 		}
-		case (Qt::Key_P) : {
-			_gw->getEventQueue()->keyPress(osgGA::GUIEventAdapter::KEY_P);
+		case ( Qt::Key_P ) : {
+			_gw->getEventQueue()->keyPress( osgGA::GUIEventAdapter::KEY_P );
 			break;
 		}
 		default: {

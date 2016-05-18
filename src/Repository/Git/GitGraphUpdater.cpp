@@ -284,7 +284,7 @@ void Repository::Git::GitGraphUpdater::addNodesToGraph( QStringList list )
 			Data::Node* node = this->getActiveGraph()->findNodeByName( lNodeName );
 			node->setType( lType );
 			node->reloadConfig();
-			node->showLabel (true, false );
+			node->showLabel( true, false );
 		}
 	}
 }
@@ -404,7 +404,7 @@ void Repository::Git::GitGraphUpdater::removeNodesFromGraph( QStringList list )
 					if ( node ) {
 						node->setType( this->getActiveGraph()->getTypesByName( "removedFile" ).at( 0 ) );
 						node->reloadConfig();
-						node->showLabel(true, false);
+						node->showLabel( true, false );
 					}
 				}
 			}

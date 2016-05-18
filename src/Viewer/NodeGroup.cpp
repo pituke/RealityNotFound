@@ -181,13 +181,15 @@ void NodeGroup::updateNodeCoordinates( float interpolationSpeed )
 		//string b = typeid (Data::Node).name();
 		//if(typeid (i.value()).name() == "aa")
 		//;
-		auto transform = nodeTransforms->value(i.key()).get();
-		auto posAttrTransform = dynamic_cast<osg::PositionAttitudeTransform*>(transform);
-		auto autoTransform = dynamic_cast<osg::AutoTransform*>(transform);
-		if (posAttrTransform)
-			posAttrTransform->setPosition((*i)->getCurrentPosition(true, interpolationSpeed));
-		else if (autoTransform)
-			autoTransform->setPosition((*i)->getCurrentPosition(true, interpolationSpeed));
+		auto transform = nodeTransforms->value( i.key() ).get();
+		auto posAttrTransform = dynamic_cast<osg::PositionAttitudeTransform*>( transform );
+		auto autoTransform = dynamic_cast<osg::AutoTransform*>( transform );
+		if ( posAttrTransform ) {
+			posAttrTransform->setPosition( ( *i )->getCurrentPosition( true, interpolationSpeed ) );
+		}
+		else if ( autoTransform ) {
+			autoTransform->setPosition( ( *i )->getCurrentPosition( true, interpolationSpeed ) );
+		}
 
 		osg::ref_ptr<osg::AutoTransform> at = NULL;
 		at = i.value()->getOutBall();

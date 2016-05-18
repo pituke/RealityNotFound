@@ -71,10 +71,10 @@ void QOSG::ViewerQT::paintGL()
 	cg->update();
 }
 
-void QOSG::ViewerQT::resizeGL(int width, int height)
+void QOSG::ViewerQT::resizeGL( int width, int height )
 {
-	AdapterWidget::resizeGL(width, height);
-	cg->onResized(width, height);
+	AdapterWidget::resizeGL( width, height );
+	cg->onResized( width, height );
 }
 
 void QOSG::ViewerQT::moveMouseAruco( double positionX,double positionY,bool isClick,int windowX,int windowY ,Qt::MouseButton button )

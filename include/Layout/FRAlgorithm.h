@@ -161,7 +161,7 @@ public:
 	    */
 	void setRepulsiveForceVertigo( int value );
 
-	void setMaxDistance(float max_distance)
+	void setMaxDistance( float max_distance )
 	{
 		this->MAX_DISTANCE = max_distance;
 	}

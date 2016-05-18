@@ -127,7 +127,7 @@ private:
 		*  \param      graphScale     graph scale
 		*  \return osg::ref_ptr node transform
 		*/
-	osg::ref_ptr<osg::Transform> wrapChild(osg::ref_ptr<Data::Node> node, float graphScale);
+	osg::ref_ptr<osg::Transform> wrapChild( osg::ref_ptr<Data::Node> node, float graphScale );
 
 	/**
 		*  \fn private  getNodeGroup(osg::ref_ptr<Data::Node> node, osg::ref_ptr<Data::Edge> parentEdge, float graphScale)

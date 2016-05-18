@@ -40,7 +40,7 @@ Data::Type::Type( qlonglong id, QString name,Data::Graph* graph, QMap<QString, Q
 void Data::Type::loadConfig()
 {
 	//nacitame nastavenia zo suboru
-	typeTexture = Vwr::DataHelper::readTextureFromFile(settings->value("textureFile"));
+	typeTexture = Vwr::DataHelper::readTextureFromFile( settings->value( "textureFile" ) );
 	scale = settings->value( "scale" ).toFloat();
 }
 

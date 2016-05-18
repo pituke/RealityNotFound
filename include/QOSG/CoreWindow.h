@@ -104,17 +104,17 @@ public slots:
 	            */
 	void showLoadGraph();
 
-    /**
-                *  \fn public  showDialogLoadJavaProject
-                *  \brief Show the dialog to load java project
-                */
-    void showDialogLoadJavaProject();
+	/**
+	            *  \fn public  showDialogLoadJavaProject
+	            *  \brief Show the dialog to load java project
+	            */
+	void showDialogLoadJavaProject();
 
 	/**
-    *  \fn public  loadJavaProject
-    *  \brief Load, parse java project, create visualization and make it current
-    */
-	void loadJavaProjectAndShow(const QString& projectDir);
+	*  \fn public  loadJavaProject
+	*  \brief Load, parse java project, create visualization and make it current
+	*/
+	void loadJavaProjectAndShow( const QString& projectDir );
 
 	/**
 	            *  \fn public  saveGraphToDB
@@ -123,7 +123,7 @@ public slots:
 
 	void saveGraphToDB();
 
-	
+
 	/**
 	            *  \fn public  loadFunctionCall()
 	            *  \brief load function call clicked
@@ -246,7 +246,7 @@ public slots:
 	            */
 	void labelOnOff( bool checked );
 
-	void labelForResidenceCheckStateChanged(int state);
+	void labelForResidenceCheckStateChanged( int state );
 
 	/**
 	            *  \fn public  sliderValueChanged(int value)
@@ -666,11 +666,11 @@ private:
 	    */
 	QAction* loadGraph;
 
-    /**
-        *  QAction * loadJavaProject
-        *  \brief Pointer to dialog to load java project
-        */
-    QAction* loadJavaProjectAction;
+	/**
+	    *  QAction * loadJavaProject
+	    *  \brief Pointer to dialog to load java project
+	    */
+	QAction* loadJavaProjectAction;
 
 	/**
 	    *  QAction * saveLayout
@@ -1310,7 +1310,7 @@ private:
 	bool isEBPlaying;
 
 private:
-	void showEvent(QShowEvent* e) override;
+	void showEvent( QShowEvent* e ) override;
 
 public:
 

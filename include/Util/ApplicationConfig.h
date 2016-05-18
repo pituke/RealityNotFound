@@ -119,7 +119,7 @@ public:
 	int getIntValue(
 		QString key,
 		const int defaultValue = int()
-		);
+	);
 
 	/**
 	* \brief Gets float value from settings or default.
@@ -130,7 +130,7 @@ public:
 	float getFloatValue(
 		QString key,
 		const float defaultValue = float()
-		);
+	);
 
 	/**
 			 * \brief Gets color value in osg::Vec4f from settings.

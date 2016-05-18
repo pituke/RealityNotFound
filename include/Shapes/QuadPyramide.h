@@ -2,11 +2,10 @@
 
 #include <osg/Geode>
 
-namespace Clustering
+namespace Clustering {
+class QuadPyramide : public osg::Geode
 {
-	class QuadPyramide : public osg::Geode
-	{
-	public:
-		QuadPyramide(float baseWidth, float baseDepth, float height, const osg::Vec3& offset = osg::Vec3());
-	};
+public:
+	QuadPyramide( float baseWidth, float baseDepth, float height, const osg::Vec3& offset = osg::Vec3() );
+};
 }

@@ -147,7 +147,7 @@ public:
 	 * \fn setActiveGraph
 	 * \brief set the active graph
 	 */
-	void setActiveGraph(Data::Graph* graph)
+	void setActiveGraph( Data::Graph* graph )
 	{
 		activeGraph = graph;
 	}

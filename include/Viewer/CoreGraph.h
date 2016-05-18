@@ -98,7 +98,7 @@ public:
 	     */
 	~CoreGraph( void );
 
-	void onResized(int width, int height);
+	void onResized( int width, int height );
 
 	/**
 	    *  \fn public  reload(Data::Graph * graph = 0)
@@ -122,7 +122,7 @@ public:
 	     */
 	void update();
 
-	void scaleNodes(bool scaleUp);
+	void scaleNodes( bool scaleUp );
 
 	/**
 	    *  \fn inline public  getCustomNodeList
@@ -188,9 +188,9 @@ public:
 	    */
 	void setNodeLabelsVisible( bool visible );
 
-	void showLabelsForResidence(bool state);
+	void showLabelsForResidence( bool state );
 
-	void showHud(bool state);
+	void showHud( bool state );
 
 	bool isHudDisplayed() const;
 

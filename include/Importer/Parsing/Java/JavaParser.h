@@ -3,15 +3,13 @@
 #include "JavaAst.h"
 #include "../SoftTree.h"
 
-namespace Importer
+namespace Importer {
+namespace Parsing {
+class JavaParser
 {
-	namespace Parsing
-	{
-		class JavaParser
-		{
-		public:
-			JavaParser();
-			bool Parse(const QString& javaProjectDirectory, SoftTree& softTree, QString& errorMessage = QString());
-		};
-	}
+public:
+	JavaParser();
+	bool Parse( const QString& javaProjectDirectory, SoftTree& softTree, QString& errorMessage = QString() );
+};
+}
 }

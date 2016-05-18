@@ -9,8 +9,8 @@
 #include "Data/DbNode.h"
 #include <City/Building.h>
 
-namespace Clustering{
-	class Residence;
+namespace Clustering {
+class Residence;
 }
 
 namespace Data {
@@ -47,7 +47,7 @@ public:
 	* \brief Sets subgraph for drawing residence of city.
 	* \param residence osg subgraph
 	*/
-	void setResidence(osg::Node* residence);
+	void setResidence( osg::Node* residence );
 
 	/**
 	* \fn public getResidence
@@ -225,8 +225,8 @@ public:
 	{
 		return color;
 	}
-	
-	void setScale(float val) override;
+
+	void setScale( float val ) override;
 
 	bool setInvisible( bool invisible );
 
@@ -362,7 +362,7 @@ public:
 	    *  \param  bbState	node stateset
 	    *  \return osg::ref_ptr node geode
 	    */
-	static osg::ref_ptr<osg::Node> createNodeSphere(const float& scale, osg::StateSet* bbState);
+	static osg::ref_ptr<osg::Node> createNodeSphere( const float& scale, osg::StateSet* bbState );
 
 	/**
 	*  \fn private static  createNodeResidence(const float & scale, osg::StateSet* bbState)
@@ -371,7 +371,7 @@ public:
 	*  \param  bbState	node stateset
 	*  \return osg::ref_ptr node geode
 	*/
-	static osg::ref_ptr<osg::Node> createNodeResidence(const float& scale);
+	static osg::ref_ptr<osg::Node> createNodeResidence( const float& scale );
 
 	/**
 	    *  \fn private static  createStateSet(Data::Type * type = 0)
@@ -379,7 +379,7 @@ public:
 	    *  \param   type     node type
 	    *  \return osg::ref_ptr node stateset
 	    */
-	static osg::ref_ptr<osg::StateSet> createStateSet(const osg::ref_ptr<osg::Texture2D>& texture);
+	static osg::ref_ptr<osg::StateSet> createStateSet( const osg::ref_ptr<osg::Texture2D>& texture );
 
 	/**
 	    *  \fn private static  createLabel(const float & scale, QString name)
@@ -388,7 +388,7 @@ public:
 	    *  \param       name     label text
 	    *  \return osg::ref_ptr node label
 	    */
-	static osg::ref_ptr<osg::Node> createLabel(const float& scale, QString name);
+	static osg::ref_ptr<osg::Node> createLabel( const float& scale, QString name );
 
 	static const int INDEX_LABEL = 0;
 	static const int INDEX_SQUARE = 1;

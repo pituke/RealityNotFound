@@ -279,31 +279,25 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, GUIActionAdap
 	else if ( ea.getKey() == osgGA::GUIEventAdapter::KEY_N ) {
 		this->selectAllNeighbors( this->pickedNodes );
 	}
-	else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_O)
-	{
-		if (isCtrlPressed)
-		{
+	else if ( ea.getKey() == osgGA::GUIEventAdapter::KEY_O ) {
+		if ( isCtrlPressed ) {
 			//scale down
-			coreGraph->scaleNodes(false);
+			coreGraph->scaleNodes( false );
 		}
-		else
-		{
+		else {
 			//scale up
-			coreGraph->scaleNodes(true);
+			coreGraph->scaleNodes( true );
 		}
 	}
-	else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_P)
-	{
+	else if ( ea.getKey() == osgGA::GUIEventAdapter::KEY_P ) {
 		Layout::LayoutThread* layout = AppCore::Core::getInstance()->getLayoutThread();
 		float distance = layout->getAlg()->getMaxDistance();
 
-		if (isCtrlPressed)
-		{
-			layout->getAlg()->setMaxDistance(distance * 0.8f);
+		if ( isCtrlPressed ) {
+			layout->getAlg()->setMaxDistance( distance * 0.8f );
 		}
-		else
-		{
-			layout->getAlg()->setMaxDistance(distance * 1.2f);
+		else {
+			layout->getAlg()->setMaxDistance( distance * 1.2f );
 		}
 	}
 
@@ -362,9 +356,8 @@ bool PickHandler::handleKeyDown( const osgGA::GUIEventAdapter& ea, GUIActionAdap
 		}
 
 	}
-	else if (ea.getKey() == 'h' || ea.getKey() == 'H')
-	{
-		coreGraph->showHud(!coreGraph->isHudDisplayed());
+	else if ( ea.getKey() == 'h' || ea.getKey() == 'H' ) {
+		coreGraph->showHud( !coreGraph->isHudDisplayed() );
 	}
 
 
@@ -537,7 +530,7 @@ bool PickHandler::pick( const double xMin, const double yMin, const double xMax,
 
 	bool result = false;
 
-	coreGraph->getHud()->setText(QString());
+	coreGraph->getHud()->setText( QString() );
 	if ( picker->containsIntersections() ) {
 		osgUtil::PolytopeIntersector::Intersections intersections = picker->getIntersections();
 
@@ -617,19 +610,16 @@ bool PickHandler::doNodePick( osg::NodePath nodePath )
 	}
 
 	Clustering::Building* b;
-	for (unsigned int i = 0; i < nodePath.size(); i++)
-	{
-		b = dynamic_cast<Clustering::Building*>(nodePath[i]);
-		if (b != NULL)
-		{
+	for ( unsigned int i = 0; i < nodePath.size(); i++ ) {
+		b = dynamic_cast<Clustering::Building*>( nodePath[i] );
+		if ( b != NULL ) {
 			break;
 		}
 	}
 
-	if (b != NULL)
-	{
-		b->select(true);
-		coreGraph->getHud()->setText(b->getInfo());
+	if ( b != NULL ) {
+		b->select( true );
+		coreGraph->getHud()->setText( b->getInfo() );
 	}
 
 	if ( n != NULL ) {
@@ -998,10 +988,14 @@ void PickHandler::unselectPickedNodes( osg::ref_ptr<Data::Node> node )
 
 		while ( i != pickedNodes.constEnd() ) {
 			( *i )->setSelected( false );
-			auto r = (*i)->getResidence();
-			if (r) r->selectAll(false);
-			auto b = (*i)->getBuilding();
-			if (b) b->select(false);
+			auto r = ( *i )->getResidence();
+			if ( r ) {
+				r->selectAll( false );
+			}
+			auto b = ( *i )->getBuilding();
+			if ( b ) {
+				b->select( false );
+			}
 			++i;
 		}
 
