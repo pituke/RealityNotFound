@@ -49,13 +49,14 @@
 #include <iostream>
 #include <osg/ref_ptr>
 #include <string>
-#include <Clustering/Building.h>
+#include <City/Building.h>
 #include <Importer/Parsing/InvocationGraph.h>
-#include <Clustering/Residence.h>
+#include <City/Residence.h>
 #include <Layout/LayoutAlgorithms.h>
 #include <Viewer/DataHelper.h>
-#include <Clustering/Cuboid.h>
+#include <Shapes/Cuboid.h>
 #include <Manager/ResourceManager.h>
+#include <Clustering/Clusterer.h>
 
 #ifdef OPENCV_FOUND
 #include "OpenCV/OpenCVCore.h"

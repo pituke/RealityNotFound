@@ -1,4 +1,4 @@
-#include "Clustering/Cuboid.h"
+#include "Shapes/Cuboid.h"
 #include <osg/Vec3>
 #include <osg/Geometry>
 #include <QVector>

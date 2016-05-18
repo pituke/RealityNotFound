@@ -7,7 +7,7 @@
 #include <Data/Type.h>
 
 #include "Data/DbNode.h"
-#include <Clustering/Building.h>
+#include <City/Building.h>
 
 namespace Clustering{
 	class Residence;

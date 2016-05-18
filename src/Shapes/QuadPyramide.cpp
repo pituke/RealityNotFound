@@ -1,4 +1,4 @@
-#include "Clustering/QuadPyramide.h"
+#include "Shapes//QuadPyramide.h"
 #include <osg/Vec3>
 #include <osg/Geometry>
 #include <QVector>

@@ -11,10 +11,10 @@
 #include <osg/CullFace>
 #include <osg/BlendFunc>
 #include <osgText/FadeText>
-#include "Clustering/Residence.h"
+#include "City/Residence.h"
 
 #include <QTextStream>
-#include <Clustering/Cuboid.h>
+#include <Shapes/Cuboid.h>
 
 
 Data::OsgNode::OsgNode( qlonglong id, QString name, Data::Type* type, Data::Graph* graph, float scaling, osg::Vec3f position )

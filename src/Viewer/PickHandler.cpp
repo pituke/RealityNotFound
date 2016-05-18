@@ -14,7 +14,7 @@
 #include "Layout/LayoutThread.h"
 #include "Layout/FRAlgorithm.h"
 #include "Layout/Shape_Cube.h"
-#include "Clustering/Residence.h"
+#include "City/Residence.h"
 
 #include "Util/ApplicationConfig.h"
 
@@ -27,6 +27,7 @@
 #include <osg/Switch>
 
 #include <string>
+#include <Clustering/Clusterer.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-enum"

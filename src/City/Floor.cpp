@@ -1,6 +1,6 @@
-#include "Clustering/Floor.h"
+#include "City/Floor.h"
 #include <Manager/ResourceManager.h>
-#include <Clustering/Cuboid.h>
+#include <Shapes/Cuboid.h>
 #include <Util/ApplicationConfig.h>
 
 namespace Clustering

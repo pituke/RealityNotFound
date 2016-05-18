@@ -14,8 +14,6 @@
 #include "Layout/ShapeGetter_SpherePlane_ByThreeNodes.h"
 //#include "Viewer/CameraManipulator.h"
 
-#include "Clustering/Clusterer.h"
-
 #ifdef SPEECHSDK_FOUND
 #include "Speech/KinectSpeechThread.h"
 #endif

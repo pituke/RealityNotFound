@@ -35,6 +35,7 @@
 #include <qfileinfo.h>
 
 #include <memory>
+#include <Clustering/Clusterer.h>
 
 Manager::GraphManager* Manager::GraphManager::manager;
 

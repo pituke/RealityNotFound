@@ -1,6 +1,6 @@
-#include "Clustering/Residence.h"
+#include "City/Residence.h"
 #include <Layout/LayoutAlgorithms.h>
-#include <Clustering/Cuboid.h>
+#include <Shapes/Cuboid.h>
 #include <Util/ApplicationConfig.h>
 
 namespace Clustering

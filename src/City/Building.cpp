@@ -1,5 +1,5 @@
-#include "Clustering/Building.h"
-#include <Clustering/QuadPyramide.h>
+#include "City/Building.h"
+#include <Shapes/QuadPyramide.h>
 #include <Util/ApplicationConfig.h>
 #include <Data/OsgNode.h>
 #include <Manager/ResourceManager.h>
